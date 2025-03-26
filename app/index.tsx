@@ -16,6 +16,8 @@ export default function Index() {
       <Link href="/(auth)/signupDetails">Signup Details</Link>
       <Link href="/(auth)/signupVerification">Signup OTP verification</Link>
       <Link href="/(auth)/forgot">Forget Password</Link>
+      <Link href="/splashScreen">SPLASH SCREEN</Link>
+      <Link href="/(tabs)/home">Home</Link>
     </View>
   );
 }

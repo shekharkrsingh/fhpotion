@@ -13,7 +13,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   card: {
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 20,
     marginVertical: 16,
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     color: COLORS.textPrimary,
-    marginBottom: 8,
+    marginBottom: 2,
   },
   subtitle: {
     fontSize: 14,
@@ -69,6 +69,23 @@ const styles = StyleSheet.create({
     height: 48,
     color: COLORS.textDark,
   },
+  switchContainer:{
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  addMoreContainer: {
+    alignItems: 'flex-end',
+    // marginBottom: 20,
+    // paddingHorizontal: 12,
+    paddingVertical:12
+  },
+  addMoreButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+  },
   textArea: {
     backgroundColor: COLORS.inputBackground,
     borderRadius: 12,
@@ -77,6 +94,7 @@ const styles = StyleSheet.create({
     padding: 12,
     height: 100,
     color: COLORS.textDark,
+    textAlignVertical:"top"
   },
   ratingContainer: {
     flexDirection: "row",

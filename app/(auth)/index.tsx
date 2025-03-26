@@ -14,15 +14,15 @@ import { Ionicons } from '@expo/vector-icons';
 import COLORS from '@/constants/colors';
 import { TextInput } from 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Link, router, useNavigation } from 'expo-router';
+import { Link, router, useNavigation, useRouter } from 'expo-router';
 import { login } from '@/service/properties/authApi';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const router=useRouter();
 
     const handleLogin = async () => {
         if (!email.trim() || !password.trim()) {
@@ -36,7 +36,8 @@ export default function Login() {
 
         if (token) {
             console.log("Login Successful! Token saved.");
-            router.replace("/"); // Navigate to home screen
+            console.log(token);
+            router.replace("/splashScreen"); // Navigate to home screen
         } else {
             Alert.alert("Login Failed", "Invalid credentials. Please try again.");
         }

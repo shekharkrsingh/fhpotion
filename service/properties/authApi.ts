@@ -94,8 +94,6 @@ export async function sendOtp(email: string): Promise<boolean> {
         password,
       });
   
-      console.log(response);
-  
       if (!response.data.success || !response.data.data?.token) {
         console.error("Login Failed:", response.data.message);
         throw new Error(response.data.message || "Login failed.");
@@ -138,3 +136,4 @@ export async function sendOtp(email: string): Promise<boolean> {
         return false;
     }
 };
+
