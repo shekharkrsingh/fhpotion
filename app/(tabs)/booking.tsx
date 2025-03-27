@@ -1,197 +1,206 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, GestureHandlerRootView, RefreshControl } from 'react-native-gesture-handler';
 import BookingHeader from '@/componets/BookingHeader';
 import AppointmentCard from '@/componets/AppointmentCard';
 import { AppTheme } from '@/constants/theme';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/store';
+import { getAppointments, updateAppointment } from '@/service/properties/appointmentApi';
+import { useDispatch } from 'react-redux';
 
 interface BookingItem {
-  id: string;
-  name: string;
-  timing: string;
-  contact: string;
-  description: string;
-  avatar: string;
-  available: boolean;
-  paid: boolean;
-  treated: boolean;
+  appointmentId: string;
+    doctorId: string;
+    patientName: string;
+    contact: string;
+    description: string | null;
+    appointmentDateTime: string;
+    bookingDateTime: string;
+    availableAtClinic: boolean;
+    treated: boolean;
+    treatedDateTime: string | null;
+    status: string;
+    appointmentType: string;
+    paymentStatus: boolean;
 }
 
 export default function BookingScreen() {
+  const { data, loading, error} = useSelector((state: RootState) => state.appointments);
+  const dispatch=useDispatch();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-   const [data, setData] = useState<BookingItem[]>([
-    {
-        id: '1',
-        name: 'John Doe',
-        timing: '9:00 AM - 5:00 PM',
-        contact: '9549964878',
-        description: 'Software Developer',
-        avatar: 'https://via.placeholder.com/50',
-        available: false,
-        paid: true,
-        treated: false, // Add treated field
-      },
-      {
-        id: '2',
-        name: 'Jane Smith',
-        timing: '10:00 AM - 6:00 PM',
-        contact: '9345632871',
-        description: 'UX Designer',
-        avatar: 'https://via.placeholder.com/50',
-        available: false,
-        paid: false,
-        treated: false, // Add treated field
-      },
-      {
-        id: '3',
-        name: 'Tom Harris',
-        timing: '8:00 AM - 4:00 PM',
-        contact: '9841237654',
-        description: 'Data Analyst',
-        avatar: 'https://via.placeholder.com/50',
-        available: true,
-        paid: true,
-        treated: false, // Add treated field
-      },
-      {
-        id: '4',
-        name: 'Sarah Lee',
-        timing: '11:00 AM - 7:00 PM',
-        contact: '9578463021',
-        description: 'Product Manager',
-        avatar: 'https://via.placeholder.com/50',
-        available: false,
-        paid: false,
-        treated: false, // Add treated field
-      },
-      {
-        id: '5',
-        name: 'Michael Brown',
-        timing: '9:30 AM - 5:30 PM',
-        contact: '9703225678',
-        description: 'Marketing Specialist',
-        avatar: 'https://via.placeholder.com/50',
-        available: false,
-        paid: true,
-        treated: false, // Add treated field
-      },
-      {
-        id: '6',
-        name: 'Lisa White',
-        timing: '9:00 AM - 6:00 PM',
-        contact: '9847765453',
-        description: 'Product Designer',
-        avatar: 'https://via.placeholder.com/50',
-        available: true,
-        paid: true,
-        treated: false, // Add treated field
-      },
-      {
-        id: '7',
-        name: 'David Green',
-        timing: '10:30 AM - 4:30 PM',
-        contact: '9708254637',
-        description: 'Business Analyst',
-        avatar: 'https://via.placeholder.com/50',
-        available: false,
-        paid: false,
-        treated: false, // Add treated field
-      },
-      {
-        id: '8',
-        name: 'Emma Harris',
-        timing: '8:00 AM - 5:00 PM',
-        contact: '9999999888',
-        description: 'Software Engineer',
-        avatar: 'https://via.placeholder.com/50',
-        available: false,
-        paid: true,
-        treated: false, // Add treated field
-      },
-      {
-        id: '9',
-        name: 'Sophia Johnson',
-        timing: '9:30 AM - 6:00 PM',
-        contact: '9876543210',
-        description: 'Account Manager',
-        avatar: 'https://via.placeholder.com/50',
-        available: false,
-        paid: false,
-        treated: false, // Add treated field
-      },
-      {
-        id: '10',
-        name: 'James Lee',
-        timing: '7:00 AM - 3:00 PM',
-        contact: '9000456789',
-        description: 'DevOps Engineer',
-        avatar: 'https://via.placeholder.com/50',
-        available: true,
-        paid: true,
-        treated: false, // Add treated field
-      },
-      {
-        id: '11',
-        name: 'Olivia Martinez',
-        timing: '9:00 AM - 4:00 PM',
-        contact: '9543245678',
-        description: 'HR Manager',
-        avatar: 'https://via.placeholder.com/50',
-        available: false,
-        paid: false,
-        treated: false, // Add treated field
-      },
-      {
-        id: '12',
-        name: 'Lucas Perez',
-        timing: '10:00 AM - 5:00 PM',
-        contact: '9537641823',
-        description: 'Graphic Designer',
-        avatar: 'https://via.placeholder.com/50',
-        available: false,
-        paid: true,
-        treated: false, // Add treated field
-      },
-      {
-        id: '13',
-        name: 'Chloe Wilson',
-        timing: '8:00 AM - 4:30 PM',
-        contact: '9551239876',
-        description: 'Business Development',
-        avatar: 'https://via.placeholder.com/50',
-        available: false,
-        paid: false,
-        treated: false, // Add treated field
-      },
-      {
-        id: '14',
-        name: 'Mason Walker',
-        timing: '9:00 AM - 6:00 PM',
-        contact: '9876954321',
-        description: 'SEO Specialist',
-        avatar: 'https://via.placeholder.com/50',
-        available: false,
-        paid: true,
-        treated: false, // Add treated field
-      },
-      {
-        id: '15',
-        name: 'Ava Scott',
-        timing: '9:30 AM - 5:30 PM',
-        contact: '9018234567',
-        description: 'Social Media Manager',
-        avatar: 'https://via.placeholder.com/50',
-        available: true,
-        paid: true,
-        treated: false, // Add treated field
-      },
-    // Add other initial booking items with the "treated" field
-  ]);
+  // const data = [
+  //   {
+  //     appointmentId: "apt-001",
+  //     doctorId: "doc-101",
+  //     patientName: "John Smith",
+  //     contact: "john.smith@example.com",
+  //     description: "Annual checkup and vaccination",
+  //     appointmentDateTime: "2023-11-15T09:30:00",
+  //     bookingDateTime: "2023-11-01T14:15:00",
+  //     availableAtClinic: true,
+  //     treated: false,
+  //     treatedDateTime: null,
+  //     status: "confirmed",
+  //     appointmentType: "general",
+  //     paymentStatus: true
+  //   },
+  //   {
+  //     appointmentId: "apt-002",
+  //     doctorId: "doc-101",
+  //     patientName: "Sarah Johnson",
+  //     contact: "sarahj@example.com",
+  //     description: "Follow-up for blood test results",
+  //     appointmentDateTime: "2023-11-15T10:15:00",
+  //     bookingDateTime: "2023-11-03T10:45:00",
+  //     availableAtClinic: true,
+  //     treated: false,
+  //     treatedDateTime: null,
+  //     status: "confirmed",
+  //     appointmentType: "follow-up",
+  //     paymentStatus: true
+  //   },
+  //   {
+  //     appointmentId: "apt-003",
+  //     doctorId: "doc-102",
+  //     patientName: "Michael Brown",
+  //     contact: "mbrown@example.com",
+  //     description: "Dental cleaning and examination",
+  //     appointmentDateTime: "2023-11-16T11:00:00",
+  //     bookingDateTime: "2023-10-30T16:20:00",
+  //     availableAtClinic: false,
+  //     treated: true,
+  //     treatedDateTime: "2023-11-16T11:45:00",
+  //     status: "completed",
+  //     appointmentType: "dental",
+  //     paymentStatus: true
+  //   },
+  //   {
+  //     appointmentId: "apt-004",
+  //     doctorId: "doc-103",
+  //     patientName: "Emily Davis",
+  //     contact: "emily.d@example.com",
+  //     description: "Initial consultation for back pain",
+  //     appointmentDateTime: "2023-11-17T14:00:00",
+  //     bookingDateTime: "2023-11-10T09:30:00",
+  //     availableAtClinic: true,
+  //     treated: false,
+  //     treatedDateTime: null,
+  //     status: "pending",
+  //     appointmentType: "consultation",
+  //     paymentStatus: false
+  //   },
+  //   {
+  //     appointmentId: "apt-005",
+  //     doctorId: "doc-101",
+  //     patientName: "Robert Wilson",
+  //     contact: "robertw@example.com",
+  //     description: "Vaccination booster shot",
+  //     appointmentDateTime: "2023-11-18T15:30:00",
+  //     bookingDateTime: "2023-11-05T11:15:00",
+  //     availableAtClinic: true,
+  //     treated: false,
+  //     treatedDateTime: null,
+  //     status: "confirmed",
+  //     appointmentType: "vaccination",
+  //     paymentStatus: true
+  //   },
+  //   {
+  //     appointmentId: "apt-006",
+  //     doctorId: "doc-104",
+  //     patientName: "Jennifer Lee",
+  //     contact: "j.lee@example.com",
+  //     description: "Physical therapy session",
+  //     appointmentDateTime: "2023-11-19T10:00:00",
+  //     bookingDateTime: "2023-11-12T13:45:00",
+  //     availableAtClinic: true,
+  //     treated: false,
+  //     treatedDateTime: null,
+  //     status: "confirmed",
+  //     appointmentType: "therapy",
+  //     paymentStatus: false
+  //   },
+  //   {
+  //     appointmentId: "apt-007",
+  //     doctorId: "doc-102",
+  //     patientName: "David Miller",
+  //     contact: "davidm@example.com",
+  //     description: "Emergency tooth extraction",
+  //     appointmentDateTime: "2023-11-20T16:00:00",
+  //     bookingDateTime: "2023-11-20T10:30:00",
+  //     availableAtClinic: true,
+  //     treated: true,
+  //     treatedDateTime: "2023-11-20T17:15:00",
+  //     status: "completed",
+  //     appointmentType: "emergency",
+  //     paymentStatus: true
+  //   },
+  //   {
+  //     appointmentId: "apt-008",
+  //     doctorId: "doc-103",
+  //     patientName: "Jessica Taylor",
+  //     contact: "jess.t@example.com",
+  //     description: "Routine physical examination",
+  //     appointmentDateTime: "2023-11-21T09:00:00",
+  //     bookingDateTime: "2023-11-15T14:00:00",
+  //     availableAtClinic: false,
+  //     treated: false,
+  //     treatedDateTime: null,
+  //     status: "confirmed",
+  //     appointmentType: "general",
+  //     paymentStatus: true
+  //   },
+  //   {
+  //     appointmentId: "apt-009",
+  //     doctorId: "doc-101",
+  //     patientName: "Daniel Anderson",
+  //     contact: "daniel.a@example.com",
+  //     description: "Blood pressure monitoring",
+  //     appointmentDateTime: "2023-11-22T11:30:00",
+  //     bookingDateTime: "2023-11-18T15:45:00",
+  //     availableAtClinic: true,
+  //     treated: false,
+  //     treatedDateTime: null,
+  //     status: "pending",
+  //     appointmentType: "monitoring",
+  //     paymentStatus: false
+  //   },
+  //   {
+  //     appointmentId: "apt-010",
+  //     doctorId: "doc-104",
+  //     patientName: "Amanda White",
+  //     contact: "awhite@example.com",
+  //     description: "Post-surgery rehabilitation",
+  //     appointmentDateTime: "2023-11-23T13:15:00",
+  //     bookingDateTime: "2023-11-10T11:20:00",
+  //     availableAtClinic: true,
+  //     treated: false,
+  //     treatedDateTime: null,
+  //     status: "confirmed",
+  //     appointmentType: "rehabilitation",
+  //     paymentStatus: true
+  //   }
+  // ];
   
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'treated'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    await getAppointments(dispatch);
+  };
+
+  const update = async (id: string,change: any) => {
+    await updateAppointment(dispatch, id, change);
+  };
+
+
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -207,7 +216,7 @@ export default function BookingScreen() {
     
     switch (availabilityFilter) {
       case 'available':
-        filtered = filtered.filter(item => item.available && item.paid && !item.treated);
+        filtered = filtered.filter(item => item.availableAtClinic && item.paymentStatus && !item.treated);
         break;
       case 'treated':
         filtered = filtered.filter(item => item.treated);
@@ -216,7 +225,7 @@ export default function BookingScreen() {
 
     if (searchQuery) {
       filtered = filtered.filter(item => 
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        item.patientName.toLowerCase().includes(searchQuery.toLowerCase()) || 
         item.contact.includes(searchQuery)
       );
     }
@@ -224,44 +233,50 @@ export default function BookingScreen() {
     return filtered;
   }, [data, availabilityFilter, searchQuery]);
 
-  const toggleAvailability = (id: string, value: boolean) => {
-    const itemToToggle = data.find(item => item.id === id);
-    if (itemToToggle && itemToToggle.paid) {
-      const newData = data.map(item =>
-        item.id === id ? { ...item, available: value } : item
-      );
-      setData(newData);
+  const toggleAvailability = async (id: string, value: boolean) => {
+    const itemToToggle = data.find((item) => item.appointmentId === id);
+
+    if (itemToToggle && itemToToggle.paymentStatus) {
+        // Update the availability field
+        await update(id, { availableAtClinic: value });
     } else {
-      alert('Cannot change availability status. Payment is required before changing availability.');
+        alert("Cannot change availability status. Payment is required before changing availability.");
     }
-  };
+};
 
   const togglePaymentStatus = (id: string) => {
-    const newData = data.map(item =>
-      item.id === id ? { ...item, paid: !item.paid } : item
+    data.filter( async (item) =>{
+      if(item.appointmentId===id){
+        await update(id, {paymentStatus: !item.paymentStatus});
+      }
+    }
     );
-    setData(newData);
+    
   };
 
-  const toggleTreatedStatus = (id: string) => {
-    const newData = data.map(item => {
-      if (item.id === id) {
-        if (item.paid && item.available) {
-          return { ...item, treated: !item.treated };
-        } else {
-          alert('Item must be paid and available to toggle the treated status.');
-          return item;
-        }
-      }
-      return item;
-    });
-    setData(newData);
-  };
+  const toggleTreatedStatus = async (id: string) => {
+    const itemToUpdate = data.find(item => item.appointmentId === id);
+
+    if (!itemToUpdate) {
+        alert("Appointment not found.");
+        return;
+    }
+
+    if (!itemToUpdate.paymentStatus || !itemToUpdate.availableAtClinic) {
+        alert("Item must be paid and available to toggle the treated status.");
+        return;
+    }
+
+    const updatedTreatedStatus = !itemToUpdate.treated;
+
+    await update(id, { treated: updatedTreatedStatus });
+};
+
   
   const renderItem = ({ item }: { item: BookingItem }) => (
     <AppointmentCard
       item={item}
-      isExpanded={item.id === expandedId}
+      isExpanded={item.appointmentId === expandedId}
       onToggleExpand={(id) => setExpandedId(id)}
       toggleAvailability={toggleAvailability}
       togglePaymentStatus={togglePaymentStatus}
@@ -297,7 +312,7 @@ export default function BookingScreen() {
         <FlatList
           data={filteredData}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.appointmentId}
           refreshControl={
             <RefreshControl 
               refreshing={refreshing} 

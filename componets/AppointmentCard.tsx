@@ -7,15 +7,19 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 interface AppointmentCardProps {
   item: {
-    id: string;
-    avatar: string;
-    name: string;
-    timing: string;
+    appointmentId: string;
+    doctorId: string;
+    patientName: string;
     contact: string;
-    description: string;
-    paid: boolean;
-    available: boolean;
+    description: string | null;
+    appointmentDateTime: string;
+    bookingDateTime: string;
+    availableAtClinic: boolean;
     treated: boolean;
+    treatedDateTime: string | null;
+    status: string;
+    appointmentType: string;
+    paymentStatus: boolean;
   };
   isExpanded: boolean;
   onToggleExpand: (id: string | null) => void;
@@ -52,13 +56,13 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   };
 
   const handleTogglePaymentStatus = () => {
-    if (item.paid) {
+    if (item.paymentStatus) {
       showPopup(
         'Are you sure you want to mark this booking as unpaid?',
-        () => togglePaymentStatus(item.id)
+        () => togglePaymentStatus(item.appointmentId)
       );
     } else {
-      togglePaymentStatus(item.id);
+      togglePaymentStatus(item.appointmentId);
     }
   };
 
@@ -66,10 +70,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     if (item.treated) {
       showPopup(
         'Are you sure you want to mark this booking as untreated?',
-        () => toggleTreatedStatus(item.id)
+        () => toggleTreatedStatus(item.appointmentId)
       );
     } else {
-      toggleTreatedStatus(item.id);
+      toggleTreatedStatus(item.appointmentId);
     }
   };
 
@@ -91,23 +95,23 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       }]}>
         <TouchableOpacity
           activeOpacity={0.9}
-          onPress={() => onToggleExpand(isExpanded ? null : item.id)}
+          onPress={() => onToggleExpand(isExpanded ? null : item.appointmentId)}
           style={styles.header}
         >
           <View style={styles.availabilityContainer}>
             <Switch
-              value={item.available}
-              onValueChange={(value) => toggleAvailability(item.id, value)}
-              thumbColor={item.available ? AppTheme.colors.success : AppTheme.colors.gray200}
+              value={item.availableAtClinic}
+              onValueChange={(value) => toggleAvailability(item.appointmentId, value)}
+              thumbColor={item.availableAtClinic ? AppTheme.colors.success : AppTheme.colors.gray200}
               trackColor={{ 
                 false: AppTheme.colors.gray200, 
                 true: AppTheme.colors.primaryLight 
               }}
             />
             <Text style={[styles.availabilityText, { 
-              color: item.available ? AppTheme.colors.primary : AppTheme.colors.gray500 
+              color: item.availableAtClinic ? AppTheme.colors.primary : AppTheme.colors.gray500 
             }]}>
-              {item.available ? 'Available' : 'Unavailable'}
+              {item.availableAtClinic ? 'Available' : 'Unavailable'}
             </Text>
           </View>
 
@@ -123,11 +127,11 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {item.name}
+              {item.patientName}
             </Text>
             <View style={[
               styles.statusContainer,
-              { backgroundColor: item.paid ? AppTheme.colors.success : AppTheme.colors.gray400 }
+              { backgroundColor: item.paymentStatus ? AppTheme.colors.success : AppTheme.colors.gray400 }
             ]}>
               {/* <View style={[
                 styles.statusIndicator,
@@ -135,9 +139,9 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
               ]} /> */}
               <Text style={[
                 styles.statusText,
-                { color: item.paid ? AppTheme.colors.white : AppTheme.colors.gray800}
+                { color: item.paymentStatus ? AppTheme.colors.white : AppTheme.colors.gray800}
               ]}>
-                {item.paid ? 'Paid' : 'Unpaid'}
+                {item.paymentStatus ? 'Paid' : 'Unpaid'}
               </Text>
             </View>
           </View>
@@ -166,7 +170,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
             <View style={styles.detailRow}>
               <MaterialIcons name="access-time" size={18} color={AppTheme.colors.gray600} />
               <Text style={[styles.detailText, { color: AppTheme.colors.gray700 }]}>
-                {item.timing}
+                {item.appointmentDateTime}
               </Text>
             </View>
 
@@ -186,7 +190,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 style={[
                   styles.actionButton,
                   { 
-                    backgroundColor: item.paid 
+                    backgroundColor: item.paymentStatus 
                       ? AppTheme.colors.dangerLight 
                       : AppTheme.colors.successLight 
                   }
@@ -196,12 +200,12 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 <Text style={[
                   styles.actionButtonText,
                   { 
-                    color: item.paid 
+                    color: item.paymentStatus 
                       ? AppTheme.colors.danger 
                       : AppTheme.colors.success 
                   }
                 ]}>
-                  {item.paid ? 'Mark as Unpaid' : 'Mark as Paid'}
+                  {item.paymentStatus ? 'Mark as Unpaid' : 'Mark as Paid'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -212,7 +216,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 style={[
                   styles.actionButton,
                   { 
-                    backgroundColor: item.paid 
+                    backgroundColor: item.paymentStatus 
                       ? AppTheme.colors.dangerLight 
                       : AppTheme.colors.successLight 
                   }
@@ -222,12 +226,12 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 <Text style={[
                   styles.actionButtonText,
                   { 
-                    color: item.paid 
+                    color: item.paymentStatus 
                       ? AppTheme.colors.danger 
                       : AppTheme.colors.success 
                   }
                 ]}>
-                  {item.paid ? 'Mark as Unpaid' : 'Mark as Paid'}
+                  {item.paymentStatus ? 'Mark as Unpaid' : 'Mark as Paid'}
                 </Text>
               </TouchableOpacity>
 
@@ -250,7 +254,9 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     borderRadius: AppTheme.borderRadius.lg,
-    padding: AppTheme.spacing.md,
+    paddingVertical: AppTheme.spacing.md,
+    paddingRight: AppTheme.spacing.md,
+    paddingLeft: AppTheme.spacing.xs,
     marginBottom: AppTheme.spacing.sm,
     marginHorizontal: AppTheme.spacing.sm,
     ...AppTheme.shadows.md,
@@ -309,6 +315,7 @@ const styles = StyleSheet.create({
     borderRadius: AppTheme.borderRadius.full,
   },
   details: {
+    height: 80,
     marginTop: AppTheme.spacing.sm,
     paddingTop: AppTheme.spacing.sm,
     borderTopWidth: 1,

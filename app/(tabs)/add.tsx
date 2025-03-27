@@ -14,9 +14,10 @@ import {
   Easing,
   StyleSheet
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { AppTheme } from '@/constants/theme';
 import { GestureHandlerRootView, RefreshControl } from 'react-native-gesture-handler';
+import { addAppointment } from '@/service/properties/appointmentApi';
 
 interface PatientData {
   firstName: string;
@@ -26,7 +27,7 @@ interface PatientData {
   description?: string;
   timing?: string;
   paymentStatus: boolean;
-  availability: boolean;
+  availableAtClinic: boolean;
 }
 
 const ModernAppointmentForm = () => {
@@ -35,7 +36,7 @@ const ModernAppointmentForm = () => {
     lastName: '',
     contact: '',
     paymentStatus: true,
-    availability: true,
+    availableAtClinic: true,
   });
   
   const [loading, setLoading] = useState(false);
@@ -114,7 +115,7 @@ const ModernAppointmentForm = () => {
       lastName: '',
       contact: '',
       paymentStatus: true,
-      availability: true,
+      availableAtClinic: true,
     });
     await new Promise(resolve => setTimeout(resolve, 1200));
     setLoading(false);
@@ -140,18 +141,23 @@ const ModernAppointmentForm = () => {
     
     setLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    console.log(patientData)
+      const response=await addAppointment({patientName: `${patientData.firstName} ${patientData.lastName}`, contact: patientData.contact, paymentStatus: patientData.paymentStatus, availableAtClinic: patientData.availableAtClinic, email: patientData.email, description: patientData.description})
     
     setLoading(false);
+    if(response){
     Alert.alert("Success", "Appointment created successfully!");
     setPatientData({
       firstName: '',
       lastName: '',
       contact: '',
       paymentStatus: true,
-      availability: true,
+      availableAtClinic: true,
     });
+  }
+  else{
+    Alert.alert("Error", "Faild to add new appointment");
+  }
     setShowAdditionalFields(false);
     // Reset animations on successful submission
     additionalFieldsHeight.setValue(0);
@@ -289,30 +295,30 @@ const ModernAppointmentForm = () => {
                   thumbColor={AppTheme.colors.white}
                   trackColor={{
                     false: AppTheme.colors.gray200,
-                    true: AppTheme.colors.successLight
+                    true: AppTheme.colors.primary
                   }}
                 />
               </View>
 
-              {/* Availability */}
+              {/* availableAtClinic */}
               <View style={styles.settingItem}>
                 <View style={styles.settingLabel}>
-                  <MaterialCommunityIcons
-                    name={patientData.availability ? "calendar-check" : "calendar-remove"}
+                  <MaterialIcons
+                    name={patientData.availableAtClinic ? "person" : "person-off"}
                     size={22}
-                    color={patientData.availability ? AppTheme.colors.success : AppTheme.colors.danger}
+                    color={patientData.availableAtClinic ? AppTheme.colors.success : AppTheme.colors.danger}
                   />
                   <Text style={styles.settingText}>
-                    {patientData.availability ? 'Slot Available' : 'Slot Booked'}
+                    {patientData.availableAtClinic ? 'At Clinic.' : 'Not at Clinic.'}
                   </Text>
                 </View>
                 <Switch
-                  value={patientData.availability}
-                  onValueChange={(value) => handleChange('availability', value)}
+                  value={patientData.availableAtClinic}
+                  onValueChange={(value) => handleChange('availableAtClinic', value)}
                   thumbColor={AppTheme.colors.white}
                   trackColor={{
                     false: AppTheme.colors.gray200,
-                    true: AppTheme.colors.successLight
+                    true: AppTheme.colors.primary
                   }}
                 />
               </View>

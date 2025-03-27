@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { getProfile } from "@/service/properties/profileApi";
 import { useDispatch } from "react-redux";
 import { AppTheme } from "@/constants/theme";
+import { connectAppointmentWebSocket } from "@/service/properties/websocketAppointment";
 
 export default function SplashScreen() {
     const dispatch = useDispatch();
@@ -53,6 +54,9 @@ export default function SplashScreen() {
                 router.replace("/(auth)");
             }
         };
+        connectAppointmentWebSocket()
+            .then(() => console.log('Connection attempt completed'))
+            .catch(console.error);
 
         initializeApp();
     }, []);
