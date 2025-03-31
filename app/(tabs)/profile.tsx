@@ -1,12 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useCallback, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
-// import COLORS from '@/constants/colors';
 import { AppTheme } from '@/constants/theme';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
-
-const { width } = Dimensions.get('window');
+import { getProfile } from '@/service/properties/profileApi';
+import { useDispatch } from 'react-redux';
+import { GestureHandlerRootView, RefreshControl } from 'react-native-gesture-handler';
 
 // Dummy image URLs
 const DEFAULT_PROFILE_IMAGE = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
@@ -46,47 +46,41 @@ interface ProfileData {
 }
 
 const DoctorProfileScreen = () => {
-  const profileData = useSelector((state: RootState) => state.profile)
-  // const profileData = {
-  //   firstName: "John",
-  //   lastName: "Doe",
-  //   doctorId: "DOC789012",
-  //   specialization: "Cardiologist",
-  //   phoneNumber: "+1 987 654 3210",
-  //   availableDays: ["Monday", "Wednesday", "Friday"],
-  //   availableTimeSlots: [
-  //     {
-  //       startTime: "09:00 AM",
-  //       endTime: "12:00 PM"
-  //     },
-  //     {
-  //       startTime: "02:00 PM",
-  //       endTime: "05:00 PM"
+  const profileData = useSelector((state: RootState) => state.profile);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const dispatch = useDispatch();
+
+  // Load profile data on initial mount
+  // useEffect(() => {
+  //   const loadProfile = async () => {
+  //     try {
+  //       setError(null);
+  //       setLoading(true);
+  //       await getProfile(dispatch);
+  //     } catch (err) {
+  //       setError('Failed to load profile data');
+  //       console.error('Failed to load profile:', err);
+  //     } finally {
+  //       setLoading(false);
   //     }
-  //   ],
-  //   clinicAddress: "123 Heart Lane, Cardiology Center, 10101",
-  //   address: {
-  //     street: "456 Health Ave",
-  //     city: "Medville",
-  //     postalCode: "10101",
-  //     state: "Health State",
-  //     country: "Medland"
-  //   },
-  //   education: [
-  //     "MD in Cardiology from Prestigious Medical University",
-  //     "Board Certified in Cardiovascular Disease"
-  //   ],
-  //   achievementsAndAwards: [
-  //     "Best Cardiologist Award 2022",
-  //     "Top Doctor in Cardiology 2021-2023"
-  //   ],
-  //   about: "Dr. John Doe is a highly skilled cardiologist with extensive experience in diagnosing and treating heart conditions. He is dedicated to providing compassionate care and the latest treatment options to his patients.",
-  //   bio: "I am passionate about cardiovascular health and committed to helping patients achieve their best heart health through personalized care plans.",
-  //   yearsOfExperience: 12,
-  //   gender: "MALE",
-  //   profilePicture: "https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg",
-  //   coverPicture: "https://img.freepik.com/free-photo/medical-banner-with-doctor-wearing-gown_23-2149611198.jpg"
-  // };
+  //   };
+    
+  //   loadProfile();
+  // }, [dispatch]);
+
+  const onRefresh = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      setError(null);
+      await getProfile(dispatch);
+    } catch (err) {
+      setError('Failed to refresh profile data');
+      console.error('Failed to refresh profile:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dispatch]);
 
   const formatAvailableDays = (days: string[]) => {
     if (!days || days.length === 0) return 'Not specified';
@@ -142,126 +136,155 @@ const DoctorProfileScreen = () => {
     );
   };
 
+  if (!profileData.success) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={AppTheme.colors.primary} />
+        {/* <Text style={styles.loadingText}>Loading profile...</Text> */}
+      </View>
+    );
+  }
+
+  // if (error || !profileData || Object.keys(profileData).length === 0) {
+  //   return (
+  //     <View style={styles.emptyContainer}>
+  //       <Ionicons name="person-circle-outline" size={80} color={AppTheme.colors.primary} />
+  //       <Text style={styles.emptyText}>{error || 'No profile data available'}</Text>
+  //       <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+  //         <Text style={styles.refreshButtonText}>Try Again</Text>
+  //       </TouchableOpacity>
+  //     </View>
+  //   );
+  // }
+
   return (
-    <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContainer}>
-        {/* Cover Photo */}
-        <View style={styles.coverContainer}>
-          <Image 
-            source={{ uri: profileData.coverPicture || DEFAULT_COVER_IMAGE }} 
-            style={styles.coverPhoto} 
-            blurRadius={1}
-          />
-          <View style={styles.coverOverlay}/>
-          {profileData.bio && (
-            <View style={styles.coverTextContainer}>
-              <Text style={styles.coverText}>{profileData.bio}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          {/* Profile Picture */}
-          <View style={styles.profileImageContainer}>
-            <Image 
-              source={{ uri: profileData.profilePicture || DEFAULT_PROFILE_IMAGE }} 
-              style={styles.profileImage} 
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: AppTheme.colors.primaryLight }}>
+      <View style={styles.container}>
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          contentContainerStyle={styles.scrollContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[AppTheme.colors.primary]}
+              tintColor={AppTheme.colors.primary}
+              progressBackgroundColor={AppTheme.colors.white}
             />
-            {/* <View style={styles.onlineIndicator} /> */}
-          </View>
-
-          {/* Basic Info */}
-          <View style={styles.basicInfo}>
-            <Text style={styles.name}>
-              Dr. {profileData.firstName} {profileData.lastName}
-            </Text>
-            {profileData.specialization && (
-              <Text style={styles.specialization}>{profileData.specialization}</Text>
-            )}
-            {profileData.doctorId && (
-              <View style={styles.idContainer}>
-                <MaterialIcons name="verified" size={16} color="#4CAF50" />
-                <Text style={styles.idText}>{profileData.doctorId}</Text>
+          }
+        >
+          {/* Cover Photo */}
+          <View style={styles.coverContainer}>
+            <Image 
+              source={{ uri: profileData.coverPicture || DEFAULT_COVER_IMAGE }} 
+              style={styles.coverPhoto} 
+              blurRadius={1}
+            />
+            <View style={styles.coverOverlay}/>
+            {profileData.bio && (
+              <View style={styles.coverTextContainer}>
+                <Text style={styles.coverText}>{profileData.bio}</Text>
               </View>
             )}
           </View>
-        </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity style={[styles.button, styles.callButton]}>
-            <AntDesign name="edit" size={24} color="#fff" />
-            <Text style={styles.buttonText}>Edit</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={[styles.button, styles.messageButton]}>
-            <AntDesign name="setting" size={24} color="#fff" />
-            <Text style={styles.buttonText}>Settings</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={[styles.button, styles.bookButton]}>
-            <Ionicons name="calendar" size={18} color="#fff" />
-            <Text style={styles.buttonText}>Book</Text>
-          </TouchableOpacity>
-        </View>
+          {/* Profile Header */}
+          <View style={styles.profileHeader}>
+            {/* Profile Picture */}
+            <View style={styles.profileImageContainer}>
+              <Image 
+                source={{ uri: profileData.profilePicture || DEFAULT_PROFILE_IMAGE }} 
+                style={styles.profileImage} 
+              />
+            </View>
 
-        {/* Details Section */}
-        <View style={styles.detailsContainer}>
-          {/* About Section */}
-          {renderSection('About', 'information-circle', profileData.about)}
-
-          {/* Bio Section */}
-          {renderSection('Bio', 'document-text', profileData.bio)}
-
-          {/* Contact Info */}
-          {profileData.phoneNumber || profileData.clinicAddress || 
-           (profileData.availableDays && profileData.availableTimeSlots) ? (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="call" size={20} color={AppTheme.colors.primary} />
-                <Text style={styles.sectionTitle}>Contact Information</Text>
-              </View>
-              {renderInfoRow('call', profileData.phoneNumber)}
-              {renderInfoRow('location', profileData.clinicAddress)}
-              {profileData.availableDays && profileData.availableTimeSlots && (
-                <View style={styles.infoRow}>
-                  <Ionicons name="time" size={18} color={AppTheme.colors.primary} />
-                  <Text style={styles.infoText}>
-                    {formatAvailableDays(profileData.availableDays)}, {formatTimeSlots(profileData.availableTimeSlots)}
-                  </Text>
+            {/* Basic Info */}
+            <View style={styles.basicInfo}>
+              <Text style={styles.name}>
+                Dr. {profileData.firstName} {profileData.lastName}
+              </Text>
+              {profileData.specialization && (
+                <Text style={styles.specialization}>{profileData.specialization}</Text>
+              )}
+              {profileData.doctorId && (
+                <View style={styles.idContainer}>
+                  <MaterialIcons name="verified" size={16} color="#4CAF50" />
+                  <Text style={styles.idText}>{profileData.doctorId}</Text>
                 </View>
               )}
             </View>
-          ) : null}
+          </View>
 
-          {/* Professional Info */}
-          {profileData.education || profileData.achievementsAndAwards || profileData.yearsOfExperience ? (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="briefcase" size={20} color={AppTheme.colors.primary} />
-                <Text style={styles.sectionTitle}>Professional Information</Text>
-              </View>
-              {renderListItems(profileData.education)}
-              {renderListItems(profileData.achievementsAndAwards)}
-              {profileData.yearsOfExperience && (
-                <View style={styles.infoRow}>
-                  <Ionicons name="time" size={18} color={AppTheme.colors.primary} />
-                  <Text style={styles.infoText}>
-                    {profileData.yearsOfExperience} years of experience
-                  </Text>
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity style={[styles.button, styles.callButton]}>
+              <AntDesign name="edit" size={24} color="#fff" />
+              <Text style={styles.buttonText}>Edit</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={[styles.button, styles.messageButton]}>
+              <AntDesign name="setting" size={24} color="#fff" />
+              <Text style={styles.buttonText}>Settings</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={[styles.button, styles.bookButton]}>
+              <Ionicons name="calendar" size={18} color="#fff" />
+              <Text style={styles.buttonText}>Book</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Details Section */}
+          <View style={styles.detailsContainer}>
+            {/* About Section */}
+            {renderSection('About', 'information-circle', profileData.about)}
+
+            {/* Bio Section */}
+            {renderSection('Bio', 'document-text', profileData.bio)}
+
+            {/* Contact Info */}
+            {profileData.phoneNumber || profileData.clinicAddress || 
+             (profileData.availableDays && profileData.availableTimeSlots) ? (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Ionicons name="call" size={20} color={AppTheme.colors.primary} />
+                  <Text style={styles.sectionTitle}>Contact Information</Text>
                 </View>
-              )}
-            </View>
-          ) : null}
-        </View>
+                {renderInfoRow('call', profileData.phoneNumber)}
+                {renderInfoRow('location', profileData.clinicAddress)}
+                {profileData.availableDays && profileData.availableTimeSlots && (
+                  <View style={styles.infoRow}>
+                    <Ionicons name="time" size={18} color={AppTheme.colors.primary} />
+                    <Text style={styles.infoText}>
+                      {formatAvailableDays(profileData.availableDays)}, {formatTimeSlots(profileData.availableTimeSlots)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ) : null}
 
-        {/* Fixed Footer */}
-        {/* <View style={styles.footer}>
-          <Text style={styles.footerText}>© 2025 H Potion</Text>
-        </View> */}
-      </ScrollView>
-    </View>
+            {/* Professional Info */}
+            {profileData.education || profileData.achievementsAndAwards || profileData.yearsOfExperience ? (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Ionicons name="briefcase" size={20} color={AppTheme.colors.primary} />
+                  <Text style={styles.sectionTitle}>Professional Information</Text>
+                </View>
+                {renderListItems(profileData.education)}
+                {renderListItems(profileData.achievementsAndAwards)}
+                {profileData.yearsOfExperience && (
+                  <View style={styles.infoRow}>
+                    <Ionicons name="time" size={18} color={AppTheme.colors.primary} />
+                    <Text style={styles.infoText}>
+                      {profileData.yearsOfExperience} years of experience
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ) : null}
+          </View>
+        </ScrollView>
+      </View>
+    </GestureHandlerRootView>
   );
 };
 
@@ -271,7 +294,7 @@ const styles = StyleSheet.create({
     backgroundColor: AppTheme.colors.primaryLight,
   },
   scrollContainer: {
-    paddingBottom: 60, // Add padding for the footer
+    paddingBottom: 60,
   },
   coverContainer: {
     height: 220,
@@ -327,25 +350,14 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     borderWidth: 4,
     borderColor: '#fff',
-    backgroundColor: '#f0f0f0', // Background color for placeholder
-  },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#4CAF50',
-    borderWidth: 2,
-    borderColor: '#fff',
+    backgroundColor: '#f0f0f0',
   },
   basicInfo: {
     flex: 1,
     justifyContent: 'center',
   },
   name: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
@@ -450,6 +462,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555',
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: AppTheme.colors.primaryLight,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: AppTheme.colors.primary,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: AppTheme.colors.primaryLight,
+    padding: 20,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: AppTheme.colors.primary,
+    textAlign: 'center',
+  },
+  refreshButton: {
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: AppTheme.colors.primary,
+    borderRadius: 8,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
 

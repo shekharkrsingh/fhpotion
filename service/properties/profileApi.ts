@@ -1,5 +1,4 @@
 import { setProfileData, setLoading, setSuccess, setError } from "@/redux/slices/profileSlice";
-import { useDispatch } from "react-redux";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiConnector } from "@/service/apiConnector";
 import { apiEndpoints } from "@/apiFactory";

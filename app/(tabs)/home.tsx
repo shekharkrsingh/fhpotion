@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, Dimensions, Touchable
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { AppTheme } from '@/constants/theme';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/store';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -29,6 +31,8 @@ interface DashboardData {
 
 const DoctorDashboard = () => {
   // Enhanced dummy data
+  const { data, loading, error} = useSelector((state: RootState) => state.statistics);
+  console.log(data)
   const dashboardData: DashboardData = {
     totalAppointment: 142,
     totalUntreatedAppointment: 28,
@@ -57,21 +61,23 @@ const DoctorDashboard = () => {
 
   // Destructure the data
   const {
-    totalAppointment,
-    totalUntreatedAppointment,
-    totalTreatedAppointment,
-    totalAvailableAtClinic,
-    lastWeekTreatedData,
+    totalAppointment=data?.totalAppointment,
+    totalUntreatedAppointment=data?.totalUntreatedAppointment,
+    totalTreatedAppointment=data?.totalTreatedAppointment,
+    totalAvailableAtClinic=data?.totalAvailableAtClinic,
+    lastWeekTreatedData=data?.lastWeekTreatedData,
     upcomingAppointments,
     performanceMetrics
   } = dashboardData;
 
+
   // Prepare data for charts
-  const lineChartData = {
-    labels: lastWeekTreatedData.map(item => item.date.split('-')[2]), // Just show day
+  
+  const lineChartData = data && {
+    labels: data.lastWeekTreatedData.map(item => item.date.split('-')[2]), // Just show day
     datasets: [
       {
-        data: lastWeekTreatedData.map(item => item.count),
+        data: data.lastWeekTreatedData.map(item => item.count),
         color: (opacity = 1) => `rgba(${hexToRgb(AppTheme.colors.appointmentBooked)}, ${opacity})`,
         strokeWidth: 3
       }
@@ -119,6 +125,9 @@ const DoctorDashboard = () => {
     return `${r}, ${g}, ${b}`;
   };
 
+  if(!data){
+    return (<Text>Wait</Text>)
+  }
   return (
     <SafeAreaView style={[styles.container, {backgroundColor: AppTheme.colors.primaryLight }]}>
       <ScrollView showsVerticalScrollIndicator={false}>

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, GestureHandlerRootView, RefreshControl } from 'react-native-gesture-handler';
 import BookingHeader from '@/componets/BookingHeader';
@@ -26,7 +26,7 @@ interface BookingItem {
 }
 
 export default function BookingScreen() {
-  const { data, loading, error} = useSelector((state: RootState) => state.appointments);
+  const { data, loading, error, success} = useSelector((state: RootState) => state.appointments);
   const dispatch=useDispatch();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -188,9 +188,7 @@ export default function BookingScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+ 
 
   const fetchData = async () => {
     await getAppointments(dispatch);
@@ -204,6 +202,7 @@ export default function BookingScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    await fetchData();
     await new Promise(resolve => setTimeout(resolve, 2000));
     setRefreshing(false);
   }, []);
@@ -309,7 +308,7 @@ export default function BookingScreen() {
           ))}
         </View>
 
-        <FlatList
+        {success ?(<FlatList
           data={filteredData}
           renderItem={renderItem}
           keyExtractor={(item) => item.appointmentId}
@@ -322,7 +321,14 @@ export default function BookingScreen() {
             />
           }
           contentContainerStyle={styles.listContent}
-        />
+        />):(
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={AppTheme.colors.primary} />
+                  {/* <Text style={styles.loadingText}>Loading profile...</Text> */}
+                </View>
+        )
+        
+        }
       </View>
     </GestureHandlerRootView>
   );
@@ -359,5 +365,16 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: AppTheme.spacing.lg,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: AppTheme.colors.primaryLight,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: AppTheme.colors.primary,
   },
 });

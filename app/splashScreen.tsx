@@ -5,6 +5,8 @@ import { getProfile } from "@/service/properties/profileApi";
 import { useDispatch } from "react-redux";
 import { AppTheme } from "@/constants/theme";
 import { connectAppointmentWebSocket } from "@/service/properties/websocketAppointment";
+import { fetchDoctorStatistics } from "@/service/properties/statisticsApi";
+import { getAppointments } from "@/service/properties/appointmentApi";
 
 export default function SplashScreen() {
     const dispatch = useDispatch();
@@ -46,17 +48,19 @@ export default function SplashScreen() {
         // Fetch profile
         const initializeApp = async () => {
             try {
-                const success = await getProfile(dispatch);
+                const profileResponse = await getProfile(dispatch);
+                const doctorStatisticResponse= await fetchDoctorStatistics();
+                const appointmentResponse= await getAppointments(dispatch);
                 setTimeout(() => {
-                    router.replace(success ? "/(tabs)/home" : "/(auth)");
+                    router.replace(profileResponse && doctorStatisticResponse &&appointmentResponse ? "/(tabs)/home" : "/(auth)");
                 }, 2500); // Minimum display time
             } catch (error) {
                 router.replace("/(auth)");
             }
         };
-        connectAppointmentWebSocket()
-            .then(() => console.log('Connection attempt completed'))
-            .catch(console.error);
+        // connectAppointmentWebSocket()
+            // .then(() => console.log('Connection attempt completed'))
+            // .catch(console.error);
 
         initializeApp();
     }, []);

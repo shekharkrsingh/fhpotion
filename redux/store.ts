@@ -3,6 +3,7 @@ import signupReducer from "@/redux/slices/signupSlice";
 import forgetPasswordReducer  from "@/redux/slices/forgetPasswordSlice"
 import profileReducer from "@/redux/slices/profileSlice"
 import appointmentReducer from "@/redux/slices/appointmentSlice"
+import statisticsReducer from "@/redux/slices/statisticsSlice"
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     forgetPassword: forgetPasswordReducer,
     profile: profileReducer,
     appointments: appointmentReducer,
+    statistics: statisticsReducer,
   },
 });
 
