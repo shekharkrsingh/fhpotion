@@ -41,12 +41,12 @@ interface ProfileData {
   bio: string;
   yearsOfExperience: number;
   gender: string;
-  profilePicture?: string;
-  coverPicture?: string;
+  profilePicture: string;
+  coverPicture: string;
 }
 
 const DoctorProfileScreen = () => {
-  const profileData = useSelector((state: RootState) => state.profile);
+  const profileData= useSelector((state: RootState) => state.profile);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();

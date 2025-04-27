@@ -16,6 +16,8 @@ interface ProfileState {
   bio: string | null;
   yearsOfExperience: string | null;
   gender: string | null;
+  profilePicture: string|null,
+  coverPicture: string|null,
   createdAt: string;
   updatedAt: string;
   isLoading: boolean;
@@ -39,6 +41,8 @@ const initialState: ProfileState = {
   bio: null,
   yearsOfExperience: null,
   gender: null,
+  profilePicture: null,
+  coverPicture: null,
   createdAt: "",
   updatedAt: "",
   isLoading: false,

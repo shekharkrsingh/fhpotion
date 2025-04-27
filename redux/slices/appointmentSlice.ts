@@ -36,6 +36,7 @@ const appointmentSlice = createSlice({
     reducers: {
         setAppointments: (state, action: PayloadAction<Appointment[]>) => {
             state.data = action.payload;
+            console.log(action.payload)
             state.success = true;
             state.error = null;
         },

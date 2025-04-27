@@ -7,10 +7,12 @@ interface TreatedData {
 
 interface DoctorStatistics {
   totalAppointment: number;
-  totalUntreatedAppointment: number;
+  totalUntreatedAppointmentAndNotAvailable: number;
   totalTreatedAppointment: number;
   totalAvailableAtClinic: number;
   lastWeekTreatedData: TreatedData[];
+  lastActiveDayAppointments: number;
+  lastActiveDayTreatedAppointments: number;
 }
 
 interface StatisticsState {

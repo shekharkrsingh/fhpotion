@@ -20,6 +20,7 @@ interface AppointmentCardProps {
     status: string;
     appointmentType: string;
     paymentStatus: boolean;
+    avatar?: string;
   };
   isExpanded: boolean;
   onToggleExpand: (id: string | null) => void;
@@ -41,13 +42,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   const [confirmationAction, setConfirmationAction] = useState<() => void>(() => {});
   const heightAnim = useRef(new Animated.Value(80)).current;
 
-  useEffect(() => {
-    Animated.timing(heightAnim, {
-      toValue: isExpanded ? 220 : 80,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [isExpanded]);
+  // Calculate expanded height based on content
+  const expandedHeight = 220; // Adjust this based on your content height
+
+
 
   const showPopup = (message: string, action: () => void) => {
     setConfirmationMessage(message);
@@ -77,6 +75,19 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     }
   };
 
+  
+  const  extractFormattedTime=(isoString: string): string =>{
+    const dateObj = new Date(isoString);
+    let hours: number = dateObj.getHours();
+    const minutes: string = String(dateObj.getMinutes()).padStart(2, '0');
+    const ampm: string = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    const time: string = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+    return time;
+  }
+  
+
+
   return (
     <>
       <ConfirmationPopup
@@ -88,11 +99,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         }}
       />
       
-      <Animated.View style={[styles.container, { 
-        backgroundColor: AppTheme.colors.white,
-        height: heightAnim,
-        overflow: 'hidden'
-      }]}>
+      <View style={styles.container}>
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={() => onToggleExpand(isExpanded ? null : item.appointmentId)}
@@ -115,15 +122,17 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
             </Text>
           </View>
 
-          <Image 
-            source={{ uri: item.avatar }} 
-            style={styles.avatar}
-            resizeMode="cover"
-          />
+          {item.avatar && (
+            <Image 
+              source={{ uri: item.avatar }} 
+              style={styles.avatar}
+              resizeMode="cover"
+            />
+          )}
 
           <View style={styles.nameContainer}>
             <Text 
-              style={[styles.name, { color: AppTheme.colors.gray800 }]}
+              style={styles.name}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
@@ -133,14 +142,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
               styles.statusContainer,
               { backgroundColor: item.paymentStatus ? AppTheme.colors.success : AppTheme.colors.gray400 }
             ]}>
-              {/* <View style={[
-                styles.statusIndicator,
-                { backgroundColor: item.paid ? AppTheme.colors.white : AppTheme.colors.danger }
-              ]} /> */}
-              <Text style={[
-                styles.statusText,
-                { color: item.paymentStatus ? AppTheme.colors.white : AppTheme.colors.gray800}
-              ]}>
+              <Text style={styles.statusText}>
                 {item.paymentStatus ? 'Paid' : 'Unpaid'}
               </Text>
             </View>
@@ -150,11 +152,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
             onPress={handleToggleTreatedStatus}
             style={[
               styles.treatedButton,
-              { 
-                backgroundColor: item.treated 
-                  ? AppTheme.colors.successLight 
-                  : AppTheme.colors.gray100 
-              }
             ]}
           >
             <MaterialIcons 
@@ -165,101 +162,87 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           </TouchableOpacity>
         </TouchableOpacity>
 
-        {isExpanded && (
-          <View style={styles.details}>
-            <View style={styles.detailRow}>
-              <MaterialIcons name="access-time" size={18} color={AppTheme.colors.gray600} />
-              <Text style={[styles.detailText, { color: AppTheme.colors.gray700 }]}>
-                {item.appointmentDateTime}
-              </Text>
-            </View>
-
-            <View style={styles.detailRow}>
-              <MaterialIcons name="phone" size={18} color={AppTheme.colors.gray600} />
-              <Text style={[styles.detailText, { color: AppTheme.colors.gray700 }]}>
-                {item.contact}
-              </Text>
-            </View>
-
-            <View style={styles.detailRow}>
-              <MaterialIcons name="description" size={18} color={AppTheme.colors.gray600} />
-              <Text style={[styles.detailText, { color: AppTheme.colors.gray700 }]}>
-                {item.description}
-              </Text>
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  { 
-                    backgroundColor: item.paymentStatus 
-                      ? AppTheme.colors.dangerLight 
-                      : AppTheme.colors.successLight 
-                  }
-                ]}
-                onPress={handleTogglePaymentStatus}
-              >
-                <Text style={[
-                  styles.actionButtonText,
-                  { 
-                    color: item.paymentStatus 
-                      ? AppTheme.colors.danger 
-                      : AppTheme.colors.success 
-                  }
-                ]}>
-                  {item.paymentStatus ? 'Mark as Unpaid' : 'Mark as Paid'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.actionRow}>
-              
-            {/* <Text>SHekhar</Text> */}
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  { 
-                    backgroundColor: item.paymentStatus 
-                      ? AppTheme.colors.dangerLight 
-                      : AppTheme.colors.successLight 
-                  }
-                ]}
-                onPress={handleTogglePaymentStatus}
-              >
-                <Text style={[
-                  styles.actionButtonText,
-                  { 
-                    color: item.paymentStatus 
-                      ? AppTheme.colors.danger 
-                      : AppTheme.colors.success 
-                  }
-                ]}>
-                  {item.paymentStatus ? 'Mark as Unpaid' : 'Mark as Paid'}
-                </Text>
-              </TouchableOpacity>
-
-              {/* <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: AppTheme.colors.primaryLight }]}
-                onPress={() => {}}
-              >
-                <Text style={[styles.actionButtonText, { color: AppTheme.colors.primary }]}>
-                  View Details
-                </Text>
-              </TouchableOpacity> */}
-            </View> 
+        <View style={[styles.detailsContainer, { display: isExpanded ? 'flex' : 'none' }]}>
+          <View style={styles.detailCard}>
+            <MaterialIcons 
+              name="access-time" 
+              size={20} 
+              color={AppTheme.colors.primary} 
+              style={styles.detailIcon}
+            />
+            <Text style={styles.detailLabel}>Time</Text>
+            <Text style={styles.detailValue}>
+              {extractFormattedTime(item.appointmentDateTime)}
+            </Text>
           </View>
-        )}
-      </Animated.View>
+        
+          <View style={styles.detailCard}>
+            <MaterialIcons 
+              name="phone" 
+              size={20} 
+              color={AppTheme.colors.primary} 
+              style={styles.detailIcon}
+            />
+            <Text style={styles.detailLabel}>Contact</Text>
+            <Text style={styles.detailValue}>
+              {item.contact}
+            </Text>
+          </View>
+        
+          <View style={styles.detailCard}>
+            <MaterialIcons 
+              name="description" 
+              size={20} 
+              color={AppTheme.colors.primary} 
+              style={styles.detailIcon}
+            />
+            <Text style={styles.detailLabel}>Description</Text>
+            <Text style={styles.detailValue}>
+              {item.description || 'No description'}
+            </Text>
+          </View>
+        
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                { 
+                  backgroundColor: item.paymentStatus 
+                    ? AppTheme.colors.gray200
+                    : AppTheme.colors.primaryLight,
+                }
+              ]}
+              onPress={handleTogglePaymentStatus}
+            >
+              <Text style={[
+                styles.actionButtonText,
+                { 
+                  color: item.paymentStatus 
+                    ? AppTheme.colors.danger 
+                    : AppTheme.colors.success 
+                }
+              ]}>
+                {item.paymentStatus ? 'Mark as Unpaid' : 'Mark as Paid'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
     </>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: AppTheme.colors.white,
     borderRadius: AppTheme.borderRadius.lg,
-    paddingVertical: AppTheme.spacing.md,
+    paddingVertical: AppTheme.spacing.sm,
     paddingRight: AppTheme.spacing.md,
     paddingLeft: AppTheme.spacing.xs,
     marginBottom: AppTheme.spacing.sm,
     marginHorizontal: AppTheme.spacing.sm,
     ...AppTheme.shadows.md,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
@@ -290,6 +273,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: AppTheme.typography.body.fontSize,
     fontWeight: '600',
+    color: AppTheme.colors.gray800,
   },
   statusContainer: {
     flexDirection: 'row',
@@ -300,51 +284,58 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: AppTheme.spacing.xs,
   },
-  statusIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: AppTheme.spacing.xs,
-  },
   statusText: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '800',
+    color: AppTheme.colors.white,
   },
   treatedButton: {
     padding: AppTheme.spacing.xs,
     borderRadius: AppTheme.borderRadius.full,
   },
-  details: {
-    height: 80,
-    marginTop: AppTheme.spacing.sm,
-    paddingTop: AppTheme.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: AppTheme.colors.gray200,
+  detailsContainer: {
+    padding: AppTheme.spacing.md,
   },
-  detailRow: {
+  detailCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: AppTheme.spacing.md,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: AppTheme.colors.gray200,
   },
-  detailText: {
-    marginLeft: AppTheme.spacing.sm,
-    fontSize: AppTheme.typography.body.fontSize,
+  detailIcon: {
+    marginRight: 12,
+    width: 24,
+    textAlign: 'center',
   },
-  actionRow: {
+  detailLabel: {
+    fontSize: 14,
+    color: AppTheme.colors.gray600,
+    width: 100,
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 14,
+    color: AppTheme.colors.gray800,
+    flex: 1,
+    fontWeight: '400',
+  },
+  actionsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: AppTheme.spacing.md,
+    justifyContent: 'center',
+    marginTop: 16,
   },
   actionButton: {
-    flex: 1,
-    padding: AppTheme.spacing.sm,
-    borderRadius: AppTheme.borderRadius.md,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     alignItems: 'center',
-    marginHorizontal: AppTheme.spacing.xs,
+    justifyContent: 'center',
+    flex: 1,
   },
   actionButtonText: {
-    fontWeight: '500',
-    fontSize: AppTheme.typography.caption.fontSize,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
