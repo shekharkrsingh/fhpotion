@@ -8,6 +8,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { getAppointments, updateAppointment } from '@/service/properties/appointmentApi';
 import { useDispatch } from 'react-redux';
+import websocketAppointment from '@/service/properties/websocketAppointment';
 
 interface BookingItem {
   appointmentId: string;
@@ -39,6 +40,7 @@ export default function BookingScreen() {
 
   const fetchData = async () => {
     await getAppointments(dispatch);
+    await websocketAppointment.connect();
   };
 
   const update = async (id: string,change: any) => {

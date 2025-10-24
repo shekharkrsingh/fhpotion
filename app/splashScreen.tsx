@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { getProfile } from "@/service/properties/profileApi";
 import { useDispatch } from "react-redux";
 import { AppTheme } from "@/constants/theme";
-import {webSocketService } from "@/service/properties/websocketAppointment";
+import websocketAppointment from "@/service/properties/websocketAppointment";
 import { fetchDoctorStatistics } from "@/service/properties/statisticsApi";
 import { getAppointments } from "@/service/properties/appointmentApi";
 
@@ -49,12 +49,15 @@ export default function SplashScreen() {
         const initializeApp = async () => {
             try {
                 const profileResponse = await getProfile(dispatch);
+                await websocketAppointment.connect();
                 const doctorStatisticResponse= await fetchDoctorStatistics();
                 const appointmentResponse= await getAppointments(dispatch);
+                
                 setTimeout(() => {
                     router.replace(profileResponse && doctorStatisticResponse &&appointmentResponse ? "/(tabs)/home" : "/(auth)");
                 }, 2500); // Minimum display time
             } catch (error) {
+                console.log("faild during splash screen pre data fetch"+error);
                 router.replace("/(auth)");
             }
         };

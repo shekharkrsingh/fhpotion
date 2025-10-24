@@ -1,4 +1,8 @@
-const BASE_URL: string = "http://localhost:8080/api/v1";
+// const BASE_URL: string = "http://localhost:8080/api/v1";
+// const WEBSOCKET_BASE: string="http://localhost:8080"
+
+const BASE_URL: string = "https://docterdevserver-1-0.onrender.com/api/v1";
+const WEBSOCKET_BASE: string="https://docterdevserver-1-0.onrender.com"
 
 type ApiEndpoints = {
   login: string;
@@ -21,6 +25,11 @@ type ApiEndpoints = {
   doctorStatistics: string;
 };
 
+type WebSocketEndpoint={
+  handShake: string;
+  appointmentUpdate: (doctorId: string) => string;
+};
+
 export const apiEndpoints: ApiEndpoints = {
   login: `${BASE_URL}/public/login`,
   test: `${BASE_URL}/public`,
@@ -41,5 +50,11 @@ export const apiEndpoints: ApiEndpoints = {
   updateAppointmentById: (appointmentId: string) => `${BASE_URL}/appointments/update/${appointmentId}`,
   doctorStatistics: `${BASE_URL}/doctor/statistics`,
 };
+
+export const webSocketEndpoint: WebSocketEndpoint={
+  handShake: `${WEBSOCKET_BASE}/ws`,
+  appointmentUpdate: (doctorId: string)=>`/topic/appointments/${doctorId}`
+
+}
 
 export default apiEndpoints;

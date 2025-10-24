@@ -1,101 +1,98 @@
-// // websocket.service.ts
-// import { Client, Message, over } from 'stompjs';
-// import SockJS from 'sockjs-client';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Client, IMessage } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RootState, store } from '../../redux/store';
+import { setAppointments } from '../../redux/slices/appointmentSlice';
+import { webSocketEndpoint } from '@/apiFactory';
 
-// class WebSocketService {
-//   private stompClient: Client | null = null;
-//   private readonly serverUrl = 'http://localhost:8080/ws'; // Update if needed
-//   private isConnected = false;
-//   private reconnectAttempts = 0;
-//   private readonly maxReconnectAttempts = 5;
+class WebsocketAppointment {
+  private stompClient: Client | null = null;
 
-//   public async connect() {
-//     if (this.isConnected) {
-//       console.log('WebSocket already connected');
-//       return;
-//     }
+  public async connect(): Promise<void> {
+    // ✅ Only connect if no active connection exists
+    if (this.stompClient && this.stompClient.connected) {
+      console.log('⚠️ WebSocket connection already established');
+      return;
+    }
 
-//     try {
-//       const authToken = await AsyncStorage.getItem('authToken');
-//       if (!authToken) {
-//         console.error('No auth token found');
-//         // Handle redirect to login screen in React Native
-//         // navigation.navigate('Login');
-//         return;
-//       }
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+      
+      // Access Redux state directly from store
+      const profileData = store.getState().profile;
 
-//       console.log('Connecting to WebSocket...');
-//       const socket = new SockJS(this.serverUrl);
-//       this.stompClient = over(socket);
+      const socket = new SockJS(webSocketEndpoint.handShake);
+      
+      this.stompClient = new Client({
+        webSocketFactory: () => socket,
+        reconnectDelay: 5000,
+        
+        connectHeaders: {
+          'Authorization': `Bearer ${token}`
+        },
+        
+        onConnect: () => {
+          console.log('✅ WebSocket connected');
+          this.subscribeToUpdates(profileData.doctorId);
+        },
+        
+        onStompError: (frame) => {
+          console.error('WebSocket error:', frame);
+        }
+      });
 
-//       // Enable debugging
-//       this.stompClient.debug = (str) => console.log('STOMP:', str);
+      this.stompClient.activate();
 
-//       this.stompClient.connect(
-//         { Authorization: `Bearer ${authToken}` },
-//         () => this.onConnectSuccess(),
-//         (error) => this.onConnectError(error)
-//       );
-//     } catch (error) {
-//       console.error('Connection error:', error);
-//     }
-//   }
+    } catch (error) {
+      console.error('Error connecting WebSocket:', error);
+    }
+  }
 
-//   private onConnectSuccess() {
-//     this.isConnected = true;
-//     this.reconnectAttempts = 0;
-//     console.log('✅ WebSocket connected successfully');
+  private subscribeToUpdates(doctorId: string): void {
+    if (!this.stompClient) return;
 
-//     this.subscribeToAppointments();
-//   }
+    this.stompClient.subscribe(webSocketEndpoint.appointmentUpdate(doctorId), (message: IMessage) => {
+      const update = JSON.parse(message.body);
+      console.log('New appointment update:', update);
+      this.handleAppointmentUpdate(update);
+    });
+  }
 
-//   private subscribeToAppointments() {
-//     if (!this.stompClient) return;
+  private handleAppointmentUpdate(updatedAppointment: any): void {
+    const currentState = store.getState();
+    const currentAppointments = currentState.appointments.data;
+    
+    const existingIndex = currentAppointments.findIndex(
+      (appointment: any) => appointment.appointmentId === updatedAppointment.appointmentId
+    );
 
-//     this.stompClient.subscribe(
-//       '/user/queue/appointments',
-//       (message: Message) => {
-//         try {
-//           const appointment = JSON.parse(message.body);
-//           console.log('📩 New appointment update:', appointment);
-//           this.handleAppointmentUpdate(appointment);
-//         } catch (error) {
-//           console.error('Error parsing appointment:', error);
-//         }
-//       }
-//     );
-//   }
+    let newAppointments: any[];
 
-//   private handleAppointmentUpdate(appointment: any) {
-//     // Implement your appointment handling logic
-//     console.log('Appointment received:', appointment);
-//     // Example: Update your React Native state or UI
-//     // this.updateAppointmentList(appointment);
-//   }
+    if (existingIndex !== -1) {
+      newAppointments = currentAppointments.map((appointment: any, index: number) => 
+        index === existingIndex ? updatedAppointment : appointment
+      );
+      console.log(`✅ Updated appointment: ${updatedAppointment.appointmentId}`);
+    } else {
+      newAppointments = [updatedAppointment, ...currentAppointments];
+      console.log(`✅ Added new appointment: ${updatedAppointment.appointmentId}`);
+    }
 
-//   private onConnectError(error: any) {
-//     this.isConnected = false;
-//     console.error('❌ WebSocket connection error:', error);
+    store.dispatch(setAppointments(newAppointments));
+  }
 
-//     if (this.reconnectAttempts < this.maxReconnectAttempts) {
-//       this.reconnectAttempts++;
-//       console.log(`Reconnecting... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-//       setTimeout(() => this.connect(), 5000);
-//     } else {
-//       console.error('Max reconnection attempts reached');
-//     }
-//   }
+  public disconnect(): void {
+    if (this.stompClient) {
+      this.stompClient.deactivate();
+      this.stompClient = null;
+      console.log('WebSocket disconnected');
+    }
+  }
+}
 
-//   public disconnect() {
-//     if (this.stompClient && this.isConnected) {
-//       this.stompClient.disconnect(() => {
-//         this.isConnected = false;
-//         console.log('WebSocket disconnected');
-//       });
-//     }
-//   }
-// }
-
-// // Singleton instance
-// export const webSocketService = new WebSocketService();
+export default new WebsocketAppointment();

@@ -1,16 +1,18 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
-import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { AntDesign, Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { AppTheme } from '@/constants/theme';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { getProfile } from '@/service/properties/profileApi';
 import { useDispatch } from 'react-redux';
 import { GestureHandlerRootView, RefreshControl } from 'react-native-gesture-handler';
+import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // Dummy image URLs
 const DEFAULT_PROFILE_IMAGE = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
-const DEFAULT_COVER_IMAGE = 'https://img.freepik.com/free-vector/hand-painted-watercolor-pastel-sky-background_23-2148902771.jpg';
+const DEFAULT_COVER_IMAGE = 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80';
 
 interface TimeSlot {
   startTime: string;
@@ -46,28 +48,10 @@ interface ProfileData {
 }
 
 const DoctorProfileScreen = () => {
-  const profileData= useSelector((state: RootState) => state.profile);
+  const profileData = useSelector((state: RootState) => state.profile);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
-
-  // Load profile data on initial mount
-  // useEffect(() => {
-  //   const loadProfile = async () => {
-  //     try {
-  //       setError(null);
-  //       setLoading(true);
-  //       await getProfile(dispatch);
-  //     } catch (err) {
-  //       setError('Failed to load profile data');
-  //       console.error('Failed to load profile:', err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-    
-  //   loadProfile();
-  // }, [dispatch]);
 
   const onRefresh = useCallback(async () => {
     try {
@@ -92,13 +76,13 @@ const DoctorProfileScreen = () => {
     return slots.map(slot => `${slot.startTime} - ${slot.endTime}`).join(', ');
   };
 
-  const renderSection = (title: string, icon: string, content: React.ReactNode) => {
+  const renderSection = (title: string, icon: React.ReactNode, content: React.ReactNode) => {
     if (!content) return null;
     
     return (
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Ionicons name={icon as any} size={20} color={AppTheme.colors.primary} />
+          {icon}
           <Text style={styles.sectionTitle}>{title}</Text>
         </View>
         {typeof content === 'string' ? (
@@ -110,55 +94,52 @@ const DoctorProfileScreen = () => {
     );
   };
 
-  const renderInfoRow = (icon: string, text: string) => {
+  const renderInfoRow = (icon: React.ReactNode, text: string, isLast = false) => {
     if (!text) return null;
     
     return (
-      <View style={styles.infoRow}>
-        <Ionicons name={icon as any} size={18} color={AppTheme.colors.primary} />
+      <View style={[styles.infoRow, isLast && styles.lastInfoRow]}>
+        <View style={styles.infoIcon}>
+          {icon}
+        </View>
         <Text style={styles.infoText}>{text}</Text>
       </View>
     );
   };
 
-  const renderListItems = (items: string[]) => {
+  const renderListItems = (items: string[], title: string) => {
     if (!items || items.length === 0) return null;
     
     return (
-      <View>
+      <View style={styles.listContainer}>
+        <Text style={styles.listTitle}>{title}</Text>
         {items.map((item, index) => (
-          <View key={index} style={styles.infoRow}>
-            <Ionicons name="ellipse" size={8} color={AppTheme.colors.primary} />
-            <Text style={styles.infoText}>{item}</Text>
+          <View key={index} style={styles.listItem}>
+            <View style={styles.bulletPoint} />
+            <Text style={styles.listText}>{item}</Text>
           </View>
         ))}
       </View>
     );
   };
 
+  const getExperienceColor = (years: number) => {
+    if (years >= 20) return '#FF6B35';
+    if (years >= 10) return '#4ECDC4';
+    if (years >= 5) return '#45B7D1';
+    return '#96CEB4';
+  };
+
   if (!profileData.success) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={AppTheme.colors.primary} />
-        {/* <Text style={styles.loadingText}>Loading profile...</Text> */}
       </View>
     );
   }
 
-  // if (error || !profileData || Object.keys(profileData).length === 0) {
-  //   return (
-  //     <View style={styles.emptyContainer}>
-  //       <Ionicons name="person-circle-outline" size={80} color={AppTheme.colors.primary} />
-  //       <Text style={styles.emptyText}>{error || 'No profile data available'}</Text>
-  //       <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-  //         <Text style={styles.refreshButtonText}>Try Again</Text>
-  //       </TouchableOpacity>
-  //     </View>
-  //   );
-  // }
-
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: AppTheme.colors.primaryLight }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       <View style={styles.container}>
         <ScrollView 
           showsVerticalScrollIndicator={false} 
@@ -173,114 +154,145 @@ const DoctorProfileScreen = () => {
             />
           }
         >
-          {/* Cover Photo */}
+          {/* Enhanced Cover Section */}
           <View style={styles.coverContainer}>
             <Image 
               source={{ uri: profileData.coverPicture || DEFAULT_COVER_IMAGE }} 
               style={styles.coverPhoto} 
-              blurRadius={1}
             />
-            <View style={styles.coverOverlay}/>
-            {profileData.bio && (
-              <View style={styles.coverTextContainer}>
-                <Text style={styles.coverText}>{profileData.bio}</Text>
-              </View>
-            )}
+            <LinearGradient
+              colors={['rgba(0,0,0,0.7)', 'rgba(0,0,0,0.3)', 'transparent']}
+              style={styles.coverGradient}
+            />
+            
+            {/* Back Button */}
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+              <Ionicons name="chevron-back" size={24} color="#fff" />
+            </TouchableOpacity>
           </View>
 
-          {/* Profile Header */}
+          {/* Profile Header with Enhanced Design */}
           <View style={styles.profileHeader}>
-            {/* Profile Picture */}
             <View style={styles.profileImageContainer}>
               <Image 
                 source={{ uri: profileData.profilePicture || DEFAULT_PROFILE_IMAGE }} 
                 style={styles.profileImage} 
               />
+              <View style={styles.onlineIndicator} />
             </View>
 
-            {/* Basic Info */}
             <View style={styles.basicInfo}>
-              <Text style={styles.name}>
-                Dr. {profileData.firstName} {profileData.lastName}
-              </Text>
+              <View style={styles.nameContainer}>
+                <Text style={styles.name}>
+                  Dr. {profileData.firstName} {profileData.lastName}
+                </Text>
+                <MaterialIcons name="verified" size={20} color="#4CAF50" />
+              </View>
+              
               {profileData.specialization && (
                 <Text style={styles.specialization}>{profileData.specialization}</Text>
               )}
-              {profileData.doctorId && (
-                <View style={styles.idContainer}>
-                  <MaterialIcons name="verified" size={16} color="#4CAF50" />
-                  <Text style={styles.idText}>{profileData.doctorId}</Text>
+              
+              {profileData.yearsOfExperience && (
+                <View style={[styles.experienceBadge, { backgroundColor: getExperienceColor(profileData.yearsOfExperience) }]}>
+                  <FontAwesome5 name="award" size={12} color="#fff" />
+                  <Text style={styles.experienceText}>{profileData.yearsOfExperience}+ Years</Text>
                 </View>
               )}
             </View>
           </View>
 
-          {/* Action Buttons */}
+          {/* Enhanced Action Buttons */}
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={[styles.button, styles.callButton]}>
-              <AntDesign name="edit" size={24} color="#fff" />
-              <Text style={styles.buttonText}>Edit</Text>
+            <TouchableOpacity 
+              style={[styles.button, styles.editButton]} 
+              onPress={() => router.navigate("/editProfile")}
+            >
+              <LinearGradient
+                colors={['#667eea', '#764ba2']}
+                style={styles.buttonGradient}
+              >
+                <AntDesign name="edit" size={18} color="#fff" />
+                <Text style={styles.buttonText}>Edit</Text>
+              </LinearGradient>
             </TouchableOpacity>
             
-            <TouchableOpacity style={[styles.button, styles.messageButton]}>
-              <AntDesign name="setting" size={24} color="#fff" />
-              <Text style={styles.buttonText}>Settings</Text>
+            <TouchableOpacity style={[styles.button, styles.settingsButton]}>
+              <LinearGradient
+                colors={['#f093fb', '#f5576c']}
+                style={styles.buttonGradient}
+              >
+                <AntDesign name="setting" size={18} color="#fff" />
+                <Text style={styles.buttonText}>Settings</Text>
+              </LinearGradient>
             </TouchableOpacity>
             
             <TouchableOpacity style={[styles.button, styles.bookButton]}>
-              <Ionicons name="calendar" size={18} color="#fff" />
-              <Text style={styles.buttonText}>Book</Text>
+              <LinearGradient
+                colors={['#4facfe', '#00f2fe']}
+                style={styles.buttonGradient}
+              >
+                <Ionicons name="calendar" size={16} color="#fff" />
+                <Text style={styles.buttonText}>Book</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
 
-          {/* Details Section */}
+          {/* Enhanced Details Section */}
           <View style={styles.detailsContainer}>
             {/* About Section */}
-            {renderSection('About', 'information-circle', profileData.about)}
+            {renderSection(
+              'Professional Summary',
+              <Ionicons name="document-text" size={20} color={AppTheme.colors.primary} />,
+              profileData.about
+            )}
 
             {/* Bio Section */}
-            {renderSection('Bio', 'document-text', profileData.bio)}
+            {renderSection(
+              'Biography',
+              <FontAwesome5 name="user-md" size={18} color={AppTheme.colors.primary} />,
+              profileData.bio
+            )}
 
-            {/* Contact Info */}
-            {profileData.phoneNumber || profileData.clinicAddress || 
-             (profileData.availableDays && profileData.availableTimeSlots) ? (
+            {/* Contact Information */}
+            {(profileData.phoneNumber || profileData.clinicAddress || 
+              (profileData.availableDays && profileData.availableTimeSlots)) && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="call" size={20} color={AppTheme.colors.primary} />
-                  <Text style={styles.sectionTitle}>Contact Information</Text>
+                  <Ionicons name="business" size={20} color={AppTheme.colors.primary} />
+                  <Text style={styles.sectionTitle}>Contact & Availability</Text>
                 </View>
-                {renderInfoRow('call', profileData.phoneNumber)}
-                {renderInfoRow('location', profileData.clinicAddress)}
-                {profileData.availableDays && profileData.availableTimeSlots && (
-                  <View style={styles.infoRow}>
-                    <Ionicons name="time" size={18} color={AppTheme.colors.primary} />
-                    <Text style={styles.infoText}>
-                      {formatAvailableDays(profileData.availableDays)}, {formatTimeSlots(profileData.availableTimeSlots)}
-                    </Text>
-                  </View>
-                )}
+                <View style={styles.infoContainer}>
+                  {profileData.phoneNumber && renderInfoRow(
+                    <Ionicons name="call" size={16} color={AppTheme.colors.primary} />,
+                    profileData.phoneNumber
+                  )}
+                  {profileData.clinicAddress && renderInfoRow(
+                    <Ionicons name="location" size={16} color={AppTheme.colors.primary} />,
+                    profileData.clinicAddress
+                  )}
+                  {profileData.availableDays && profileData.availableTimeSlots && renderInfoRow(
+                    <Ionicons name="time" size={16} color={AppTheme.colors.primary} />,
+                    `${formatAvailableDays(profileData.availableDays)}, ${formatTimeSlots(profileData.availableTimeSlots)}`,
+                    true
+                  )}
+                </View>
               </View>
-            ) : null}
+            )}
 
-            {/* Professional Info */}
-            {profileData.education || profileData.achievementsAndAwards || profileData.yearsOfExperience ? (
+            {/* Professional Information */}
+            {(profileData.education || profileData.achievementsAndAwards) && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="briefcase" size={20} color={AppTheme.colors.primary} />
-                  <Text style={styles.sectionTitle}>Professional Information</Text>
+                  <Ionicons name="ribbon" size={20} color={AppTheme.colors.primary} />
+                  <Text style={styles.sectionTitle}>Qualifications</Text>
                 </View>
-                {renderListItems(profileData.education)}
-                {renderListItems(profileData.achievementsAndAwards)}
-                {profileData.yearsOfExperience && (
-                  <View style={styles.infoRow}>
-                    <Ionicons name="time" size={18} color={AppTheme.colors.primary} />
-                    <Text style={styles.infoText}>
-                      {profileData.yearsOfExperience} years of experience
-                    </Text>
-                  </View>
-                )}
+                <View style={styles.professionalInfo}>
+                  {profileData.education && renderListItems(profileData.education, "Education")}
+                  {profileData.achievementsAndAwards && renderListItems(profileData.achievementsAndAwards, "Achievements & Awards")}
+                </View>
               </View>
-            ) : null}
+            )}
           </View>
         </ScrollView>
       </View>
@@ -291,213 +303,252 @@ const DoctorProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: AppTheme.colors.primaryLight,
+    backgroundColor: '#F8FAFC',
   },
   scrollContainer: {
-    paddingBottom: 60,
+    paddingBottom: 30,
   },
   coverContainer: {
-    height: 220,
+    height: 200,
     width: '100%',
     position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   coverPhoto: {
     height: '100%',
     width: '100%',
     resizeMode: 'cover',
   },
-  coverOverlay: {
+  coverGradient: {
     position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
     height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
-  coverTextContainer: {
+  backButton: {
     position: 'absolute',
+    top: 50,
+    left: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-  },
-  coverText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    backdropFilter: 'blur(10px)',
   },
   profileHeader: {
     flexDirection: 'row',
-    padding: 20,
-    marginTop: -70,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    marginTop: -60,
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 8,
   },
   profileImageContainer: {
-    marginRight: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
+    position: 'relative',
+    marginRight: 16,
   },
   profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     borderWidth: 4,
     borderColor: '#fff',
     backgroundColor: '#f0f0f0',
+  },
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#4CAF50',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   basicInfo: {
     flex: 1,
     justifyContent: 'center',
   },
+  nameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   name: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#fff',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    color: '#1E293B',
+    marginRight: 6,
   },
   specialization: {
     fontSize: 16,
     color: AppTheme.colors.primary,
     fontWeight: '600',
-    marginTop: 5,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    marginBottom: 8,
   },
-  idContainer: {
+  experienceBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginTop: 4,
   },
-  idText: {
+  experienceText: {
     fontSize: 12,
     color: '#fff',
-    marginLeft: 5,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    fontWeight: '600',
+    marginLeft: 4,
   },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: 24,
+    marginVertical: 20,
+    gap: 12,
   },
   button: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  buttonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: 10,
-    width: '30%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingHorizontal: 8,
   },
-  callButton: {
-    backgroundColor: '#4CAF50',
+  editButton: {
+    shadowColor: '#667eea',
   },
-  messageButton: {
-    backgroundColor: '#2196F3',
+  settingsButton: {
+    shadowColor: '#f5576c',
   },
   bookButton: {
-    backgroundColor: '#FF5722',
-    width: '35%',
+    shadowColor: '#4facfe',
   },
   buttonText: {
     color: '#fff',
     fontWeight: '600',
-    marginLeft: 5,
-    fontSize: 14,
+    marginLeft: 6,
+    fontSize: 13,
   },
   detailsContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
   },
   section: {
-    marginBottom: 25,
+    marginBottom: 20,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowRadius: 12,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginLeft: 8,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginLeft: 10,
   },
   sectionContent: {
-    fontSize: 14,
-    color: '#555',
-    lineHeight: 22,
+    fontSize: 15,
+    color: '#64748B',
+    lineHeight: 24,
+    letterSpacing: 0.2,
+  },
+  infoContainer: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 4,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  lastInfoRow: {
+    borderBottomWidth: 0,
+  },
+  infoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   infoText: {
-    marginLeft: 12,
     fontSize: 14,
-    color: '#555',
+    color: '#475569',
     flex: 1,
+    fontWeight: '500',
+  },
+  professionalInfo: {
+    gap: 16,
+  },
+  listContainer: {
+    gap: 8,
+  },
+  listTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 4,
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 6,
+  },
+  bulletPoint: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: AppTheme.colors.primary,
+    marginTop: 8,
+    marginRight: 12,
+  },
+  listText: {
+    fontSize: 14,
+    color: '#64748B',
+    flex: 1,
+    lineHeight: 20,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: AppTheme.colors.primaryLight,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: AppTheme.colors.primary,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: AppTheme.colors.primaryLight,
-    padding: 20,
-  },
-  emptyText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: AppTheme.colors.primary,
-    textAlign: 'center',
-  },
-  refreshButton: {
-    marginTop: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    backgroundColor: AppTheme.colors.primary,
-    borderRadius: 8,
-  },
-  refreshButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+    backgroundColor: '#F8FAFC',
   },
 });
 
