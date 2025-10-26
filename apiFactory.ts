@@ -1,8 +1,8 @@
-// const BASE_URL: string = "http://localhost:8080/api/v1";
-// const WEBSOCKET_BASE: string="http://localhost:8080"
+const BASE_URL: string = "http://localhost:8080/api/v1";
+const WEBSOCKET_BASE: string="http://localhost:8080"
 
-const BASE_URL: string = "https://docterdevserver-1-0.onrender.com/api/v1";
-const WEBSOCKET_BASE: string="https://docterdevserver-1-0.onrender.com"
+// const BASE_URL: string = "https://docterdevserver-1-0.onrender.com/api/v1";
+// const WEBSOCKET_BASE: string="https://docterdevserver-1-0.onrender.com"
 
 type ApiEndpoints = {
   login: string;
@@ -23,6 +23,10 @@ type ApiEndpoints = {
   getAppointmentsByDate: string;
   updateAppointmentById: (appointmentId: string) => string;
   doctorStatistics: string;
+  getAllNotification:string;
+  getUnreadNotifications:string;
+  markNotificationAsRead:(notificationId: string)=> string;
+  markAllNotificationAsRead:string;
 };
 
 type WebSocketEndpoint={
@@ -49,6 +53,10 @@ export const apiEndpoints: ApiEndpoints = {
   getAppointmentsByDate: `${BASE_URL}/appointments/by-doctor`,
   updateAppointmentById: (appointmentId: string) => `${BASE_URL}/appointments/update/${appointmentId}`,
   doctorStatistics: `${BASE_URL}/doctor/statistics`,
+  getAllNotification:  `${BASE_URL}/notification`,
+  getUnreadNotifications: `${BASE_URL}/notification/unread`,
+  markNotificationAsRead: (notificationId: string)=> `${BASE_URL}/notification/${notificationId}/read`,
+  markAllNotificationAsRead: `${BASE_URL}/notification/read-all`,
 };
 
 export const webSocketEndpoint: WebSocketEndpoint={

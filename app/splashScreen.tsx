@@ -7,6 +7,7 @@ import { AppTheme } from "@/constants/theme";
 import websocketAppointment from "@/service/properties/websocketAppointment";
 import { fetchDoctorStatistics } from "@/service/properties/statisticsApi";
 import { getAppointments } from "@/service/properties/appointmentApi";
+import { getAllNotification } from "@/service/properties/notificationApi";
 
 export default function SplashScreen() {
     const dispatch = useDispatch();
@@ -52,6 +53,7 @@ export default function SplashScreen() {
                 await websocketAppointment.connect();
                 const doctorStatisticResponse= await fetchDoctorStatistics();
                 const appointmentResponse= await getAppointments(dispatch);
+                const notificationResponse=await getAllNotification(dispatch);
                 
                 setTimeout(() => {
                     router.replace(profileResponse && doctorStatisticResponse &&appointmentResponse ? "/(tabs)/home" : "/(auth)");

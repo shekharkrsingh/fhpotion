@@ -217,7 +217,9 @@ const DoctorProfileScreen = () => {
               </LinearGradient>
             </TouchableOpacity>
             
-            <TouchableOpacity style={[styles.button, styles.settingsButton]}>
+            <TouchableOpacity style={[styles.button, styles.settingsButton]}
+              onPress={() => router.navigate("/settings")}
+            >
               <LinearGradient
                 colors={['#f093fb', '#f5576c']}
                 style={styles.buttonGradient}

@@ -10,10 +10,10 @@ class WebsocketAppointment {
 
   public async connect(): Promise<void> {
     // ✅ Only connect if no active connection exists
-    if (this.stompClient && this.stompClient.connected) {
-      console.log('⚠️ WebSocket connection already established');
-      return;
-    }
+    // if (this.stompClient && this.stompClient.connected) {
+    //   console.log('⚠️ WebSocket connection already established');
+    //   return;
+    // }
 
     try {
       const token = await AsyncStorage.getItem('authToken');

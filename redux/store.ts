@@ -4,6 +4,7 @@ import forgetPasswordReducer  from "@/redux/slices/forgetPasswordSlice"
 import profileReducer from "@/redux/slices/profileSlice"
 import appointmentReducer from "@/redux/slices/appointmentSlice"
 import statisticsReducer from "@/redux/slices/statisticsSlice"
+import notificationReducer from "@/redux/slices/notificationSlice"
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     profile: profileReducer,
     appointments: appointmentReducer,
     statistics: statisticsReducer,
+    notification: notificationReducer
   },
 });
 

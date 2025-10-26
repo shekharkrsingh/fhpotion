@@ -3,9 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiConnector } from "@/service/apiConnector";
 import { apiEndpoints } from "@/apiFactory";
 
-interface updateProfile {
 
-}
 
 export const getProfile = async (dispatch: any): Promise<boolean> => {
     try {
