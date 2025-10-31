@@ -135,5 +135,64 @@ export async function sendOtp(email: string): Promise<boolean> {
         console.error("Error in forgotPassword API:", error);
         return false;
     }
+  };
+
+
+    export const changeDoctorPassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
+    try {
+        const token = await AsyncStorage.getItem("authToken");
+
+        if (!token) {
+          console.error("No authentication token found.");
+          return false;
+        }
+
+        const response = await apiConnector("POST", apiEndpoints.changeDoctorPassword, {
+          oldPassword,
+          newPassword
+        },{
+          Authorization: `Bearer ${token}`
+        })
+        if (response.status === 200) {
+            console.log("Password changed successfully", response.data);
+            return true;
+        } else {
+            console.error("Failed to change password:", response.data);
+            return false;
+        }
+    } catch (error) {
+        console.error("Error in changeDoctorPasswrod API:", error);
+        return false;
+    }
+  };
+
+    export const changeDoctorEmail = async (newEmail: string, otp: string, password: string): Promise<boolean> => {
+    try {
+        const token = await AsyncStorage.getItem("authToken");
+
+        if (!token) {
+          console.error("No authentication token found.");
+          return false;
+        }
+
+        const response = await apiConnector("POST", apiEndpoints.updateDoctorEmail, {
+          newEmail,
+          otp,
+          password
+        },{
+          Authorization: `Bearer ${token}`
+        })
+        if (response.status === 200) {
+            console.log("Email changed successfully", response.data);
+            return true;
+        } else {
+            console.error("Failed to change Email:", response.data);
+            return false;
+        }
+    } catch (error) {
+        console.error("Error in updateDoctorEmail API:", error);
+        return false;
+    }
+
 };
 

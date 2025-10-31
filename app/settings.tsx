@@ -18,7 +18,8 @@ import { AppTheme } from '../constants/theme';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { router } from 'expo-router';
-import OTPVerification from '@/componets/OTPVerificationProps';
+
+import { changeDoctorPassword, changeDoctorEmail, sendOtp, signout } from '@/service/properties/authApi';
 
 const SettingsScreen = () => {
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -55,6 +56,12 @@ const SettingsScreen = () => {
     supportMessage: '',
     supportCategory: 'general'
   });
+
+  // Password visibility states
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showEmailPassword, setShowEmailPassword] = useState(false);
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const sectionAnimations = useRef<{[key: string]: Animated.Value}>({}).current;
@@ -164,13 +171,15 @@ const SettingsScreen = () => {
 
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      Alert.alert('Success', 'Password changed successfully!');
-      updateFormData({ oldPassword: '', newPassword: '', confirmPassword: '' });
-      setErrors({});
-      toggleSection('password');
+      const res = await changeDoctorPassword(formData.oldPassword, formData.newPassword);
+      if (res) {
+        Alert.alert('Success', 'Password changed successfully!');
+        updateFormData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+        setErrors({});
+        toggleSection('password');
+      } else {
+        Alert.alert('Failed', 'Password change failed!');
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to change password. Please try again.');
     } finally {
@@ -183,11 +192,13 @@ const SettingsScreen = () => {
 
     setIsLoading(true);
     try {
-      // Simulate API call to send OTP
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setShowOTPModal(true);
-      Alert.alert('OTP Sent', 'Verification code has been sent to your new email address.');
+      const success = await sendOtp(formData.newEmail);
+      if (success) {
+        setShowOTPModal(true);
+        Alert.alert('OTP Sent', 'Verification code has been sent to your new email address.');
+      } else {
+        Alert.alert('Error', 'Failed to send verification code. Please try again.');
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to send verification code. Please try again.');
     } finally {
@@ -198,16 +209,22 @@ const SettingsScreen = () => {
   const handleVerifyOTP = async (otp: string) => {
     setIsLoading(true);
     try {
-      // Simulate OTP verification and email update
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setShowOTPModal(false);
-      Alert.alert('Success', 'Email updated successfully!');
-      updateFormData({ newEmail: '', emailPassword: '', currentEmail: formData.newEmail });
-      setErrors({});
-      toggleSection('email');
+      const success = await changeDoctorEmail(formData.newEmail, otp, formData.emailPassword);
+      if (success) {
+        setShowOTPModal(false);
+        Alert.alert('Success', 'Email updated successfully!');
+        updateFormData({ 
+          newEmail: '', 
+          emailPassword: '', 
+          currentEmail: formData.newEmail 
+        });
+        setErrors({});
+        toggleSection('email');
+      } else {
+        Alert.alert('Error', 'Failed to update email. Please try again.');
+      }
     } catch (error) {
-      Alert.alert('Error', 'Invalid verification code. Please try again.');
+      Alert.alert('Error', 'Failed to update email. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -215,9 +232,14 @@ const SettingsScreen = () => {
 
   const handleResendOTP = async (): Promise<boolean> => {
     try {
-      // Simulate resend OTP
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return true;
+      const success = await sendOtp(formData.newEmail);
+      if (success) {
+        Alert.alert('Success', 'OTP resent successfully!');
+        return true;
+      } else {
+        Alert.alert('Error', 'Failed to resend OTP. Please try again.');
+        return false;
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to resend OTP. Please try again.');
       return false;
@@ -255,7 +277,6 @@ const SettingsScreen = () => {
 
     setIsLoading(true);
     try {
-      // Generate ticket ID and include doctor info
       const ticketId = `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
       const doctorId = profileData.doctorId || 'N/A';
       const doctorEmail = formData.currentEmail;
@@ -270,7 +291,6 @@ const SettingsScreen = () => {
         timestamp: new Date().toISOString()
       };
 
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       Alert.alert(
@@ -287,6 +307,37 @@ const SettingsScreen = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSignout = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Sign Out', 
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              const success = await signout();
+              if (success) {
+                Alert.alert('Success', 'Signed out successfully!');
+                // Navigate to login screen or handle signout
+                router.replace('/login');
+              } else {
+                Alert.alert('Error', 'Failed to sign out. Please try again.');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleDeactivateAccount = () => {
@@ -331,7 +382,43 @@ const SettingsScreen = () => {
     Linking.openURL('mailto:support@healapp.com');
   };
 
-  // UI Components
+  // UI Components with Eye Icons
+  const renderPasswordInput = (
+    label: string,
+    value: string,
+    onChange: (text: string) => void,
+    error?: string,
+    placeholder: string = '',
+    showPassword: boolean,
+    setShowPassword: (show: boolean) => void
+  ) => (
+    <View style={styles.inputGroup}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <View style={[styles.passwordInputContainer, error && styles.inputError]}>
+        <TextInput
+          style={styles.passwordInput}
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor={AppTheme.colors.gray500}
+          secureTextEntry={!showPassword}
+          autoCapitalize="none"
+        />
+        <TouchableOpacity
+          style={styles.eyeIcon}
+          onPress={() => setShowPassword(!showPassword)}
+        >
+          <Ionicons 
+            name={showPassword ? "eye-off" : "eye"} 
+            size={20} 
+            color={AppTheme.colors.gray500} 
+          />
+        </TouchableOpacity>
+      </View>
+      {error && <Text style={styles.errorText}>{error}</Text>}
+    </View>
+  );
+
   const renderInput = (
     label: string,
     value: string,
@@ -437,6 +524,122 @@ const SettingsScreen = () => {
     </View>
   );
 
+  // OTP Verification Component
+  const OTPVerification = ({ email, onSubmit, onResend }: { 
+    email: string; 
+    onSubmit: (otp: string) => Promise<void>; 
+    onResend: () => Promise<boolean>;
+  }) => {
+    const [otp, setOtp] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [isResendEnabled, setIsResendEnabled] = useState(false);
+    const [timer, setTimer] = useState(30);
+
+    let countdownInterval: NodeJS.Timeout;
+
+    const startTimer = () => {
+      let timeLeft = 30;
+      countdownInterval = setInterval(() => {
+        setTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdownInterval);
+            setIsResendEnabled(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    };
+
+    React.useEffect(() => {
+      startTimer();
+      return () => clearInterval(countdownInterval);
+    }, []);
+
+    const handleResendOtp = async () => {
+      setIsResendEnabled(false);
+      setTimer(30);
+      setIsLoading(true);
+      try {
+        await onResend();
+        startTimer();
+      } catch (error) {
+        console.error("Error sending OTP:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const handleOtpSubmit = async () => {
+      if (!otp.trim()) return;
+      setIsLoading(true);
+      try {
+        await onSubmit(otp);
+      } catch (error) {
+        console.error("OTP Verification Failed:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    return (
+      <View style={styles.otpContainer}>
+        <View style={styles.otpHeader}>
+          <TouchableOpacity onPress={() => setShowOTPModal(false)} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={AppTheme.colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.otpTitle}>Verify OTP</Text>
+          <View style={styles.headerPlaceholder} />
+        </View>
+
+        <ScrollView style={styles.otpContent}>
+          <View style={styles.otpIllustration}>
+            <Ionicons name="mail" size={80} color={AppTheme.colors.primary} />
+          </View>
+
+          <View style={styles.otpForm}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.otpLabel}>Enter OTP sent to {email}</Text>
+              <View style={styles.otpInputContainer}>
+                <Ionicons name='key' size={20} color={AppTheme.colors.primary} style={styles.inputIcon} />
+                <TextInput 
+                  style={styles.otpInput} 
+                  placeholder="******" 
+                  placeholderTextColor={AppTheme.colors.gray500} 
+                  value={otp} 
+                  onChangeText={setOtp} 
+                  autoCapitalize='none' 
+                  keyboardType="numeric" 
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.actionButton, isLoading && styles.buttonDisabled]} 
+              onPress={handleOtpSubmit} 
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Verify & Change Email</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.otpFooter}>
+              <Text style={styles.footerText}>
+                {isResendEnabled ? "Didn't receive OTP? " : `Resend OTP in ${timer}s`}
+              </Text>
+              <TouchableOpacity disabled={!isResendEnabled} onPress={handleResendOtp}>
+                <Text style={[styles.link, !isResendEnabled && { color: '#ccc' }]}>Resend</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Header with Back Button */}
@@ -461,31 +664,34 @@ const SettingsScreen = () => {
           "Change Password",
           "Update your account password",
           <View style={styles.formContent}>
-            {renderInput(
+            {renderPasswordInput(
               "Current Password",
               formData.oldPassword,
               (text) => updateFormData({ oldPassword: text }),
               errors.oldPassword,
               "Enter your current password",
-              true
+              showOldPassword,
+              setShowOldPassword
             )}
             
-            {renderInput(
+            {renderPasswordInput(
               "New Password",
               formData.newPassword,
               (text) => updateFormData({ newPassword: text }),
               errors.newPassword,
               "Enter new password",
-              true
+              showNewPassword,
+              setShowNewPassword
             )}
             
-            {renderInput(
+            {renderPasswordInput(
               "Confirm New Password",
               formData.confirmPassword,
               (text) => updateFormData({ confirmPassword: text }),
               errors.confirmPassword,
               "Re-enter new password",
-              true
+              showConfirmPassword,
+              setShowConfirmPassword
             )}
 
             <TouchableOpacity 
@@ -531,13 +737,14 @@ const SettingsScreen = () => {
               'email-address'
             )}
             
-            {renderInput(
+            {renderPasswordInput(
               "Confirm Password",
               formData.emailPassword,
               (text) => updateFormData({ emailPassword: text }),
               errors.emailPassword,
               "Enter your password to confirm",
-              true
+              showEmailPassword,
+              setShowEmailPassword
             )}
 
             <TouchableOpacity 
@@ -761,6 +968,34 @@ const SettingsScreen = () => {
           </View>
         )}
 
+        {/* Sign Out Section */}
+        {renderSection(
+          "signout",
+          "log-out",
+          "Sign Out",
+          "Sign out from your account",
+          <View style={styles.formContent}>
+            <Text style={styles.warningText}>
+              You will be logged out from all devices and need to sign in again to access your account.
+            </Text>
+
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.signoutButton]}
+              onPress={handleSignout}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="log-out" size={20} color="#fff" />
+                  <Text style={styles.buttonText}>Sign Out</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Account Actions Section */}
         {renderSection(
           "account",
@@ -920,6 +1155,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1E293B',
   },
+  passwordInputContainer: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+    color: '#1E293B',
+  },
+  eyeIcon: {
+    padding: 16,
+  },
   textArea: {
     height: 120,
     textAlignVertical: 'top',
@@ -981,6 +1233,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  signoutButton: {
+    backgroundColor: AppTheme.colors.danger,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -1202,6 +1457,76 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
     fontSize: 14,
     textAlign: 'center',
+  },
+  // OTP Styles
+  otpContainer: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  otpHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: AppTheme.colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  otpTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  otpContent: {
+    flex: 1,
+  },
+  otpIllustration: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  otpForm: {
+    padding: 20,
+  },
+  otpLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: 8,
+  },
+  otpInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  otpInput: {
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#1E293B',
+  },
+  otpFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  footerText: {
+    fontSize: 14,
+    color: AppTheme.colors.gray600,
+  },
+  link: {
+    fontSize: 14,
+    color: AppTheme.colors.primary,
+    fontWeight: '600',
+    marginLeft: 4,
   },
 });
 
