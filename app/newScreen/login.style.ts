@@ -1,0 +1,186 @@
+// styles/login.styles.ts
+import { StyleSheet } from 'react-native';
+import { MedicalTheme } from '@/newConstants/theme';
+
+export const styles = StyleSheet.create({
+  // Main container - FIXED: removed flexGrow and padding
+  container: {
+    flex: 1,
+    backgroundColor: MedicalTheme.colors.background.primary,
+  },
+
+  // Top illustration section - FIXED: fixed height
+  topIllustration: {
+    height: '30%', // Reduced height to prevent overflow
+    backgroundColor: MedicalTheme.colors.primary[50],
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: MedicalTheme.spacing[4],
+  },
+
+  illustrationImage: {
+    width: '100%',
+    height: '80%',
+    maxHeight: 200, // Limit maximum height
+  },
+
+  // Card section - FIXED: removed negative margin and adjusted padding
+  card: {
+    flex: 1,
+    backgroundColor: MedicalTheme.colors.background.primary,
+    borderTopLeftRadius: MedicalTheme.borderRadius['3xl'],
+    borderTopRightRadius: MedicalTheme.borderRadius['3xl'],
+    paddingTop: MedicalTheme.spacing[8],
+    paddingHorizontal: MedicalTheme.spacing[6],
+    paddingBottom: MedicalTheme.spacing[4], // Added bottom padding
+    shadowColor: MedicalTheme.shadow.lg.shadowColor,
+    shadowOffset: MedicalTheme.shadow.lg.shadowOffset,
+    shadowOpacity: MedicalTheme.shadow.lg.shadowOpacity,
+    shadowRadius: MedicalTheme.shadow.lg.shadowRadius,
+    elevation: MedicalTheme.shadow.lg.elevation,
+  },
+
+  // Form container - FIXED: removed marginBottom
+  formContainer: {
+    flex: 1,
+  },
+
+  // Input groups
+  inputGroup: {
+    marginBottom: MedicalTheme.spacing[5],
+  },
+
+  label: {
+    fontSize: MedicalTheme.typography.fontSize.sm,
+    color: MedicalTheme.colors.text.secondary,
+    marginBottom: MedicalTheme.spacing[2],
+    fontWeight: '500' as const,
+  },
+
+  inputContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: MedicalTheme.colors.background.primary,
+    borderWidth: 1,
+    borderColor: MedicalTheme.colors.border.medium,
+    borderRadius: MedicalTheme.borderRadius.lg,
+    paddingHorizontal: MedicalTheme.spacing[4],
+    minHeight: 48,
+  },
+
+  inputIcon: {
+    marginRight: MedicalTheme.spacing[3],
+  },
+
+  input: {
+    flex: 1,
+    fontSize: MedicalTheme.typography.fontSize.base,
+    color: MedicalTheme.colors.text.primary,
+    paddingVertical: MedicalTheme.spacing[2],
+    fontWeight: '400' as const,
+    includeFontPadding: false,
+  },
+
+  eyeIcon: {
+    padding: MedicalTheme.spacing[2],
+    marginLeft: MedicalTheme.spacing[2],
+  },
+
+  // Button styles
+  button: {
+    backgroundColor: MedicalTheme.colors.primary[500],
+    paddingVertical: MedicalTheme.spacing[3],
+    paddingHorizontal: MedicalTheme.spacing[6],
+    borderRadius: MedicalTheme.borderRadius.lg,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    minHeight: 44,
+    marginTop: MedicalTheme.spacing[2],
+    marginBottom: MedicalTheme.spacing[4],
+    shadowColor: MedicalTheme.shadow.sm.shadowColor,
+    shadowOffset: MedicalTheme.shadow.sm.shadowOffset,
+    shadowOpacity: MedicalTheme.shadow.sm.shadowOpacity,
+    shadowRadius: MedicalTheme.shadow.sm.shadowRadius,
+    elevation: MedicalTheme.shadow.sm.elevation,
+  },
+
+  buttonDisabled: {
+    backgroundColor: MedicalTheme.colors.neutral[300],
+    opacity: 0.6,
+  },
+
+  buttonText: {
+    fontSize: MedicalTheme.typography.fontSize.base,
+    fontWeight: '600' as const,
+    color: MedicalTheme.colors.text.inverse,
+    textAlign: 'center' as const,
+  },
+
+  // Extra content sections
+  extraContaint: {
+    alignItems: 'center' as const,
+    marginBottom: MedicalTheme.spacing[4],
+  },
+
+  orText: {
+    fontSize: MedicalTheme.typography.fontSize.sm,
+    color: MedicalTheme.colors.text.tertiary,
+    marginBottom: MedicalTheme.spacing[3],
+    fontWeight: '400' as const,
+    textAlign: 'center' as const,
+  },
+
+  link: {
+    fontSize: MedicalTheme.typography.fontSize.base,
+    fontWeight: '500' as const,
+    color: MedicalTheme.colors.primary[500],
+    textAlign: 'center' as const,
+  },
+
+  // Social buttons
+  socialButtonsRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
+    gap: MedicalTheme.spacing[4],
+  },
+
+  socialButton: {
+    width: 52,
+    height: 52,
+    borderRadius: MedicalTheme.borderRadius.lg,
+    backgroundColor: MedicalTheme.colors.background.secondary,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: MedicalTheme.colors.border.light,
+    shadowColor: MedicalTheme.shadow.sm.shadowColor,
+    shadowOffset: MedicalTheme.shadow.sm.shadowOffset,
+    shadowOpacity: MedicalTheme.shadow.sm.shadowOpacity,
+    shadowRadius: MedicalTheme.shadow.sm.shadowRadius,
+    elevation: MedicalTheme.shadow.sm.elevation,
+  },
+
+  socialLogo: {
+    width: 24,
+    height: 24,
+  },
+
+  // Footer sections
+  footer: {
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    marginBottom: MedicalTheme.spacing[3],
+    flexWrap: 'wrap' as const,
+  },
+
+  footerText: {
+    fontSize: MedicalTheme.typography.fontSize.sm,
+    color: MedicalTheme.colors.text.secondary,
+    marginRight: MedicalTheme.spacing[1],
+    fontWeight: '400' as const,
+    textAlign: 'center' as const,
+  },
+});
+
+export default styles;
