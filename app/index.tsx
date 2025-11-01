@@ -19,6 +19,7 @@ export default function Index() {
       <Link href="/splashScreen">SPLASH SCREEN</Link>
       <Link href="/(tabs)/home">Home</Link>
       <Link href={"/AppointmentsScreen"}>Appointment</Link>
+      <Link href={"/test"}>Test</Link>
     </View>
   );
 }
