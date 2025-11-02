@@ -1,6 +1,6 @@
+import { AppDispatch } from "@/newStore";
 import { apiConnector } from "@/newService/apiConnector";
 import { notificationEndpoints } from "@/newService/config/apiEndpoints";
-import { store } from "@/newStore";
 import {
   setNotifications,
   markAsRead,
@@ -25,142 +25,130 @@ export interface Notification {
   createdAt: string;
 }
 
-const {dispatch}=store;
-
-/**
- * FETCH ALL NOTIFICATIONS
- */
-export const fetchAllNotifications = async (): Promise<boolean> => {
-  dispatch(setLoading(true));
-
+export const fetchAllNotifications = () => async (dispatch: AppDispatch): Promise<boolean> => {
   try {
+    dispatch(setLoading(true));
+    dispatch(setError(null));
+
     const response = await apiConnector<ApiResponse<Notification[]>>({
       method: "GET",
       url: notificationEndpoints.getAllNotification,
       tokenRequired: true,
     });
 
-    if (response.status !== 200 || !response.data?.data) {
-      dispatch(setError(response.data?.message || "Failed to fetch notifications"));
-      dispatch(setLoading(false));
-      return false;
+    if (response.status === 200 && response.data?.data) {
+      dispatch(setNotifications(response.data.data));
+      dispatch(setSuccess(true));
+      return true;
     }
 
-    dispatch(setNotifications(response.data.data));
-    dispatch(setSuccess(true));
-    dispatch(setLoading(false));
-    return true;
+    dispatch(setError(response.data?.message || "Failed to fetch notifications"));
+    return false;
   } catch (error: any) {
     const message =
       error?.response?.data?.message ||
-      error.message ||
-      "Something went wrong while fetching notifications";
+      (error?.response?.status === 401
+        ? "Unauthorized. Please log in again."
+        : "Something went wrong while fetching notifications.");
     dispatch(setError(message));
-    dispatch(setLoading(false));
     return false;
+  } finally {
+    dispatch(setLoading(false));
   }
 };
 
-/**
- * FETCH UNREAD NOTIFICATIONS
- */
-export const fetchUnreadNotifications = async (): Promise<boolean> => {
-  dispatch(setLoading(true));
-
+export const fetchUnreadNotifications = () => async (dispatch: AppDispatch): Promise<boolean> => {
   try {
+    dispatch(setLoading(true));
+    dispatch(setError(null));
+
     const response = await apiConnector<ApiResponse<Notification[]>>({
       method: "GET",
       url: notificationEndpoints.getUnreadNotifications,
       tokenRequired: true,
     });
 
-    if (response.status !== 200 || !response.data?.data) {
-      dispatch(setError(response.data?.message || "Failed to fetch unread notifications"));
-      dispatch(setLoading(false));
-      return false;
+    if (response.status === 200 && response.data?.data) {
+      dispatch(setNotifications(response.data.data));
+      dispatch(setSuccess(true));
+      return true;
     }
 
-    dispatch(setNotifications(response.data.data));
-    dispatch(setSuccess(true));
-    dispatch(setLoading(false));
-    return true;
+    dispatch(setError(response.data?.message || "Failed to fetch unread notifications"));
+    return false;
   } catch (error: any) {
     const message =
       error?.response?.data?.message ||
-      error.message ||
-      "Something went wrong while fetching unread notifications";
+      (error?.response?.status === 401
+        ? "Unauthorized. Please log in again."
+        : "Something went wrong while fetching unread notifications.");
     dispatch(setError(message));
-    dispatch(setLoading(false));
     return false;
+  } finally {
+    dispatch(setLoading(false));
   }
 };
 
-/**
- * MARK A SINGLE NOTIFICATION AS READ
- */
-export const markNotificationAsRead = async (
-  notificationId: string
-): Promise<boolean> => {
-  dispatch(setLoading(true));
-
+export const markNotificationAsRead = (notificationId: string) => async (dispatch: AppDispatch): Promise<boolean> => {
   try {
+    dispatch(setLoading(true));
+    dispatch(setError(null));
+
     const response = await apiConnector<ApiResponse<null>>({
       method: "PUT",
       url: notificationEndpoints.markNotificationAsRead(notificationId),
       tokenRequired: true,
     });
 
-    if (response.status !== 200) {
-      dispatch(setError(response.data?.message || "Failed to mark notification as read"));
-      dispatch(setLoading(false));
-      return false;
+    if (response.status === 200) {
+      dispatch(markAsRead(notificationId));
+      dispatch(setSuccess(true));
+      return true;
     }
 
-    dispatch(markAsRead(notificationId));
-    dispatch(setSuccess(true));
-    dispatch(setLoading(false));
-    return true;
+    dispatch(setError(response.data?.message || "Failed to mark notification as read"));
+    return false;
   } catch (error: any) {
     const message =
       error?.response?.data?.message ||
-      error.message ||
-      "Something went wrong while marking as read";
+      (error?.response?.status === 401
+        ? "Unauthorized. Please log in again."
+        : "Something went wrong while marking as read.");
     dispatch(setError(message));
-    dispatch(setLoading(false));
     return false;
+  } finally {
+    dispatch(setLoading(false));
   }
 };
 
-/**
- * MARK ALL NOTIFICATIONS AS READ
- */
-export const markAllNotificationsAsRead = async (): Promise<boolean> => {
-  dispatch(setLoading(true));
-
+export const markAllNotificationsAsRead = () => async (dispatch: AppDispatch): Promise<boolean> => {
   try {
+    dispatch(setLoading(true));
+    dispatch(setError(null));
+
     const response = await apiConnector<ApiResponse<null>>({
       method: "PUT",
       url: notificationEndpoints.markAllNotificationAsRead,
       tokenRequired: true,
     });
 
-    if (response.status !== 200) {
-      dispatch(setError(response.data?.message || "Failed to mark all as read"));
-      dispatch(setLoading(false));
-      return false;
+    if (response.status === 200) {
+      dispatch(markAllAsRead());
+      dispatch(setSuccess(true));
+      return true;
     }
 
-    dispatch(markAllAsRead());
-    dispatch(setSuccess(true));
-    dispatch(setLoading(false));
-    return true;
+    dispatch(setError(response.data?.message || "Failed to mark all as read"));
+    return false;
   } catch (error: any) {
     const message =
       error?.response?.data?.message ||
-      error.message ||
-      "Something went wrong while marking all as read";
+      (error?.response?.status === 401
+        ? "Unauthorized. Please log in again."
+        : "Something went wrong while marking all as read.");
     dispatch(setError(message));
-    dispatch(setLoading(false));
     return false;
+  } finally {
+    dispatch(setLoading(false));
   }
 };

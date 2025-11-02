@@ -1,12 +1,12 @@
 import { AppDispatch } from "@/newStore";
-import { apiConnector } from "@/service/apiConnector";
-import { apiEndpoints } from "@/apiFactory";
+import { apiConnector } from "@/newService/apiConnector";
+import { doctorEndpoints } from "@/newService/config/apiEndpoints";
 import {
   setProfileData,
   setLoading,
   setSuccess,
   setError,
-} from "@/redux/slices/profileSlice";
+} from "@/newStore/slices/profileSlice";
 
 export const getProfile = () => async (dispatch: AppDispatch): Promise<boolean> => {
   try {
@@ -15,7 +15,7 @@ export const getProfile = () => async (dispatch: AppDispatch): Promise<boolean> 
 
     const response = await apiConnector({
       method: "GET",
-      url: apiEndpoints.getDoctorProfile,
+      url: doctorEndpoints.getDoctorProfile,
       tokenRequired: true,
     });
 
@@ -48,7 +48,7 @@ export const updateProfile = (updateData: Record<string, any>) =>
 
       const response = await apiConnector({
         method: "PUT",
-        url: apiEndpoints.updateDoctor,
+        url: doctorEndpoints.updateDoctor,
         bodyData: updateData,
         tokenRequired: true,
       });

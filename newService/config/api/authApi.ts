@@ -1,13 +1,12 @@
 import { apiConnector } from "@/newService/apiConnector";
 import { authEndpoints, doctorEndpoints } from "@/newService/config/apiEndpoints";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Dispatch } from "@reduxjs/toolkit";
 import {
   setLoading,
   setSuccess,
   setError,
   setSignupData,
-} from "@/redux/slices/signupSlice";
+} from "@/newStore/slices/signupSlice";
 import { store } from "@/newStore";
 
 interface ApiResponse<T> {

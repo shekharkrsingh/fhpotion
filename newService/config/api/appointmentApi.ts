@@ -11,38 +11,37 @@ import {
 } from "@/newStore/slices/appointmentSlice";
 import { Appointment } from "@/redux/slices/appointmentSlice";
 
-export const getAppointments =
-  () => async (dispatch: AppDispatch): Promise<boolean> => {
-    try {
-      dispatch(setLoading(true));
-      dispatch(setError(null));
+export const getAppointments = () => async (dispatch: AppDispatch): Promise<boolean> => {
+  try {
+    dispatch(setLoading(true));
+    dispatch(setError(null));
 
-      const response = await apiConnector({
-        method: "GET",
-        url: apiEndpoints.getTodaysAppointments,
-        tokenRequired: true,
-      });
+    const response = await apiConnector({
+      method: "GET",
+      url: apiEndpoints.getTodaysAppointments,
+      tokenRequired: true,
+    });
 
-      if (response.status === 200 && response.data?.success) {
-        dispatch(setAppointments(response.data.data || []));
-        dispatch(setSuccess(true));
-        return true;
-      }
-
-      dispatch(setError(response.data?.message || "Failed to fetch appointments"));
-      return false;
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        (error?.response?.status === 401
-          ? "Unauthorized. Please log in again."
-          : "Something went wrong while fetching appointments.");
-      dispatch(setError(message));
-      return false;
-    } finally {
-      dispatch(setLoading(false));
+    if (response.status === 200 && response.data?.success) {
+      dispatch(setAppointments(response.data.data || []));
+      dispatch(setSuccess(true));
+      return true;
     }
-  };
+
+    dispatch(setError(response.data?.message || "Failed to fetch appointments"));
+    return false;
+  } catch (error: any) {
+    const message =
+      error?.response?.data?.message ||
+      (error?.response?.status === 401
+        ? "Unauthorized. Please log in again."
+        : "Something went wrong while fetching appointments.");
+    dispatch(setError(message));
+    return false;
+  } finally {
+    dispatch(setLoading(false));
+  }
+};
 
 export const updateAppointment =
   (appointmentId: string, updateData: Partial<Appointment>) =>
