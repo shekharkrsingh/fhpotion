@@ -97,7 +97,7 @@ const ChartsSection: React.FC<ChartsSectionProps> = ({ statistics }) => {
           <Text style={styles.chartTitle}>Weekly Appointment Trend</Text>
           <LineChart
             data={lineChartData}
-            width={screenWidth - MedicalTheme.spacing[8]}
+            width={screenWidth - (MedicalTheme.spacing[8] * 2)}
             height={220}
             chartConfig={chartConfig}
             bezier
