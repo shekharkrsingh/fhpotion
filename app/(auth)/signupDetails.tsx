@@ -20,12 +20,14 @@ import Toast from 'react-native-toast-message';
 import { styles } from '@/assets/styles/signupDetails.styles';
 import { MedicalTheme } from '@/newConstants/theme';
 import OTPModal from '@/newComponents/OTPVerificationPopup';
-import { sendOtp } from '@/service/properties/authApi';
+import { sendOtp } from '@/newService/config/api/authApi';
 import { signupDoctor } from '@/newService/config/api/authApi';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/newStore';
+import { AppDispatch, RootState } from '@/newStore';
+import { useDispatch } from 'react-redux';
 
 export default function SignupDetails() {
+  const dispatch=useDispatch<AppDispatch>();
   const signupData = useSelector((state: RootState) => state.signup);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -150,7 +152,7 @@ export default function SignupDetails() {
 
   const handleResendOtp = async (): Promise<void> => {
     // Replace with your actual resend OTP API
-     await sendOtp(email);
+     await dispatch(sendOtp(email));
   };
 
   const handleOTPVerifySuccess = () => {

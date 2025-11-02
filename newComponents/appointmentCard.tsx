@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Animated } from 'react-native';
 import { appointmentCardStyles } from '@/assets/styles/appointmentCard.styles';
-import ConfirmationPopup from '@/componets/ConfirmationPopup';
+import AlertPopup from '@/newComponents/alertPopup';
 import AppointmentHeader from '@/newComponents/appointmentHeader';
 import AppointmentDetails from '@/newComponents/appointmentDetails';
 
@@ -21,6 +21,7 @@ interface AppointmentCardProps {
     appointmentType: string;
     paymentStatus: boolean;
     avatar?: string;
+    emergency?: boolean;
   };
   isExpanded: boolean;
   onToggleExpand: (id: string | null) => void;
@@ -40,11 +41,19 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   const [popupVisible, setPopupVisible] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [confirmationAction, setConfirmationAction] = useState<() => void>(() => {});
+  
+  const [alertPopupVisible, setAlertPopupVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
   const showPopup = (message: string, action: () => void) => {
     setConfirmationMessage(message);
     setConfirmationAction(() => action);
     setPopupVisible(true);
+  };
+
+  const showAlert = (message: string) => {
+    setAlertMessage(message);
+    setAlertPopupVisible(true);
   };
 
   const handleTogglePaymentStatus = () => {
@@ -70,6 +79,19 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   };
 
   const handleToggleAvailability = (value: boolean) => {
+    // Check if user is trying to mark as available BUT payment hasn't been made
+    if (value && !item.paymentStatus) {
+      showAlert('Cannot mark as available. Payment has not been received for this appointment.');
+      return;
+    }
+    
+    // Check if user is trying to mark as unavailable AND payment has been made
+    if (!value && item.paymentStatus) {
+      showAlert('Cannot mark as unavailable. Payment has already been received for this appointment.');
+      return;
+    }
+    
+    // If no payment issues, proceed with the availability toggle
     toggleAvailability(item.appointmentId, value);
   };
 
@@ -79,13 +101,32 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
   return (
     <>
-      <ConfirmationPopup
+      {/* Confirmation Popup for reversible actions */}
+      <AlertPopup
         message={confirmationMessage}
         visible={popupVisible}
         onClose={(confirmed) => {
           setPopupVisible(false);
           if (confirmed) confirmationAction();
         }}
+        type="confirmation"
+        variant="warning"
+        title="Confirmation Required"
+        confirmText="Yes"
+        cancelText="No"
+        showIcon={true}
+      />
+      
+      {/* Alert Popup for blocking actions */}
+      <AlertPopup
+        message={alertMessage}
+        visible={alertPopupVisible}
+        onClose={() => setAlertPopupVisible(false)}
+        type="alert"
+        variant="error"
+        title="Action Not Allowed"
+        confirmText="OK"
+        showIcon={true}
       />
       
       <View style={appointmentCardStyles.container}>

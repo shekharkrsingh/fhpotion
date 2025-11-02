@@ -2,8 +2,6 @@ import React, { useCallback, useState, useEffect } from 'react';
 import { View, ScrollView, Text, RefreshControl } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/redux/store';
-import { getProfile } from '@/service/properties/profileApi';
 import { useDispatch } from 'react-redux';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -15,12 +13,14 @@ import ProfileSection from '@/newComponents/profileSection';
 import InfoRow from '@/newComponents/infoRow';
 import ListSection from '@/newComponents/listSection';
 import EmptyScreen from '@/newComponents/EmptyScreen';
+import { AppDispatch, RootState } from '@/newStore';
+import { getProfile } from '@/newService/config/api/profileApi';
 
 const DoctorProfileScreen = () => {
   const profileData = useSelector((state: RootState) => state.profile);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   // Load profile data on component mount
   useEffect(() => {
@@ -30,7 +30,7 @@ const DoctorProfileScreen = () => {
   const loadProfileData = async () => {
     try {
       setError(null);
-      await getProfile(dispatch);
+       await dispatch(getProfile());
     } catch (err) {
       setError('Failed to load profile data');
       console.error('Failed to load profile:', err);
@@ -41,7 +41,7 @@ const DoctorProfileScreen = () => {
     try {
       setRefreshing(true);
       setError(null);
-      await getProfile(dispatch);
+      await getProfile();
     } catch (err) {
       setError('Failed to refresh profile data');
       console.error('Failed to refresh profile:', err);
@@ -61,7 +61,7 @@ const DoctorProfileScreen = () => {
   };
 
   // Show loading state
-  if (profileData.loading && !refreshing) {
+  if (profileData.isLoading && !refreshing) {
     return (
       <EmptyScreen
         type="no-data"

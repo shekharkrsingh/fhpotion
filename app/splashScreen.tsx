@@ -1,18 +1,21 @@
+// splashScreen.tsx
 import React, { useEffect, useState } from "react";
-import { View, Image, StyleSheet, Animated, Easing } from "react-native";
+import { View, Image, Animated, Easing } from "react-native";
 import { router } from "expo-router";
-import { getProfile } from "@/service/properties/profileApi";
 import { useDispatch } from "react-redux";
+import { getProfile } from "@/newService/config/api/profileApi";
 import { AppTheme } from "@/constants/theme";
-import websocketAppointment from "@/service/properties/websocketAppointment";
-import { fetchDoctorStatistics } from "@/service/properties/statisticsApi";
-import { getAppointments } from "@/service/properties/appointmentApi";
-import { getAllNotification } from "@/service/properties/notificationApi";
+import { fetchDoctorStatistics } from "@/newService/config/api/statisticsApi";
+import { getAppointments } from "@/newService/config/api/appointmentApi";
+import { fetchAllNotifications } from "@/newService/config/api/notificationApi";
+import { AppDispatch } from "@/newStore";
+import { splashScreenStyles } from "@/assets/styles/splashScreen.styles";
+import { waitForWebSocketConnection } from "@/utils/websocketUtils";
 
 export default function SplashScreen() {
-    const dispatch = useDispatch();
     const [initialized, setInitialized] = useState(false);
-    
+    const dispatch = useDispatch<AppDispatch>();
+
     // Animations
     const logoScale = new Animated.Value(0.8);
     const logoOpacity = new Animated.Value(0);
@@ -43,76 +46,97 @@ export default function SplashScreen() {
                 duration: 2000,
                 easing: Easing.linear,
                 useNativeDriver: false,
-            })
+            }),
         ]).start();
 
-        // Fetch profile
+        // Initialize app
         const initializeApp = async () => {
             try {
-                const profileResponse = await getProfile(dispatch);
-                await websocketAppointment.connect();
-                const doctorStatisticResponse= await fetchDoctorStatistics();
-                const appointmentResponse= await getAppointments(dispatch);
-                const notificationResponse=await getAllNotification(dispatch);
-                
-                setTimeout(() => {
-                    router.replace(profileResponse && doctorStatisticResponse &&appointmentResponse ? "/(tabs)/home" : "/(auth)");
-                }, 2500); // Minimum display time
+                // Step 1️⃣: Fetch statistics (blocking)
+                const statisticsSuccess = await dispatch(fetchDoctorStatistics());
+
+                if (statisticsSuccess) {
+                    // Step 2️⃣: Lazy load other data
+                    await Promise.allSettled([
+                        dispatch(getProfile()),
+                        dispatch(getAppointments()),
+                        dispatch(fetchAllNotifications()),
+                    ]);
+
+                    // Step 3️⃣: Ensure WebSocket is connected before navigation
+                    const socketConnected = await waitForWebSocketConnection();
+
+                    if (socketConnected) {
+                        console.log("✅ WebSocket connected before navigation");
+                    } else {
+                        console.log("⚠️ WebSocket connection timeout — proceeding anyway");
+                    }
+
+                    // Step 4️⃣: Navigate to dashboard
+                    router.replace("/(tabs)/home");
+                } else {
+                    // Statistics failed, go to auth
+                    router.replace("/(auth)");
+                }
             } catch (error) {
-                console.log("faild during splash screen pre data fetch"+error);
                 router.replace("/(auth)");
             }
         };
-        // webSocketService.connect();
 
         initializeApp();
-    }, []);
+    }, [dispatch]);
 
     const animatedBg = bgColor.interpolate({
         inputRange: [0, 1],
-        outputRange: [AppTheme.colors.white, AppTheme.colors.gray100]
+        outputRange: [AppTheme.colors.white, AppTheme.colors.gray100],
     });
 
     return (
-        <Animated.View style={[styles.container, { backgroundColor: animatedBg }]}>
-            <Animated.View style={[
-                styles.logoContainer,
-                { 
-                    opacity: logoOpacity,
-                    transform: [{ scale: logoScale }] 
-                }
-            ]}>
+        <Animated.View style={[splashScreenStyles.container, { backgroundColor: animatedBg }]}>
+            <Animated.View
+                style={[
+                    splashScreenStyles.logoContainer,
+                    {
+                        opacity: logoOpacity,
+                        transform: [{ scale: logoScale }],
+                    },
+                ]}
+            >
                 <Image
                     source={require("@/assets/images/HP-miniLogo.png")}
-                    style={styles.logo}
+                    style={splashScreenStyles.logo}
                     resizeMode="contain"
                 />
             </Animated.View>
-            
-            <View style={styles.loadingBarContainer}>
-                <Animated.View style={[
-                    styles.loadingBar,
-                    { 
-                        width: loadingWidth.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: ['0%', '100%']
-                        }),
-                        backgroundColor: AppTheme.colors.primary
-                    }
-                ]}/>
+
+            <View style={splashScreenStyles.loadingBarContainer}>
+                <Animated.View
+                    style={[
+                        splashScreenStyles.loadingBar,
+                        {
+                            width: loadingWidth.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ["0%", "100%"],
+                            }),
+                            backgroundColor: AppTheme.colors.primary,
+                        },
+                    ]}
+                />
             </View>
 
-            <View style={styles.brandContainer}>
+            <View style={splashScreenStyles.brandContainer}>
                 <Image
-                    source={require("@/assets/images/HP-miniLogo.png")} // Replace with your H Potion wordmark if available
-                    style={styles.brandMark}
+                    source={require("@/assets/images/HP-miniLogo.png")}
+                    style={splashScreenStyles.brandMark}
                     resizeMode="contain"
                 />
-                <View style={styles.taglineContainer}>
-                    <Animated.Text style={[
-                        styles.tagline,
-                        { opacity: logoOpacity }
-                    ]}>
+                <View style={splashScreenStyles.taglineContainer}>
+                    <Animated.Text
+                        style={[
+                            splashScreenStyles.tagline,
+                            { opacity: logoOpacity },
+                        ]}
+                    >
                         Modern Solutions, Magical Results
                     </Animated.Text>
                 </View>
@@ -120,51 +144,3 @@ export default function SplashScreen() {
         </Animated.View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    logoContainer: {
-        marginBottom: AppTheme.spacing.xxl,
-    },
-    logo: {
-        width: 180,
-        height: 180,
-    },
-    loadingBarContainer: {
-        width: '60%',
-        height: 4,
-        backgroundColor: AppTheme.colors.gray200,
-        borderRadius: AppTheme.borderRadius.full,
-        overflow: 'hidden',
-        marginBottom: AppTheme.spacing.xxl,
-    },
-    loadingBar: {
-        height: '100%',
-    },
-    brandContainer: {
-        position: 'absolute',
-        bottom: AppTheme.spacing.xxl,
-        alignItems: 'center',
-    },
-    brandMark: {
-        height: 24,
-        width: 100,
-        opacity: 0.8,
-        marginBottom: AppTheme.spacing.sm,
-    },
-    taglineContainer: {
-        borderTopWidth: 1,
-        borderTopColor: AppTheme.colors.gray200,
-        paddingTop: AppTheme.spacing.sm,
-    },
-    tagline: {
-        fontSize: 14,
-        letterSpacing: 0.5,
-        color: AppTheme.colors.gray600,
-        fontFamily: 'Inter-Medium',
-    },
-});

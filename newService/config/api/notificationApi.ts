@@ -1,4 +1,4 @@
-import { AppDispatch } from "@/newStore";
+import { AppDispatch } from "@/newStore/index";
 import { apiConnector } from "@/newService/apiConnector";
 import { notificationEndpoints } from "@/newService/config/apiEndpoints";
 import {

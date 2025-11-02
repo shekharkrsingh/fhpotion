@@ -4,8 +4,8 @@ import {
   ScrollView,
   RefreshControl,
 } from 'react-native';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/redux/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '@/newStore';
 
 import { styles } from '@/assets/styles/dashboard.styles';
 import { MedicalTheme } from '@/newConstants/theme';
@@ -17,24 +17,49 @@ import UpcomingAppointments from '@/newComponents/upcomingAppointments';
 import QuickActions from '@/newComponents/quickActions';
 import LoadingState from '@/newComponents/loadingState';
 import EmptyScreen from '@/newComponents/EmptyScreen';
+import { fetchDoctorStatistics } from '@/newService/config/api/statisticsApi';
+import { getProfile } from '@/newService/config/api/profileApi';
+import { getAppointments } from '@/newService/config/api/appointmentApi';
 
 const DoctorDashboard = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const profileData = useSelector((state: RootState) => state.profile);
   const { data: statistics, loading, error } = useSelector(
     (state: RootState) => state.statistics
   );
 
-  const { data: upcomingAppointments, loading: upcomingAppointmentsLoading } = useSelector(
+  const { appointments: upcomingAppointments, loading: upcomingAppointmentsLoading } = useSelector(
     (state: RootState) => state.appointments
   );
 
   const [refreshing, setRefreshing] = React.useState(false);
 
-  const onRefresh = React.useCallback(() => {
+  // Fixed refresh function
+  const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    // Simulate refresh - replace with actual refresh logic
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    try {
+      // Dispatch the statistics fetch and wait for it to complete
+      await dispatch(fetchDoctorStatistics());
+      await dispatch(getProfile());
+      await dispatch(getAppointments());
+    } catch (error) {
+      console.error('Error refreshing dashboard:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dispatch]);
+
+  // Load initial data on component mount
+  React.useEffect(() => {
+    // Load initial statistics if not already loaded
+
+      if(!statistics && !loading){
+        dispatch(fetchDoctorStatistics());
+        dispatch(getProfile());
+        dispatch(getAppointments());
+      }
+
+  }, [dispatch, profileData, upcomingAppointments, statistics, loading, upcomingAppointmentsLoading, profileData.isLoading]);
 
   // Check if we have meaningful data to display
   const hasData = statistics && (
@@ -47,7 +72,7 @@ const DoctorDashboard = () => {
     return <LoadingState />;
   }
 
-  if (error) {
+  if (error && !refreshing) {
     return (
       <EmptyScreen
         type="error"
@@ -73,7 +98,7 @@ const DoctorDashboard = () => {
   }
 
   // Show empty state if no data
-  if (!statistics && !loading) {
+  if (!statistics && !loading && !refreshing) {
     return (
       <EmptyScreen
         type="no-data"
@@ -90,34 +115,33 @@ const DoctorDashboard = () => {
             disabled: refreshing,
           },
         ]}
-      >
-      </EmptyScreen>
+      />
     );
   }
 
   return (
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[MedicalTheme.colors.primary[500]]}
-            tintColor={MedicalTheme.colors.primary[500]}
-          />
-        }
-      >
-        <DashboardHeader profileData={profileData} />
-        <StatsCards statistics={statistics} />
-        <PerformanceMetrics statistics={statistics} />
-        <ChartsSection statistics={statistics} />
-        <UpcomingAppointments 
-          appointments={upcomingAppointments}
-          loading={upcomingAppointmentsLoading}
+    <ScrollView 
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[MedicalTheme.colors.primary[500]]}
+          tintColor={MedicalTheme.colors.primary[500]}
         />
-        <QuickActions />
-      </ScrollView>
+      }
+    >
+      <DashboardHeader profileData={profileData} />
+      <StatsCards statistics={statistics} />
+      <PerformanceMetrics statistics={statistics} />
+      <ChartsSection statistics={statistics} />
+      <UpcomingAppointments 
+        appointments={upcomingAppointments}
+        loading={upcomingAppointmentsLoading || refreshing}
+      />
+      <QuickActions />
+    </ScrollView>
   );
 };
 

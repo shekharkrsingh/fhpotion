@@ -21,6 +21,7 @@ import Toast from 'react-native-toast-message';
 import { styles } from '@/assets/styles/signup.style';
 import { MedicalTheme } from '@/newConstants/theme';
 import { setSignupData } from '@/newStore/slices/signupSlice';
+import { AppDispatch } from '@/newStore';
 
 export default function Signup() {
     const [firstName, setFirstName] = useState("");
@@ -28,7 +29,7 @@ export default function Signup() {
     const [isLoading, setIsLoading] = useState(false);
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
     const router = useRouter();
-    const dispatch = useDispatch();
+    const dispatch = useDispatch<AppDispatch>();
 
     React.useEffect(() => {
         const keyboardDidShowListener = Keyboard.addListener(

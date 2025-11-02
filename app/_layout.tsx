@@ -1,6 +1,5 @@
 import SafeScreen from "@/componets/SafeScreen";
-import { store } from "@/redux/store";
-// import store from "@/redux/store";
+import { store } from "@/newStore/index";
 import {Stack} from "expo-router";
 import {StatusBar} from "expo-status-bar";
 import {SafeAreaProvider} from "react-native-safe-area-context";

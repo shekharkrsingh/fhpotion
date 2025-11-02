@@ -15,6 +15,7 @@ export interface Appointment {
   status: string;
   appointmentType: string;
   paymentStatus: boolean;
+  emergeny: boolean;
 }
 
 interface AppointmentState {

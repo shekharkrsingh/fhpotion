@@ -2,19 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 
-import { RootState } from '@/redux/store';
+import { RootState, AppDispatch } from '@/newStore/index';
 import { 
-  markAllNotificationAsRead, 
+  fetchAllNotifications, 
   markNotificationAsRead, 
-  getAllNotification 
-} from '@/service/properties/notificationApi';
+  markAllNotificationsAsRead 
+} from '@/newService/config/api/notificationApi';
 
 import NotificationHeader from '@/newComponents/notificationHeader';
 import NotificationList from '@/newComponents/notificationList';
 import { notificationStyles } from '@/assets/styles/notification.styles';
 
 const NotificationScreen = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   
   const { notifications, isLoading } = useSelector((state: RootState) => state.notification);
   const [refreshing, setRefreshing] = useState(false);
@@ -25,7 +25,7 @@ const NotificationScreen = () => {
   }, []);
 
   const loadNotifications = async () => {
-    await getAllNotification(dispatch);
+    await dispatch(fetchAllNotifications());
   };
 
   // Handle refresh
@@ -37,13 +37,13 @@ const NotificationScreen = () => {
 
   // Handle mark all as read
   const handleMarkAllAsRead = async () => {
-    await markAllNotificationAsRead(dispatch);
+    await dispatch(markAllNotificationsAsRead());
   };
 
   // Handle individual notification click
   const handleNotificationPress = async (notificationId: string, isRead: boolean) => {
     if (!isRead) {
-      await markNotificationAsRead(dispatch, notificationId);
+      await dispatch(markNotificationAsRead(notificationId));
     }
     // You can add additional navigation logic here if needed
   };
@@ -56,6 +56,7 @@ const NotificationScreen = () => {
       />
       
       <NotificationList
+        notifications={notifications}
         onRefresh={handleRefresh}
         refreshing={refreshing}
         onNotificationPress={handleNotificationPress}

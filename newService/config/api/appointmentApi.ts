@@ -1,6 +1,6 @@
 import { AppDispatch } from "@/newStore";
-import { apiConnector } from "@/service/apiConnector";
-import { apiEndpoints } from "@/apiFactory";
+import { apiConnector } from "@/newService/apiConnector";
+import { appointmentEndpoints } from "@/newService/config/apiEndpoints/appointmentEndpoints";
 import {
   setAppointments,
   setLoading,
@@ -9,16 +9,15 @@ import {
   updateAppointment as updateAppointmentInStore,
   addAppointment as addAppointmentInStore,
 } from "@/newStore/slices/appointmentSlice";
-import { Appointment } from "@/redux/slices/appointmentSlice";
+import { Appointment } from "@/newStore/slices/appointmentSlice";
 
 export const getAppointments = () => async (dispatch: AppDispatch): Promise<boolean> => {
   try {
     dispatch(setLoading(true));
     dispatch(setError(null));
-
     const response = await apiConnector({
       method: "GET",
-      url: apiEndpoints.getTodaysAppointments,
+      url: appointmentEndpoints.getTodaysAppointments,
       tokenRequired: true,
     });
 
@@ -52,7 +51,7 @@ export const updateAppointment =
 
       const response = await apiConnector({
         method: "PUT",
-        url: apiEndpoints.updateAppointmentById(appointmentId),
+        url: appointmentEndpoints.updateAppointmentById(appointmentId),
         bodyData: updateData,
         tokenRequired: true,
       });
@@ -87,7 +86,7 @@ export const addAppointment =
 
       const response = await apiConnector({
         method: "POST",
-        url: apiEndpoints.bookAppointment,
+        url: appointmentEndpoints.bookAppointment,
         bodyData: newAppointment,
         tokenRequired: true,
       });

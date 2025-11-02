@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
     fontWeight: MedicalTheme.typography.fontWeight.normal,
   },
   doctorName: {
-    fontSize: MedicalTheme.typography.fontSize['3xl'],
+    fontSize: MedicalTheme.typography.fontSize['2xl'],
     fontWeight: MedicalTheme.typography.fontWeight.bold,
     color: MedicalTheme.colors.text.primary,
   },

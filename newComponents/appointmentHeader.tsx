@@ -36,7 +36,7 @@ const AppointmentHeader: React.FC<AppointmentHeaderProps> = ({
         <Switch
           value={item.availableAtClinic}
           onValueChange={onToggleAvailability}
-          thumbColor={item.availableAtClinic ? MedicalTheme.colors.success[100] : MedicalTheme.colors.neutral[100]}
+          thumbColor={item.availableAtClinic ? MedicalTheme.colors.success[500] : MedicalTheme.colors.neutral[100]}
           trackColor={{ 
             false: MedicalTheme.colors.neutral[100], 
             true: MedicalTheme.colors.primary[100] 

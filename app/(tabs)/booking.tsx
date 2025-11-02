@@ -3,9 +3,9 @@ import { View, Alert } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSelector, useDispatch } from 'react-redux';
 
-import { RootState } from '@/redux/store';
-import { getAppointments, updateAppointment } from '@/service/properties/appointmentApi';
-import websocketAppointment from '@/service/properties/websocketAppointment';
+import { RootState, AppDispatch } from '@/newStore';
+import { getAppointments, updateAppointment } from '@/newService/config/api/appointmentApi';
+import { websocketAppointment } from '@/newService/config/websocket/websocketAppointment';
 
 import BookingHeader from '@/newComponents/bookingHeader';
 import BookingFilterButtons from '@/newComponents/bookingFilterButtons';
@@ -13,8 +13,8 @@ import BookingList from '@/newComponents/bookingList';
 import { bookingStyles } from '@/assets/styles/booking.styles';
 
 export default function BookingScreen() {
-  const { data, loading, error, success } = useSelector((state: RootState) => state.appointments);
-  const dispatch = useDispatch();
+  const { appointments, loading, error, success } = useSelector((state: RootState) => state.appointments);
+  const dispatch = useDispatch<AppDispatch>();
   
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -22,20 +22,28 @@ export default function BookingScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchData = async () => {
-    await getAppointments(dispatch);
-    await websocketAppointment.connect();
+    try {
+      await dispatch(getAppointments());
+      await websocketAppointment.connect();
+    } catch (error) {
+      console.error('Failed to fetch appointments:', error);
+    }
   };
 
   const update = async (id: string, change: any) => {
-    await updateAppointment(dispatch, id, change);
+    try {
+      await dispatch(updateAppointment(id, change));
+    } catch (error) {
+      console.error('Failed to update appointment:', error);
+      alert('Failed to update appointment. Please try again.');
+    }
   };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchData();
-    await new Promise(resolve => setTimeout(resolve, 2000));
     setRefreshing(false);
-  }, []);
+  }, [dispatch]);
 
   const handleSearch = (query: string) => setSearchQuery(query);
 
@@ -52,20 +60,19 @@ export default function BookingScreen() {
           text: 'Activate',
           style: 'destructive',
           onPress: () => {
-            // Filter to show only emergency cases or implement your emergency logic
             Alert.alert('Emergency', 'Emergency protocol activated! Prioritizing emergency cases.');
-            // You can add your emergency logic here, like:
-            // - Filter to show only emergency appointments
-            // - Send emergency notification
-            // - Trigger emergency workflow
           },
         },
       ]
     );
   };
 
+  // Safe filtering with fallback to empty array
   const filteredData = useMemo(() => {
-    let filtered = [...data];
+    // Ensure appointments is always an array
+    const safeAppointments = Array.isArray(appointments) ? appointments : [];
+    
+    let filtered = [...safeAppointments];
     
     switch (availabilityFilter) {
       case 'available':
@@ -78,16 +85,16 @@ export default function BookingScreen() {
 
     if (searchQuery) {
       filtered = filtered.filter(item => 
-        item.patientName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        item.contact.includes(searchQuery)
+        item.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        item.contact?.includes(searchQuery)
       );
     }
 
     return filtered;
-  }, [data, availabilityFilter, searchQuery]);
+  }, [appointments, availabilityFilter, searchQuery]);
 
   const toggleAvailability = async (id: string, value: boolean) => {
-    const itemToToggle = data.find((item) => item.appointmentId === id);
+    const itemToToggle = appointments?.find((item) => item.appointmentId === id);
 
     if (itemToToggle && itemToToggle.paymentStatus) {
       await update(id, { availableAtClinic: value });
@@ -97,14 +104,14 @@ export default function BookingScreen() {
   };
 
   const togglePaymentStatus = async (id: string) => {
-    const itemToUpdate = data.find(item => item.appointmentId === id);
+    const itemToUpdate = appointments?.find(item => item.appointmentId === id);
     if (itemToUpdate) {
       await update(id, { paymentStatus: !itemToUpdate.paymentStatus });
     }
   };
 
   const toggleTreatedStatus = async (id: string) => {
-    const itemToUpdate = data.find(item => item.appointmentId === id);
+    const itemToUpdate = appointments?.find(item => item.appointmentId === id);
 
     if (!itemToUpdate) {
       alert("Appointment not found.");
@@ -121,7 +128,7 @@ export default function BookingScreen() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [dispatch]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

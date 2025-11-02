@@ -1,8 +1,8 @@
 import { Client, IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { store } from "@/newStore";
-import { setAppointments } from "@/redux/slices/appointmentSlice";
-import { webSocketEndpoints } from "../websocketEndpoints";
+import { setAppointments } from "@/newStore/slices/appointmentSlice";
+import { webSocketEndpoints } from "@/newService/config/websocketEndpoints";
 
 class WebsocketAppointment {
   private stompClient: Client | null = null;
@@ -75,7 +75,7 @@ class WebsocketAppointment {
   /** Update Redux store with new or modified appointment */
   private updateAppointments(updated: any): void {
     const state = store.getState();
-    const existingAppointments = state.appointments.data;
+    const existingAppointments = state.appointments.appointments;
 
     const index = existingAppointments.findIndex(
       (a: any) => a.appointmentId === updated.appointmentId

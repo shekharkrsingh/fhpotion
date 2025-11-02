@@ -13,12 +13,14 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { GestureHandlerRootView, RefreshControl } from 'react-native-gesture-handler';
-import { addAppointment } from '@/service/properties/appointmentApi';
+import { addAppointment } from '@/newService/config/api/appointmentApi'
 
 import { appointmentFormStyles } from '@/assets/styles/appointmentForm.styles';
 import { MedicalTheme } from '@/newConstants/theme';
 import FormInput from '@/newComponents/formInput';
 import SettingToggle from '@/newComponents/settingToggle';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/newStore';
 
 interface PatientData {
   firstName: string;
@@ -37,8 +39,11 @@ const ModernAppointmentForm = () => {
     contact: '',
     paymentStatus: true,
     availableAtClinic: true,
+    email:'',
+    description:''
   });
   
+  const dispatch = useDispatch<AppDispatch>();
   const [loading, setLoading] = useState(false);
   const [showAdditionalFields, setShowAdditionalFields] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -116,6 +121,8 @@ const ModernAppointmentForm = () => {
       contact: '',
       paymentStatus: true,
       availableAtClinic: true,
+      email: '',
+      description: ''
     });
     await new Promise(resolve => setTimeout(resolve, 1200));
     setLoading(false);
@@ -135,39 +142,54 @@ const ModernAppointmentForm = () => {
 
   const handleSubmit = async () => {
     if (!patientData.firstName.trim() || !patientData.contact.trim()) {
-      Alert.alert("Required Fields", "Please fill in all required fields");
+      Alert.alert("Required Fields", "Please fill in First Name and Contact Number");
+      return;
+    }
+    
+    // Validate contact number format
+    const contactRegex = /^[0-9+\-\s()]{10,}$/;
+    if (!contactRegex.test(patientData.contact.replace(/\s/g, ''))) {
+      Alert.alert("Invalid Contact", "Please enter a valid contact number");
       return;
     }
     
     setLoading(true);
-    
-    console.log(patientData)
-    const response = await addAppointment({
-      patientName: `${patientData.firstName} ${patientData.lastName}`, 
-      contact: patientData.contact, 
-      paymentStatus: patientData.paymentStatus, 
-      availableAtClinic: patientData.availableAtClinic, 
-      email: patientData.email, 
-      description: patientData.description
-    });
-    
-    setLoading(false);
-    if(response){
-      Alert.alert("Success", "Appointment created successfully!");
-      setPatientData({
-        firstName: '',
-        lastName: '',
-        contact: '',
-        paymentStatus: true,
-        availableAtClinic: true,
-      });
-    } else {
-      Alert.alert("Error", "Failed to add new appointment");
+    try {
+      const response = await dispatch(addAppointment({
+        patientName: `${patientData.firstName.trim()} ${patientData.lastName.trim()}`.trim(), 
+        contact: patientData.contact.trim(), 
+        paymentStatus: patientData.paymentStatus, 
+        availableAtClinic: patientData.availableAtClinic, 
+        email: patientData.email?.trim() || '', 
+        description: patientData.description?.trim() || ''
+      }));
+
+      // Handle the response based on your thunk structure
+      if (response?.payload || response === true) {
+        Alert.alert("Success", "Appointment created successfully!");
+        setPatientData({
+          firstName: '',
+          lastName: '',
+          contact: '',
+          paymentStatus: true,
+          availableAtClinic: true,
+          email: '',
+          description: ''
+        });
+        setShowAdditionalFields(false);
+        // Reset animations on successful submission
+        additionalFieldsHeight.setValue(0);
+        additionalFieldsOpacity.setValue(0);
+      } else {
+        const errorMessage = response?.error?.message || "Failed to add new appointment";
+        Alert.alert("Error", errorMessage);
+      }
+    } catch (error: any) {
+      console.error('Appointment submission error:', error);
+      Alert.alert("Error", error?.message || "An unexpected error occurred");
+    } finally {
+      setLoading(false);
     }
-    setShowAdditionalFields(false);
-    // Reset animations on successful submission
-    additionalFieldsHeight.setValue(0);
-    additionalFieldsOpacity.setValue(0);
   };
 
   // Interpolate height for smooth animation
@@ -226,11 +248,12 @@ const ModernAppointmentForm = () => {
               
               <FormInput
                 icon="account-outline"
-                placeholder="First Name"
+                placeholder="First Name *"
                 value={patientData.firstName}
                 onChangeText={(text) => handleChange('firstName', text)}
                 required={true}
                 autoCapitalize="words"
+                maxLength={50}
               />
 
               <FormInput
@@ -239,15 +262,17 @@ const ModernAppointmentForm = () => {
                 value={patientData.lastName}
                 onChangeText={(text) => handleChange('lastName', text)}
                 autoCapitalize="words"
+                maxLength={50}
               />
 
               <FormInput
                 icon="phone-outline"
-                placeholder="Contact Number"
+                placeholder="Contact Number *"
                 value={patientData.contact}
                 onChangeText={(text) => handleChange('contact', text)}
                 required={true}
                 keyboardType="phone-pad"
+                maxLength={15}
               />
             </View>
 
@@ -299,42 +324,47 @@ const ModernAppointmentForm = () => {
             </TouchableOpacity>
 
             {/* Additional Fields - Animated */}
-            <Animated.View 
-              style={[
-                appointmentFormStyles.additionalFieldsContainer,
-                { 
-                  height: animatedHeight,
-                  opacity: additionalFieldsOpacity
-                }
-              ]}
-            >
-              <FormInput
-                icon="email-outline"
-                placeholder="Email Address"
-                value={patientData.email || ''}
-                onChangeText={(text) => handleChange('email', text)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+            {showAdditionalFields && (
+              <Animated.View 
+                style={[
+                  appointmentFormStyles.additionalFieldsContainer,
+                  { 
+                    height: animatedHeight,
+                    opacity: additionalFieldsOpacity
+                  }
+                ]}
+              >
+                <FormInput
+                  icon="email-outline"
+                  placeholder="Email Address"
+                  value={patientData.email || ''}
+                  onChangeText={(text) => handleChange('email', text)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  maxLength={100}
+                />
 
-              <FormInput
-                icon="text-box-outline"
-                placeholder="Clinical Notes (Symptoms, History, etc.)"
-                value={patientData.description || ''}
-                onChangeText={(text) => handleChange('description', text)}
-                multiline={true}
-                numberOfLines={4}
-              />
-            </Animated.View>
+                <FormInput
+                  icon="text-box-outline"
+                  placeholder="Clinical Notes (Symptoms, History, etc.)"
+                  value={patientData.description || ''}
+                  onChangeText={(text) => handleChange('description', text)}
+                  multiline={true}
+                  numberOfLines={4}
+                  maxLength={500}
+                />
+              </Animated.View>
+            )}
 
             {/* Submit Button */}
             <TouchableOpacity
               style={[
                 appointmentFormStyles.submitButton,
-                loading && { backgroundColor: MedicalTheme.colors.primary[700] }
+                (loading || !patientData.firstName.trim() || !patientData.contact.trim()) && 
+                { backgroundColor: MedicalTheme.colors.primary[300] }
               ]}
               onPress={handleSubmit}
-              disabled={loading}
+              disabled={loading || !patientData.firstName.trim() || !patientData.contact.trim()}
               activeOpacity={0.9}
             >
               {loading ? (
@@ -346,7 +376,12 @@ const ModernAppointmentForm = () => {
                     size={22}
                     color={MedicalTheme.colors.text.inverse}
                   />
-                  <Text style={appointmentFormStyles.submitButtonText}>Confirm Appointment</Text>
+                  <Text style={appointmentFormStyles.submitButtonText}>
+                    {!patientData.firstName.trim() || !patientData.contact.trim() 
+                      ? 'Fill Required Fields' 
+                      : 'Confirm Appointment'
+                    }
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
