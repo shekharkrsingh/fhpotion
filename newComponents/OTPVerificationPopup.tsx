@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import Toast from 'react-native-toast-message';
 
-import { styles } from './OTPVerificationPopup.styles';
+import { styles } from '../assets/styles/OTPVerificationPopup.styles';
 import { MedicalTheme } from '@/newConstants/theme';
 
 interface OTPModalProps {

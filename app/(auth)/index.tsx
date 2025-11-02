@@ -18,7 +18,7 @@ import Toast from 'react-native-toast-message';
 
 import { styles } from '@/assets/styles/login.style';
 import { MedicalTheme } from '@/newConstants/theme';
-import { login } from '@/service/properties/authApi';
+import { loginDoctor } from '@/newService/config/api/authApi';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -67,7 +67,7 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const token = await login(email, password);
+      const token = await loginDoctor(email, password);
 
       if (token) {
         Toast.show({

@@ -5,7 +5,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   RefreshControl,
 } from 'react-native';
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
@@ -182,8 +181,24 @@ const EmptyScreen: React.FC<EmptyScreenProps> = ({
     }
   };
 
-  const renderIconForButton = (iconName?: string) => {
+  const getButtonIconColor = (variant: string = 'primary') => {
+    // Get the appropriate icon color based on button variant
+    switch (variant) {
+      case 'primary':
+        return MedicalTheme.colors.text.inverse; // White icon for primary buttons
+      case 'secondary':
+        return MedicalTheme.colors.primary[500]; // Primary color for secondary buttons
+      case 'outline':
+        return MedicalTheme.colors.primary[500]; // Primary color for outline buttons
+      default:
+        return MedicalTheme.colors.text.inverse; // Default to white
+    }
+  };
+
+  const renderIconForButton = (iconName?: string, variant?: string) => {
     if (!iconName) return null;
+
+    const iconColor = getButtonIconColor(variant);
 
     // Determine which icon library to use based on icon name
     if (iconName === 'refresh' || iconName === 'wifi') {
@@ -191,7 +206,7 @@ const EmptyScreen: React.FC<EmptyScreenProps> = ({
         <Ionicons 
           name={iconName as any} 
           size={20} 
-          color={getButtonTextStyle(displayActions[0].variant)[0].color} 
+          color={iconColor} 
         />
       );
     } else {
@@ -199,7 +214,7 @@ const EmptyScreen: React.FC<EmptyScreenProps> = ({
         <MaterialIcons 
           name={iconName as any} 
           size={20} 
-          color={getButtonTextStyle(displayActions[0].variant)[0].color} 
+          color={iconColor} 
         />
       );
     }
@@ -243,7 +258,7 @@ const EmptyScreen: React.FC<EmptyScreenProps> = ({
                   onPress={action.onPress}
                   disabled={action.disabled}
                 >
-                  {action.icon && renderIconForButton(action.icon)}
+                  {action.icon && renderIconForButton(action.icon, action.variant)}
                   <Text style={getButtonTextStyle(action.variant)}>
                     {action.label}
                   </Text>

@@ -7,17 +7,18 @@ import {
   TouchableOpacity, 
   ActivityIndicator, 
   Alert,
-  TextInput,
   ScrollView,
-  Switch,
   Animated,
-  Easing,
-  StyleSheet
+  Easing
 } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
-import { AppTheme } from '@/constants/theme';
 import { GestureHandlerRootView, RefreshControl } from 'react-native-gesture-handler';
 import { addAppointment } from '@/service/properties/appointmentApi';
+
+import { appointmentFormStyles } from '@/assets/styles/appointmentForm.styles';
+import { MedicalTheme } from '@/newConstants/theme';
+import FormInput from '@/newComponents/formInput';
+import SettingToggle from '@/newComponents/settingToggle';
 
 interface PatientData {
   firstName: string;
@@ -25,7 +26,6 @@ interface PatientData {
   contact: string;
   email?: string;
   description?: string;
-  timing?: string;
   paymentStatus: boolean;
   availableAtClinic: boolean;
 }
@@ -142,22 +142,28 @@ const ModernAppointmentForm = () => {
     setLoading(true);
     
     console.log(patientData)
-      const response=await addAppointment({patientName: `${patientData.firstName} ${patientData.lastName}`, contact: patientData.contact, paymentStatus: patientData.paymentStatus, availableAtClinic: patientData.availableAtClinic, email: patientData.email, description: patientData.description})
+    const response = await addAppointment({
+      patientName: `${patientData.firstName} ${patientData.lastName}`, 
+      contact: patientData.contact, 
+      paymentStatus: patientData.paymentStatus, 
+      availableAtClinic: patientData.availableAtClinic, 
+      email: patientData.email, 
+      description: patientData.description
+    });
     
     setLoading(false);
     if(response){
-    Alert.alert("Success", "Appointment created successfully!");
-    setPatientData({
-      firstName: '',
-      lastName: '',
-      contact: '',
-      paymentStatus: true,
-      availableAtClinic: true,
-    });
-  }
-  else{
-    Alert.alert("Error", "Faild to add new appointment");
-  }
+      Alert.alert("Success", "Appointment created successfully!");
+      setPatientData({
+        firstName: '',
+        lastName: '',
+        contact: '',
+        paymentStatus: true,
+        availableAtClinic: true,
+      });
+    } else {
+      Alert.alert("Error", "Failed to add new appointment");
+    }
     setShowAdditionalFields(false);
     // Reset animations on successful submission
     additionalFieldsHeight.setValue(0);
@@ -171,27 +177,27 @@ const ModernAppointmentForm = () => {
   });
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: AppTheme.colors.primaryLight }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: MedicalTheme.colors.background.secondary }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? "padding" : 'height'}
       >
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={appointmentFormStyles.container}
           refreshControl={
             <RefreshControl 
               refreshing={refreshing} 
               onRefresh={onRefresh}
-              colors={[AppTheme.colors.primary]}
-              tintColor={AppTheme.colors.primary}
-              progressBackgroundColor={AppTheme.colors.white}
+              colors={[MedicalTheme.colors.primary[500]]}
+              tintColor={MedicalTheme.colors.primary[500]}
+              progressBackgroundColor={MedicalTheme.colors.background.primary}
             />
           }
           keyboardShouldPersistTaps="handled"
         >
           {/* Header */}
           <Animated.View style={[
-            styles.header,
+            appointmentFormStyles.header,
             { 
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }] 
@@ -200,215 +206,147 @@ const ModernAppointmentForm = () => {
             <MaterialCommunityIcons 
               name="calendar-plus" 
               size={32} 
-              color={AppTheme.colors.white} 
+              color={MedicalTheme.colors.text.inverse} 
             />
-            <Text style={styles.headerTitle}>New Appointment</Text>
-            <Text style={styles.headerSubtitle}>Schedule patient consultation</Text>
+            <Text style={appointmentFormStyles.headerTitle}>New Appointment</Text>
+            <Text style={appointmentFormStyles.headerSubtitle}>Schedule patient consultation</Text>
           </Animated.View>
 
           {/* Main Form Card */}
           <Animated.View style={[
-            styles.card,
+            appointmentFormStyles.card,
             { 
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }] 
             }
           ]}>
             {/* Basic Information Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Patient Information</Text>
+            <View style={appointmentFormStyles.section}>
+              <Text style={appointmentFormStyles.sectionTitle}>Patient Information</Text>
               
-              {/* First Name */}
-              <View style={styles.inputRow}>
-                <MaterialCommunityIcons
-                  name="account-outline"
-                  size={22}
-                  color={AppTheme.colors.primary}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="First Name*"
-                  placeholderTextColor={AppTheme.colors.gray400}
-                  value={patientData.firstName}
-                  onChangeText={(text) => handleChange('firstName', text)}
-                  autoCapitalize="words"
-                />
-              </View>
+              <FormInput
+                icon="account-outline"
+                placeholder="First Name"
+                value={patientData.firstName}
+                onChangeText={(text) => handleChange('firstName', text)}
+                required={true}
+                autoCapitalize="words"
+              />
 
-              {/* Last Name */}
-              <View style={styles.inputRow}>
-                <MaterialCommunityIcons
-                  name="account-outline"
-                  size={22}
-                  color={AppTheme.colors.gray500}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Last Name"
-                  placeholderTextColor={AppTheme.colors.gray400}
-                  value={patientData.lastName}
-                  onChangeText={(text) => handleChange('lastName', text)}
-                  autoCapitalize="words"
-                />
-              </View>
+              <FormInput
+                icon="account-outline"
+                placeholder="Last Name"
+                value={patientData.lastName}
+                onChangeText={(text) => handleChange('lastName', text)}
+                autoCapitalize="words"
+              />
 
-              {/* Contact */}
-              <View style={styles.inputRow}>
-                <MaterialCommunityIcons
-                  name="phone-outline"
-                  size={22}
-                  color={AppTheme.colors.primary}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Contact Number*"
-                  placeholderTextColor={AppTheme.colors.gray400}
-                  value={patientData.contact}
-                  onChangeText={(text) => handleChange('contact', text)}
-                  keyboardType="phone-pad"
-                />
-              </View>
+              <FormInput
+                icon="phone-outline"
+                placeholder="Contact Number"
+                value={patientData.contact}
+                onChangeText={(text) => handleChange('contact', text)}
+                required={true}
+                keyboardType="phone-pad"
+              />
             </View>
 
             {/* Appointment Settings Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Appointment Settings</Text>
+            <View style={appointmentFormStyles.section}>
+              <Text style={appointmentFormStyles.sectionTitle}>Appointment Settings</Text>
               
-              {/* Payment Status */}
-              <View style={styles.settingItem}>
-                <View style={styles.settingLabel}>
+              <SettingToggle
+                icon={
                   <MaterialCommunityIcons
                     name={patientData.paymentStatus ? "credit-card-check" : "credit-card-remove"}
                     size={22}
-                    color={patientData.paymentStatus ? AppTheme.colors.success : AppTheme.colors.danger}
+                    color={patientData.paymentStatus ? MedicalTheme.colors.success[500] : MedicalTheme.colors.error[500]}
                   />
-                  <Text style={styles.settingText}>
-                    {patientData.paymentStatus ? 'Payment Confirmed' : 'Payment Pending'}
-                  </Text>
-                </View>
-                <Switch
-                  value={patientData.paymentStatus}
-                  onValueChange={(value) => handleChange('paymentStatus', value)}
-                  thumbColor={AppTheme.colors.white}
-                  trackColor={{
-                    false: AppTheme.colors.gray200,
-                    true: AppTheme.colors.primary
-                  }}
-                />
-              </View>
+                }
+                label={patientData.paymentStatus ? 'Payment Confirmed' : 'Payment Pending'}
+                value={patientData.paymentStatus}
+                onValueChange={(value) => handleChange('paymentStatus', value)}
+              />
 
-              {/* availableAtClinic */}
-              <View style={styles.settingItem}>
-                <View style={styles.settingLabel}>
+              <SettingToggle
+                icon={
                   <MaterialIcons
                     name={patientData.availableAtClinic ? "person" : "person-off"}
                     size={22}
-                    color={patientData.availableAtClinic ? AppTheme.colors.success : AppTheme.colors.danger}
+                    color={patientData.availableAtClinic ? MedicalTheme.colors.success[500] : MedicalTheme.colors.error[500]}
                   />
-                  <Text style={styles.settingText}>
-                    {patientData.availableAtClinic ? 'At Clinic.' : 'Not at Clinic.'}
-                  </Text>
-                </View>
-                <Switch
-                  value={patientData.availableAtClinic}
-                  onValueChange={(value) => handleChange('availableAtClinic', value)}
-                  thumbColor={AppTheme.colors.white}
-                  trackColor={{
-                    false: AppTheme.colors.gray200,
-                    true: AppTheme.colors.primary
-                  }}
-                />
-              </View>
+                }
+                label={patientData.availableAtClinic ? 'Patient at Clinic' : 'Patient Not at Clinic'}
+                value={patientData.availableAtClinic}
+                onValueChange={(value) => handleChange('availableAtClinic', value)}
+              />
             </View>
 
             {/* Additional Fields Toggle */}
             <TouchableOpacity 
-              style={styles.expandButton}
+              style={appointmentFormStyles.expandButton}
               onPress={toggleAdditionalFields}
               activeOpacity={0.8}
             >
-              <Text style={styles.expandButtonText}>
+              <Text style={appointmentFormStyles.expandButtonText}>
                 {showAdditionalFields ? 'Hide Additional Details' : 'Show Additional Details'}
               </Text>
               <MaterialCommunityIcons
                 name={showAdditionalFields ? "chevron-up" : "chevron-down"}
                 size={24}
-                color={AppTheme.colors.primary}
+                color={MedicalTheme.colors.primary[500]}
               />
             </TouchableOpacity>
 
             {/* Additional Fields - Animated */}
             <Animated.View 
               style={[
-                styles.additionalFieldsContainer,
+                appointmentFormStyles.additionalFieldsContainer,
                 { 
                   height: animatedHeight,
                   opacity: additionalFieldsOpacity
                 }
               ]}
             >
-              {/* Email */}
-              <View style={styles.inputRow}>
-                <MaterialCommunityIcons
-                  name="email-outline"
-                  size={22}
-                  color={AppTheme.colors.gray500}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email Address"
-                  placeholderTextColor={AppTheme.colors.gray400}
-                  value={patientData.email}
-                  onChangeText={(text) => handleChange('email', text)}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
+              <FormInput
+                icon="email-outline"
+                placeholder="Email Address"
+                value={patientData.email || ''}
+                onChangeText={(text) => handleChange('email', text)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
 
-              {/* Notes */}
-              <View style={styles.notesContainer}>
-                <MaterialCommunityIcons
-                  name="text-box-outline"
-                  size={22}
-                  color={AppTheme.colors.gray500}
-                  style={[styles.inputIcon, { alignSelf: 'flex-start' }]}
-                />
-                <TextInput
-                  style={[styles.input, styles.notesInput]}
-                  placeholder="Clinical Notes (Symptoms, History, etc.)"
-                  placeholderTextColor={AppTheme.colors.gray400}
-                  value={patientData.description}
-                  onChangeText={(text) => handleChange('description', text)}
-                  multiline
-                  numberOfLines={4}
-                />
-              </View>
+              <FormInput
+                icon="text-box-outline"
+                placeholder="Clinical Notes (Symptoms, History, etc.)"
+                value={patientData.description || ''}
+                onChangeText={(text) => handleChange('description', text)}
+                multiline={true}
+                numberOfLines={4}
+              />
             </Animated.View>
 
             {/* Submit Button */}
             <TouchableOpacity
               style={[
-                styles.submitButton,
-                loading && { backgroundColor: AppTheme.colors.primaryDark }
+                appointmentFormStyles.submitButton,
+                loading && { backgroundColor: MedicalTheme.colors.primary[700] }
               ]}
               onPress={handleSubmit}
               disabled={loading}
               activeOpacity={0.9}
             >
               {loading ? (
-                <ActivityIndicator color={AppTheme.colors.white} size="small" />
+                <ActivityIndicator color={MedicalTheme.colors.text.inverse} size="small" />
               ) : (
                 <>
                   <MaterialCommunityIcons
                     name="calendar-check"
                     size={22}
-                    color={AppTheme.colors.white}
+                    color={MedicalTheme.colors.text.inverse}
                   />
-                  <Text style={styles.submitButtonText}>Confirm Appointment</Text>
+                  <Text style={appointmentFormStyles.submitButtonText}>Confirm Appointment</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -418,149 +356,5 @@ const ModernAppointmentForm = () => {
     </GestureHandlerRootView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingBottom: 40,
-  },
-  header: {
-    backgroundColor: AppTheme.colors.primary,
-    padding: 24,
-    paddingTop: Platform.OS === 'ios' ? 60 : 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: AppTheme.colors.white,
-    marginTop: 12,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: AppTheme.colors.white,
-    opacity: 0.9,
-    marginTop: 4,
-  },
-  card: {
-    backgroundColor: AppTheme.colors.white,
-    borderRadius: 20,
-    margin: 16,
-    marginTop: -20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  section: {
-    marginBottom: 18,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: AppTheme.colors.gray700,
-    marginBottom: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: AppTheme.colors.gray100,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: AppTheme.colors.gray100,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 6,
-    borderWidth: 1,
-    borderColor: AppTheme.colors.gray100,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    color: AppTheme.colors.gray800,
-    paddingVertical: 4,
-  },
-  notesContainer: {
-    flexDirection: 'row',
-    backgroundColor: AppTheme.colors.gray50,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: AppTheme.colors.gray100,
-  },
-  notesInput: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: AppTheme.colors.gray100,
-  },
-  settingLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  settingText: {
-    fontSize: 15,
-    color: AppTheme.colors.gray700,
-    marginLeft: 12,
-  },
-  expandButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: AppTheme.colors.gray100,
-    marginBottom: 6,
-  },
-  expandButtonText: {
-    color: AppTheme.colors.primary,
-    fontWeight: '500',
-    fontSize: 15,
-  },
-  additionalFieldsContainer: {
-    overflow: 'hidden',
-  },
-  submitButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: AppTheme.colors.primary,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-    shadowColor: AppTheme.colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  submitButtonText: {
-    color: AppTheme.colors.white,
-    fontWeight: '600',
-    fontSize: 16,
-    marginLeft: 12,
-  },
-});
 
 export default ModernAppointmentForm;
