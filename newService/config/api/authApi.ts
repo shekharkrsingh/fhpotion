@@ -8,6 +8,7 @@ import {
   setError,
   setSignupData,
 } from "@/redux/slices/signupSlice";
+import { store } from "@/newStore";
 
 interface ApiResponse<T> {
   data: T;
@@ -32,26 +33,26 @@ export interface LoginResponse {
   email: string;
 }
 
+const {dispatch}=store;
+
 /**
  * SIGNUP
  */
 export const signupDoctor = async (
-  dispatch: Dispatch,
-  payload: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    otp: string;
-  }
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string,
+    otp: string,
 ): Promise<boolean> => {
   dispatch(setLoading(true));
+
 
   try {
     const response = await apiConnector<ApiResponse<DoctorData>>({
       method: "POST",
       url: authEndpoints.createDoctor,
-      bodyData: payload,
+      bodyData: {firstName, lastName, email, password, otp},
       tokenRequired: false,
     });
 

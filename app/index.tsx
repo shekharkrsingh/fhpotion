@@ -20,9 +20,8 @@ export default function Index() {
       <Link href="/(tabs)/home">Home</Link>
       <Link href={"/AppointmentsScreen"}>Appointment</Link>
       <Link href={"/test"}>Test</Link>
-      <Link href={"/newScreen"}>NewLogin</Link>
-      <Link href={"/newScreen/signupDetails"}>New Signup details</Link>
       <Link href={"/newScreen/signup"}>new Signup</Link>
+      {/* <Link href={"/newScreen/newForgetPassword"}>new forget passwrod</Link> */}
     </View>
   );
 }
