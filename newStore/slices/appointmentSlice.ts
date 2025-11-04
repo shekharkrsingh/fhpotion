@@ -15,7 +15,7 @@ export interface Appointment {
   status: string;
   appointmentType: string;
   paymentStatus: boolean;
-  emergeny: boolean;
+  isEmergency: boolean;
 }
 
 interface AppointmentState {
@@ -41,12 +41,18 @@ const appointmentSlice = createSlice({
       state.success = true;
       state.error = null;
     },
-    addAppointment: (state, action: PayloadAction<Appointment>) => {
+   addAppointment: (state, action: PayloadAction<Appointment>) => {
       const index = state.appointments.findIndex(
         (a) => a.appointmentId === action.payload.appointmentId
       );
-      if (index !== -1) state.appointments[index] = action.payload;
+
+      if (index !== -1) {
+        state.appointments[index] = action.payload;
+      } else {
+        state.appointments.push(action.payload);
+      }
     },
+
     updateAppointment: (state, action: PayloadAction<Appointment>) => {
       const index = state.appointments.findIndex(
         (a) => a.appointmentId === action.payload.appointmentId
