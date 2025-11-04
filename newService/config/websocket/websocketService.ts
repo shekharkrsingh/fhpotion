@@ -1,25 +1,26 @@
 import { Client, IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { store } from "@/newStore";
-import { setAppointments } from "@/newStore/slices/appointmentSlice";
+import { addAppointment } from "@/newStore/slices/appointmentSlice";
+import { addNotification } from "@/newStore/slices/notificationSlice";
 import { webSocketEndpoints } from "@/newService/config/websocketEndpoints";
 
-class WebsocketAppointment {
+interface WebSocketMessage {
+  type: 'APPOINTMENT' | 'NOTIFICATION';
+  payload: any;
+}
+
+class WebsocketService {
   private stompClient: Client | null = null;
   private isConnecting = false;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectTimeout: NodeJS.Timeout | null = null;
 
-  /** Returns true if socket is actively connected */
   private get isConnected(): boolean {
     return !!this.stompClient?.connected;
   }
 
-  /**
-   * Establish a WebSocket connection if not already connected.
-   * Prevents duplicate or concurrent connection attempts.
-   */
   public async connect(): Promise<void> {
     if (this.isConnected || this.isConnecting) return;
 
@@ -59,7 +60,6 @@ class WebsocketAppointment {
     }
   }
 
-  /** Subscribe to doctor's appointment updates */
   private subscribeToDoctorChannel(doctorId: string): void {
     if (!this.stompClient) return;
 
@@ -67,37 +67,53 @@ class WebsocketAppointment {
       webSocketEndpoints.appointmentUpdate(doctorId),
       (message: IMessage) => {
         const update = JSON.parse(message.body);
-        this.updateAppointments(update);
+        this.handleIncomingMessage(update);
       }
     );
   }
 
-  /** Update Redux store with new or modified appointment */
-  private updateAppointments(updated: any): void {
-    const state = store.getState();
-    const existingAppointments = state.appointments.appointments;
-
-    const index = existingAppointments.findIndex(
-      (a: any) => a.appointmentId === updated.appointmentId
-    );
-
-    const newAppointments =
-      index !== -1
-        ? existingAppointments.map((a: any, i: number) =>
-            i === index ? updated : a
-          )
-        : [updated, ...existingAppointments];
-
-    store.dispatch(setAppointments(newAppointments));
+  private handleIncomingMessage(message: WebSocketMessage): void {
+    try {
+      switch (message.type) {
+        case 'APPOINTMENT':
+          this.handleAppointmentUpdate(message.payload);
+          break;
+        
+        case 'NOTIFICATION':
+          this.handleNotificationUpdate(message.payload);
+          break;
+        
+        default:
+          console.warn('Unknown message type:', message.type);
+          break;
+      }
+    } catch (error) {
+      console.error('Error handling WebSocket message:', error);
+    }
   }
 
-  /** Handles disconnect events with scheduled reconnection attempts */
+  private handleAppointmentUpdate(updatedAppointment: any): void {
+    store.dispatch(addAppointment(updatedAppointment))
+  }
+
+  private handleNotificationUpdate(notificationData: any): void {
+    const notification: Notification = {
+      id: notificationData.id || `notification-${Date.now()}`,
+      type: notificationData.type || 'general',
+      title: notificationData.title || 'New Notification',
+      message: notificationData.message || '',
+      isRead: false,
+      createdAt: notificationData.createdAt || new Date().toISOString(),
+    };
+
+    store.dispatch(addNotification(notification));
+  }
+
   private handleDisconnect(): void {
     this.cleanup();
     this.scheduleReconnect();
   }
 
-  /** Schedule a reconnect attempt with exponential backoff */
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) return;
 
@@ -111,7 +127,6 @@ class WebsocketAppointment {
     }, delay);
   }
 
-  /** Cleanly deactivate current WebSocket connection */
   private cleanup(): void {
     if (this.stompClient) {
       this.stompClient.deactivate();
@@ -120,20 +135,17 @@ class WebsocketAppointment {
     this.isConnecting = false;
   }
 
-  /** Disconnect manually and reset reconnect attempts */
   public disconnect(): void {
     if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
     this.cleanup();
     this.reconnectAttempts = 0;
   }
 
-  /** Force a complete reconnection immediately */
   public async forceReconnect(): Promise<void> {
     this.disconnect();
     await this.connect();
   }
 
-  /** Ensure connection is active; reconnect immediately if not */
   public async ensureConnected(): Promise<void> {
     if (!this.isConnected && !this.isConnecting) {
       await this.connect();
@@ -141,4 +153,4 @@ class WebsocketAppointment {
   }
 }
 
-export const websocketAppointment = new WebsocketAppointment();
+export const websocketAppointment = new WebsocketService();

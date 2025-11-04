@@ -1,5 +1,5 @@
 // utils/websocketUtils.ts
-import { websocketAppointment } from "@/newService/config/websocket/websocketAppointment";
+import { websocketAppointment } from "@/newService/config/websocket/websocketService";
 
 /** 
  * Waits for WebSocket connection (max wait = timeout ms)

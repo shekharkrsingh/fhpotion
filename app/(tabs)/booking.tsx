@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 
 import { RootState, AppDispatch } from '@/newStore';
 import { getAppointments, updateAppointment } from '@/newService/config/api/appointmentApi';
-import { websocketAppointment } from '@/newService/config/websocket/websocketAppointment';
+import { websocketAppointment } from '@/newService/config/websocket/websocketService';
 
 import BookingHeader from '@/newComponents/bookingHeader';
 import BookingFilterButtons from '@/newComponents/bookingFilterButtons';
