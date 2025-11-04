@@ -1,7 +1,7 @@
 import React from 'react';
 import { FlatList, RefreshControl, ActivityIndicator, View } from 'react-native';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/redux/store';
+import { RootState } from '@/newStore/index';
 
 import AppointmentCard from '@/newComponents/appointmentCard';
 import EmptyScreen from '@/newComponents/EmptyScreen';

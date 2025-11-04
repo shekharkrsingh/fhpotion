@@ -4,6 +4,7 @@ import { appointmentCardStyles } from '@/assets/styles/appointmentCard.styles';
 import AlertPopup from '@/newComponents/alertPopup';
 import AppointmentHeader from '@/newComponents/appointmentHeader';
 import AppointmentDetails from '@/newComponents/appointmentDetails';
+import { MedicalTheme } from '@/newConstants/theme';
 
 interface AppointmentCardProps {
   item: {
@@ -21,7 +22,7 @@ interface AppointmentCardProps {
     appointmentType: string;
     paymentStatus: boolean;
     avatar?: string;
-    emergency?: boolean;
+    isEmergency?: boolean;
   };
   isExpanded: boolean;
   onToggleExpand: (id: string | null) => void;
@@ -99,6 +100,13 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     onToggleExpand(isExpanded ? null : item.appointmentId);
   };
 
+  // Emergency card styles - border and background color only
+  const emergencyCardStyle = item.isEmergency ? {
+    borderLeftWidth: 4,
+    borderLeftColor: MedicalTheme.colors.error[500],
+    backgroundColor: MedicalTheme.colors.error[50],
+  } : {};
+
   return (
     <>
       {/* Confirmation Popup for reversible actions */}
@@ -129,7 +137,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         showIcon={true}
       />
       
-      <View style={appointmentCardStyles.container}>
+      <View style={[appointmentCardStyles.container, emergencyCardStyle]}>
         <AppointmentHeader
           item={item}
           onToggleExpand={handleToggleExpand}
