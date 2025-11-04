@@ -95,7 +95,7 @@ export const markNotificationAsRead = (notificationId: string) => async (dispatc
     dispatch(setError(null));
 
     const response = await apiConnector<ApiResponse<null>>({
-      method: "PUT",
+      method: "PATCH",
       url: notificationEndpoints.markNotificationAsRead(notificationId),
       tokenRequired: true,
     });
@@ -127,7 +127,7 @@ export const markAllNotificationsAsRead = () => async (dispatch: AppDispatch): P
     dispatch(setError(null));
 
     const response = await apiConnector<ApiResponse<null>>({
-      method: "PUT",
+      method: "PATCH",
       url: notificationEndpoints.markAllNotificationAsRead,
       tokenRequired: true,
     });
