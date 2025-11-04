@@ -80,19 +80,16 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   };
 
   const handleToggleAvailability = (value: boolean) => {
-    // Check if user is trying to mark as available BUT payment hasn't been made
     if (value && !item.paymentStatus) {
       showAlert('Cannot mark as available. Payment has not been received for this appointment.');
       return;
     }
     
-    // Check if user is trying to mark as unavailable AND payment has been made
     if (!value && item.paymentStatus) {
       showAlert('Cannot mark as unavailable. Payment has already been received for this appointment.');
       return;
     }
     
-    // If no payment issues, proceed with the availability toggle
     toggleAvailability(item.appointmentId, value);
   };
 
@@ -100,16 +97,17 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     onToggleExpand(isExpanded ? null : item.appointmentId);
   };
 
-  // Emergency card styles - border and background color only
   const emergencyCardStyle = item.isEmergency ? {
     borderLeftWidth: 4,
     borderLeftColor: MedicalTheme.colors.error[500],
     backgroundColor: MedicalTheme.colors.error[50],
-  } : {};
+  } : {
+    borderLeftWidth: 0,
+    backgroundColor: MedicalTheme.colors.background.primary,
+  };
 
   return (
     <>
-      {/* Confirmation Popup for reversible actions */}
       <AlertPopup
         message={confirmationMessage}
         visible={popupVisible}
@@ -125,7 +123,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         showIcon={true}
       />
       
-      {/* Alert Popup for blocking actions */}
       <AlertPopup
         message={alertMessage}
         visible={alertPopupVisible}
