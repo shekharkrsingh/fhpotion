@@ -42,7 +42,10 @@ const appointmentSlice = createSlice({
       state.error = null;
     },
     addAppointment: (state, action: PayloadAction<Appointment>) => {
-      state.appointments.unshift(action.payload);
+      const index = state.appointments.findIndex(
+        (a) => a.appointmentId === action.payload.appointmentId
+      );
+      if (index !== -1) state.appointments[index] = action.payload;
     },
     updateAppointment: (state, action: PayloadAction<Appointment>) => {
       const index = state.appointments.findIndex(
