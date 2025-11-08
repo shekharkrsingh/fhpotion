@@ -14,7 +14,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/newStore/rootReducer';
 import { router } from 'expo-router';
 
-import { changeDoctorPassword, changeDoctorEmail, sendOtp, signout } from '@/newService/config/api/authApi';
+import { changeDoctorPassword, changeDoctorEmail, sendOtp, signOutDoctor } from '@/newService/config/api/authApi';
 import { MedicalTheme } from '@/newConstants/theme';
 import { styles } from '@/assets/styles/settings.styles';
 
@@ -308,35 +308,22 @@ const SettingsScreen = () => {
     }
   };
 
-  const handleSignout = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Sign Out', 
-          style: 'destructive',
-          onPress: async () => {
-            setIsLoading(true);
-            try {
-              const success = await signout();
-              if (success) {
-                Alert.alert('Success', 'Signed out successfully!');
-                router.replace('/login');
-              } else {
-                Alert.alert('Error', 'Failed to sign out. Please try again.');
-              }
-            } catch (error) {
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-            } finally {
-              setIsLoading(false);
-            }
-          }
-        }
-      ]
-    );
-  };
+  // In SettingsScreen.tsx, update the handleSignout function:
+
+const handleSignout = async () => {
+  setIsLoading(true);
+  try {
+    console.log("Direct signout started");
+    await signOutDoctor();
+    closeModal();
+    router.replace('/(auth)');
+  } catch (error) {
+    console.error("Signout error:", error);
+    Alert.alert('Error', 'Failed to sign out.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleDeactivateAccount = () => {
     Alert.alert(
@@ -1122,24 +1109,24 @@ const SettingsScreen = () => {
           {renderSection("email", "Change your account email address")}
         </View>
 
-        {/* Preferences */}
+        {/* Preferences 
         <View style={styles.categoryContainer}>
           <Text style={styles.categoryTitle}>Preferences</Text>
           {renderSection("notifications", "Manage how you receive notifications")}
           {renderSection("privacy", "Control your profile visibility and privacy")}
-        </View>
+        </View> */}
 
-        {/* Support */}
+        {/* Support 
         <View style={styles.categoryContainer}>
           <Text style={styles.categoryTitle}>Support</Text>
           {renderSection("support", "Get help from our support team")}
-        </View>
+        </View>*/}
 
         {/* Account Actions */}
         <View style={styles.categoryContainer}>
           <Text style={styles.categoryTitle}>Account</Text>
           {renderSection("signout", "Sign out from your account")}
-          {renderSection("account", "Manage your account status")}
+          {/* {renderSection("account", "Manage your account status")} */}
         </View>
       </ScrollView>
 

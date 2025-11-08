@@ -239,3 +239,21 @@ export const logoutDoctor = async (): Promise<void> => {
     );
   }
 };
+
+
+export const signOutDoctor = async (): Promise<boolean> => {
+  try {
+    // Simply remove the token - this is the most important part
+    await AsyncStorage.removeItem("token");
+    
+    console.log("Signed out successfully - token removed");
+    return true;
+
+  } catch (error: any) {
+    console.error(
+      "Error signing out:",
+      error?.message || "Something went wrong"
+    );
+    return false;
+  }
+};
