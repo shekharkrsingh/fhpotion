@@ -1,28 +1,25 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
   TouchableOpacity, 
-  StyleSheet, 
-  Animated,
-  Easing,
   ScrollView,
   TextInput,
   Alert,
   ActivityIndicator,
-  Modal,
-  Linking
+  Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AppTheme } from '../constants/theme';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/redux/store';
+import { RootState } from '@/newStore/rootReducer';
 import { router } from 'expo-router';
 
-import { changeDoctorPassword, changeDoctorEmail, sendOtp, signout } from '@/service/properties/authApi';
+import { changeDoctorPassword, changeDoctorEmail, sendOtp, signout } from '@/newService/config/api/authApi';
+import { MedicalTheme } from '@/newConstants/theme';
+import { styles } from '@/assets/styles/settings.styles';
 
 const SettingsScreen = () => {
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [activeModal, setActiveModal] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
   const dispatch = useDispatch();
@@ -64,41 +61,43 @@ const SettingsScreen = () => {
   const [showEmailPassword, setShowEmailPassword] = useState(false);
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
-  const sectionAnimations = useRef<{[key: string]: Animated.Value}>({}).current;
 
   // Helper functions
-  const getSectionAnimation = (section: string) => {
-    if (!sectionAnimations[section]) {
-      sectionAnimations[section] = new Animated.Value(0);
-    }
-    return sectionAnimations[section];
+  const getSectionTitle = (section: string): string => {
+    const titles: {[key: string]: string} = {
+      password: 'Change Password',
+      email: 'Update Email',
+      notifications: 'Notification Preferences',
+      privacy: 'Privacy Settings',
+      support: 'Contact Support',
+      signout: 'Sign Out',
+      account: 'Account Actions'
+    };
+    return titles[section] || section;
   };
 
-  const toggleSection = (section: string) => {
-    if (activeSection === section) {
-      Animated.timing(getSectionAnimation(section), {
-        toValue: 0,
-        duration: 300,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: false
-      }).start(() => setActiveSection(null));
-    } else {
-      if (activeSection) {
-        Animated.timing(getSectionAnimation(activeSection), {
-          toValue: 0,
-          duration: 200,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: false
-        }).start();
-      }
-      setActiveSection(section);
-      Animated.timing(getSectionAnimation(section), {
-        toValue: 1,
-        duration: 400,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: false
-      }).start();
-    }
+  const getSectionIcon = (section: string): string => {
+    const icons: {[key: string]: string} = {
+      password: 'lock-closed',
+      email: 'mail',
+      notifications: 'notifications',
+      privacy: 'shield-checkmark',
+      support: 'headset',
+      signout: 'log-out',
+      account: 'person'
+    };
+    return icons[section] || 'settings';
+  };
+
+  // Modal functions
+  const openModal = (section: string) => {
+    setActiveModal(section);
+    setErrors({});
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+    setErrors({});
   };
 
   const updateFormData = (updates: any) => {
@@ -176,7 +175,7 @@ const SettingsScreen = () => {
         Alert.alert('Success', 'Password changed successfully!');
         updateFormData({ oldPassword: '', newPassword: '', confirmPassword: '' });
         setErrors({});
-        toggleSection('password');
+        closeModal();
       } else {
         Alert.alert('Failed', 'Password change failed!');
       }
@@ -219,7 +218,7 @@ const SettingsScreen = () => {
           currentEmail: formData.newEmail 
         });
         setErrors({});
-        toggleSection('email');
+        closeModal();
       } else {
         Alert.alert('Error', 'Failed to update email. Please try again.');
       }
@@ -251,7 +250,7 @@ const SettingsScreen = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
       Alert.alert('Success', 'Preferences updated successfully!');
-      toggleSection('notifications');
+      closeModal();
     } catch (error) {
       Alert.alert('Error', 'Failed to update preferences.');
     } finally {
@@ -264,7 +263,7 @@ const SettingsScreen = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
       Alert.alert('Success', 'Privacy settings updated successfully!');
-      toggleSection('privacy');
+      closeModal();
     } catch (error) {
       Alert.alert('Error', 'Failed to update privacy settings.');
     } finally {
@@ -299,7 +298,7 @@ const SettingsScreen = () => {
         [{ text: 'OK', onPress: () => {
           updateFormData({ supportSubject: '', supportMessage: '', supportCategory: 'general' });
           setErrors({});
-          toggleSection('support');
+          closeModal();
         }}]
       );
     } catch (error) {
@@ -324,7 +323,6 @@ const SettingsScreen = () => {
               const success = await signout();
               if (success) {
                 Alert.alert('Success', 'Signed out successfully!');
-                // Navigate to login screen or handle signout
                 router.replace('/login');
               } else {
                 Alert.alert('Error', 'Failed to sign out. Please try again.');
@@ -351,6 +349,7 @@ const SettingsScreen = () => {
           style: 'destructive',
           onPress: () => {
             Alert.alert('Account Deactivated', 'Your account has been deactivated successfully.');
+            closeModal();
           }
         }
       ]
@@ -368,21 +367,14 @@ const SettingsScreen = () => {
           style: 'destructive',
           onPress: () => {
             Alert.alert('Account Deleted', 'Your account has been permanently deleted.');
+            closeModal();
           }
         }
       ]
     );
   };
 
-  const handleCallSupport = () => {
-    Linking.openURL('tel:+18005551234');
-  };
-
-  const handleEmailSupport = () => {
-    Linking.openURL('mailto:support@healapp.com');
-  };
-
-  // UI Components with Eye Icons
+  // UI Components
   const renderPasswordInput = (
     label: string,
     value: string,
@@ -400,7 +392,7 @@ const SettingsScreen = () => {
           value={value}
           onChangeText={onChange}
           placeholder={placeholder}
-          placeholderTextColor={AppTheme.colors.gray500}
+          placeholderTextColor={MedicalTheme.colors.text.tertiary}
           secureTextEntry={!showPassword}
           autoCapitalize="none"
         />
@@ -411,7 +403,7 @@ const SettingsScreen = () => {
           <Ionicons 
             name={showPassword ? "eye-off" : "eye"} 
             size={20} 
-            color={AppTheme.colors.gray500} 
+            color={MedicalTheme.colors.text.tertiary} 
           />
         </TouchableOpacity>
       </View>
@@ -436,7 +428,7 @@ const SettingsScreen = () => {
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor={AppTheme.colors.gray500}
+        placeholderTextColor={MedicalTheme.colors.text.tertiary}
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType as any}
         autoCapitalize="none"
@@ -478,49 +470,494 @@ const SettingsScreen = () => {
 
   const renderSection = (
     section: string,
-    icon: string,
-    title: string,
-    description: string,
-    content: React.ReactNode
+    description: string
   ) => (
-    <View style={styles.section}>
-      <TouchableOpacity 
-        style={styles.sectionHeader}
-        onPress={() => toggleSection(section)}
-        activeOpacity={0.7}
-      >
+    <TouchableOpacity 
+      style={styles.section}
+      onPress={() => openModal(section)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.sectionHeader}>
         <View style={styles.sectionHeaderContent}>
-          <Ionicons name={icon as any} size={24} color={AppTheme.colors.primary} />
+          <View style={styles.iconContainer}>
+            <Ionicons name={getSectionIcon(section) as any} size={22} color={MedicalTheme.colors.primary[500]} />
+          </View>
           <View style={styles.sectionTextContainer}>
-            <Text style={styles.sectionTitle}>{title}</Text>
+            <Text style={styles.sectionTitle}>{getSectionTitle(section)}</Text>
             <Text style={styles.sectionDescription}>{description}</Text>
           </View>
         </View>
-        <Ionicons 
-          name={activeSection === section ? "chevron-up" : "chevron-down"} 
-          size={24} 
-          color={AppTheme.colors.gray500} 
-        />
-      </TouchableOpacity>
+        <View style={styles.chevronContainer}>
+          <Ionicons name="chevron-forward" size={20} color={MedicalTheme.colors.neutral[400]} />
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
 
-      <Animated.View 
-        style={[
-          styles.sectionContent,
-          {
-            height: getSectionAnimation(section).interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 'auto']
-            }),
-            opacity: getSectionAnimation(section)
-          }
-        ]}
-      >
-        {activeSection === section && (
-          <View style={styles.editContent}>
-            {content}
+  // Modal Header Component
+  const renderModalHeader = () => (
+    <View style={styles.modalHeader}>
+      <View style={styles.modalHeaderContent}>
+        <View style={styles.modalIconContainer}>
+          <Ionicons 
+            name={getSectionIcon(activeModal!) as any} 
+            size={28} 
+            color={MedicalTheme.colors.text.inverse} 
+          />
+        </View>
+        <View style={styles.modalTitleContainer}>
+          <Text style={styles.modalTitle}>Update {getSectionTitle(activeModal!)}</Text>
+        </View>
+      </View>
+      <TouchableOpacity style={styles.modalCloseButton} onPress={closeModal}>
+        <Ionicons name="close" size={24} color={MedicalTheme.colors.text.inverse} />
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Modal Content Components
+  const renderPasswordModal = () => (
+    <View style={styles.modalContent}>
+      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.formContainer}>
+          {renderPasswordInput(
+            "Current Password",
+            formData.oldPassword,
+            (text) => updateFormData({ oldPassword: text }),
+            errors.oldPassword,
+            "Enter your current password",
+            showOldPassword,
+            setShowOldPassword
+          )}
+          
+          {renderPasswordInput(
+            "New Password",
+            formData.newPassword,
+            (text) => updateFormData({ newPassword: text }),
+            errors.newPassword,
+            "Enter new password",
+            showNewPassword,
+            setShowNewPassword
+          )}
+          
+          {renderPasswordInput(
+            "Confirm New Password",
+            formData.confirmPassword,
+            (text) => updateFormData({ confirmPassword: text }),
+            errors.confirmPassword,
+            "Re-enter new password",
+            showConfirmPassword,
+            setShowConfirmPassword
+          )}
+
+          {errors.password && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="warning" size={16} color={MedicalTheme.colors.error[500]} />
+              <Text style={styles.errorText}>{errors.password}</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={handleChangePassword}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="key" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Change Password</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderEmailModal = () => (
+    <View style={styles.modalContent}>
+      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.formContainer}>
+          <View style={styles.currentEmailContainer}>
+            <Text style={styles.currentEmailLabel}>Current Email</Text>
+            <Text style={styles.currentEmail}>{formData.currentEmail}</Text>
+            <View style={styles.verifiedBadge}>
+              <Ionicons name="checkmark-circle" size={16} color={MedicalTheme.colors.success[500]} />
+              <Text style={styles.verifiedText}>Verified</Text>
+            </View>
           </View>
-        )}
-      </Animated.View>
+
+          {renderInput(
+            "New Email Address",
+            formData.newEmail,
+            (text) => updateFormData({ newEmail: text }),
+            errors.newEmail,
+            "Enter new email address",
+            false,
+            'email-address'
+          )}
+          
+          {renderPasswordInput(
+            "Confirm Password",
+            formData.emailPassword,
+            (text) => updateFormData({ emailPassword: text }),
+            errors.emailPassword,
+            "Enter your password to confirm",
+            showEmailPassword,
+            setShowEmailPassword
+          )}
+
+          {errors.email && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="warning" size={16} color={MedicalTheme.colors.error[500]} />
+              <Text style={styles.errorText}>{errors.email}</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={handleSendEmailOTP}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="mail" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Send Verification Code</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderNotificationsModal = () => (
+    <View style={styles.modalContent}>
+      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.formContainer}>
+          {renderToggle(
+            "Email Notifications",
+            formData.emailNotifications,
+            (value) => updateFormData({ emailNotifications: value }),
+            "Receive important updates via email"
+          )}
+          
+          {renderToggle(
+            "Push Notifications",
+            formData.pushNotifications,
+            (value) => updateFormData({ pushNotifications: value }),
+            "Get instant alerts on your device"
+          )}
+          
+          {renderToggle(
+            "Appointment Reminders",
+            formData.appointmentReminders,
+            (value) => updateFormData({ appointmentReminders: value }),
+            "Reminders for upcoming appointments"
+          )}
+          
+          {renderToggle(
+            "Promotional Emails",
+            formData.promotionalEmails,
+            (value) => updateFormData({ promotionalEmails: value }),
+            "Special offers and health tips"
+          )}
+        </View>
+      </ScrollView>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={handleSavePreferences}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="save" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Save Preferences</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderPrivacyModal = () => (
+    <View style={styles.modalContent}>
+      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.formContainer}>
+          <Text style={styles.sectionLabel}>Profile Visibility</Text>
+          {renderRadio(
+            "Public",
+            "public",
+            formData.profileVisibility,
+            (value) => updateFormData({ profileVisibility: value }),
+            "Visible to all patients"
+          )}
+          {renderRadio(
+            "Patients Only",
+            "patients_only",
+            formData.profileVisibility,
+            (value) => updateFormData({ profileVisibility: value }),
+            "Visible only to your patients"
+          )}
+          {renderRadio(
+            "Private",
+            "private",
+            formData.profileVisibility,
+            (value) => updateFormData({ profileVisibility: value }),
+            "Hidden from all patients"
+          )}
+
+          <View style={styles.toggleGroup}>
+            {renderToggle(
+              "Show Online Status",
+              formData.showOnlineStatus,
+              (value) => updateFormData({ showOnlineStatus: value }),
+              "Display when you're available for consultations"
+            )}
+            
+            {renderToggle(
+              "Allow Patient Reviews",
+              formData.allowPatientReviews,
+              (value) => updateFormData({ allowPatientReviews: value }),
+              "Let patients leave reviews and ratings"
+            )}
+          </View>
+        </View>
+      </ScrollView>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={handleSavePrivacy}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="save" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Save Privacy Settings</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderSupportModal = () => (
+    <View style={styles.modalContent}>
+      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.formContainer}>
+          <Text style={styles.sectionLabel}>Submit Support Ticket</Text>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Category</Text>
+            <View style={styles.categoryContainer}>
+              {['general', 'technical', 'billing', 'feature_request'].map(category => (
+                <TouchableOpacity
+                  key={category}
+                  style={[
+                    styles.categoryButton,
+                    formData.supportCategory === category && styles.categoryButtonActive
+                  ]}
+                  onPress={() => updateFormData({ supportCategory: category })}
+                >
+                  <Text style={[
+                    styles.categoryButtonText,
+                    formData.supportCategory === category && styles.categoryButtonTextActive
+                  ]}>
+                    {category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {renderInput(
+            "Subject",
+            formData.supportSubject,
+            (text) => updateFormData({ supportSubject: text }),
+            errors.supportSubject,
+            "Brief description of your issue"
+          )}
+          
+          {renderInput(
+            "Message",
+            formData.supportMessage,
+            (text) => updateFormData({ supportMessage: text }),
+            errors.supportMessage,
+            "Please describe your issue in detail...",
+            false,
+            'default',
+            true
+          )}
+
+          <View style={styles.supportInfo}>
+            <Text style={styles.supportInfoText}>
+              Your ticket will automatically include:
+            </Text>
+            <Text style={styles.supportInfoDetail}>• Doctor ID: {profileData.doctorId || 'N/A'}</Text>
+            <Text style={styles.supportInfoDetail}>• Email: {formData.currentEmail}</Text>
+            <Text style={styles.supportInfoDetail}>• Automatic ticket ID generation</Text>
+          </View>
+
+          {errors.support && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="warning" size={16} color={MedicalTheme.colors.error[500]} />
+              <Text style={styles.errorText}>{errors.support}</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={handleSubmitSupport}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="send" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Submit Support Request</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderSignoutModal = () => (
+    <View style={styles.modalContent}>
+      <View style={styles.formContainer}>
+        <View style={styles.warningContainer}>
+          <Ionicons name="warning" size={40} color={MedicalTheme.colors.warning[500]} />
+          <Text style={styles.warningTitle}>Sign Out Confirmation</Text>
+          <Text style={styles.warningText}>
+            You will be logged out from all devices and need to sign in again to access your account.
+          </Text>
+        </View>
+      </View>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.signoutButton, isLoading && styles.buttonDisabled]}
+          onPress={handleSignout}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="log-out" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Sign Out</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderAccountModal = () => (
+    <View style={styles.modalContent}>
+      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.formContainer}>
+          <View style={styles.warningContainer}>
+            <Ionicons name="warning" size={40} color={MedicalTheme.colors.warning[500]} />
+            <Text style={styles.warningTitle}>Account Actions</Text>
+            <Text style={styles.warningText}>
+              These actions are irreversible and will affect your account access.
+            </Text>
+          </View>
+
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity 
+              style={[styles.accountActionButton, styles.deactivateButton]}
+              onPress={handleDeactivateAccount}
+            >
+              <View style={styles.accountActionContent}>
+                <Ionicons name="pause-circle" size={24} color="#fff" />
+                <Text style={styles.accountActionText}>Deactivate Account</Text>
+                <Text style={styles.accountActionDescription}>
+                  Temporarily disable your account
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.accountActionButton, styles.deleteButton]}
+              onPress={handleDeleteAccount}
+            >
+              <View style={styles.accountActionContent}>
+                <Ionicons name="trash" size={24} color="#fff" />
+                <Text style={styles.accountActionText}>Delete Account</Text>
+                <Text style={styles.accountActionDescription}>
+                  Permanently delete your account and data
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -586,7 +1023,7 @@ const SettingsScreen = () => {
       <View style={styles.otpContainer}>
         <View style={styles.otpHeader}>
           <TouchableOpacity onPress={() => setShowOTPModal(false)} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={AppTheme.colors.primary} />
+            <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
           </TouchableOpacity>
           <Text style={styles.otpTitle}>Verify OTP</Text>
           <View style={styles.headerPlaceholder} />
@@ -594,18 +1031,18 @@ const SettingsScreen = () => {
 
         <ScrollView style={styles.otpContent}>
           <View style={styles.otpIllustration}>
-            <Ionicons name="mail" size={80} color={AppTheme.colors.primary} />
+            <Ionicons name="mail" size={80} color={MedicalTheme.colors.primary[500]} />
           </View>
 
           <View style={styles.otpForm}>
             <View style={styles.inputGroup}>
               <Text style={styles.otpLabel}>Enter OTP sent to {email}</Text>
               <View style={styles.otpInputContainer}>
-                <Ionicons name='key' size={20} color={AppTheme.colors.primary} style={styles.inputIcon} />
+                <Ionicons name='key' size={20} color={MedicalTheme.colors.primary[500]} style={styles.inputIcon} />
                 <TextInput 
                   style={styles.otpInput} 
                   placeholder="******" 
-                  placeholderTextColor={AppTheme.colors.gray500} 
+                  placeholderTextColor={MedicalTheme.colors.text.tertiary} 
                   value={otp} 
                   onChangeText={setOtp} 
                   autoCapitalize='none' 
@@ -631,7 +1068,7 @@ const SettingsScreen = () => {
                 {isResendEnabled ? "Didn't receive OTP? " : `Resend OTP in ${timer}s`}
               </Text>
               <TouchableOpacity disabled={!isResendEnabled} onPress={handleResendOtp}>
-                <Text style={[styles.link, !isResendEnabled && { color: '#ccc' }]}>Resend</Text>
+                <Text style={[styles.link, !isResendEnabled && { color: MedicalTheme.colors.text.disabled }]}>Resend</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -640,12 +1077,33 @@ const SettingsScreen = () => {
     );
   };
 
+  const renderModalContent = () => {
+    switch (activeModal) {
+      case 'password':
+        return renderPasswordModal();
+      case 'email':
+        return renderEmailModal();
+      case 'notifications':
+        return renderNotificationsModal();
+      case 'privacy':
+        return renderPrivacyModal();
+      case 'support':
+        return renderSupportModal();
+      case 'signout':
+        return renderSignoutModal();
+      case 'account':
+        return renderAccountModal();
+      default:
+        return null;
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Header with Back Button */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={AppTheme.colors.primary} />
+          <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.headerPlaceholder} />
@@ -657,386 +1115,46 @@ const SettingsScreen = () => {
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        {/* Change Password Section */}
-        {renderSection(
-          "password",
-          "lock-closed",
-          "Change Password",
-          "Update your account password",
-          <View style={styles.formContent}>
-            {renderPasswordInput(
-              "Current Password",
-              formData.oldPassword,
-              (text) => updateFormData({ oldPassword: text }),
-              errors.oldPassword,
-              "Enter your current password",
-              showOldPassword,
-              setShowOldPassword
-            )}
-            
-            {renderPasswordInput(
-              "New Password",
-              formData.newPassword,
-              (text) => updateFormData({ newPassword: text }),
-              errors.newPassword,
-              "Enter new password",
-              showNewPassword,
-              setShowNewPassword
-            )}
-            
-            {renderPasswordInput(
-              "Confirm New Password",
-              formData.confirmPassword,
-              (text) => updateFormData({ confirmPassword: text }),
-              errors.confirmPassword,
-              "Re-enter new password",
-              showConfirmPassword,
-              setShowConfirmPassword
-            )}
+        {/* Account & Security */}
+        <View style={styles.categoryContainer}>
+          <Text style={styles.categoryTitle}>Account & Security</Text>
+          {renderSection("password", "Update your account password")}
+          {renderSection("email", "Change your account email address")}
+        </View>
 
-            <TouchableOpacity 
-              style={[styles.actionButton, isLoading && styles.buttonDisabled]}
-              onPress={handleChangePassword}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="key" size={20} color="#fff" />
-                  <Text style={styles.buttonText}>Change Password</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* Preferences */}
+        <View style={styles.categoryContainer}>
+          <Text style={styles.categoryTitle}>Preferences</Text>
+          {renderSection("notifications", "Manage how you receive notifications")}
+          {renderSection("privacy", "Control your profile visibility and privacy")}
+        </View>
 
-        {/* Update Email Section */}
-        {renderSection(
-          "email",
-          "mail",
-          "Update Email Address",
-          "Change your account email address",
-          <View style={styles.formContent}>
-            <View style={styles.currentEmailContainer}>
-              <Text style={styles.currentEmailLabel}>Current Email</Text>
-              <Text style={styles.currentEmail}>{formData.currentEmail}</Text>
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark-circle" size={16} color={AppTheme.colors.success} />
-                <Text style={styles.verifiedText}>Verified</Text>
-              </View>
-            </View>
+        {/* Support */}
+        <View style={styles.categoryContainer}>
+          <Text style={styles.categoryTitle}>Support</Text>
+          {renderSection("support", "Get help from our support team")}
+        </View>
 
-            {renderInput(
-              "New Email Address",
-              formData.newEmail,
-              (text) => updateFormData({ newEmail: text }),
-              errors.newEmail,
-              "Enter new email address",
-              false,
-              'email-address'
-            )}
-            
-            {renderPasswordInput(
-              "Confirm Password",
-              formData.emailPassword,
-              (text) => updateFormData({ emailPassword: text }),
-              errors.emailPassword,
-              "Enter your password to confirm",
-              showEmailPassword,
-              setShowEmailPassword
-            )}
-
-            <TouchableOpacity 
-              style={[styles.actionButton, isLoading && styles.buttonDisabled]}
-              onPress={handleSendEmailOTP}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="mail" size={20} color="#fff" />
-                  <Text style={styles.buttonText}>Send Verification Code</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Notification Preferences */}
-        {renderSection(
-          "notifications",
-          "notifications",
-          "Notification Preferences",
-          "Manage how you receive notifications",
-          <View style={styles.formContent}>
-            {renderToggle(
-              "Email Notifications",
-              formData.emailNotifications,
-              (value) => updateFormData({ emailNotifications: value }),
-              "Receive important updates via email"
-            )}
-            
-            {renderToggle(
-              "Push Notifications",
-              formData.pushNotifications,
-              (value) => updateFormData({ pushNotifications: value }),
-              "Get instant alerts on your device"
-            )}
-            
-            {renderToggle(
-              "Appointment Reminders",
-              formData.appointmentReminders,
-              (value) => updateFormData({ appointmentReminders: value }),
-              "Reminders for upcoming appointments"
-            )}
-            
-            {renderToggle(
-              "Promotional Emails",
-              formData.promotionalEmails,
-              (value) => updateFormData({ promotionalEmails: value }),
-              "Special offers and health tips"
-            )}
-
-            <TouchableOpacity 
-              style={[styles.actionButton, isLoading && styles.buttonDisabled]}
-              onPress={handleSavePreferences}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="save" size={20} color="#fff" />
-                  <Text style={styles.buttonText}>Save Preferences</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Privacy Settings */}
-        {renderSection(
-          "privacy",
-          "shield-checkmark",
-          "Privacy Settings",
-          "Control your profile visibility and privacy",
-          <View style={styles.formContent}>
-            <Text style={styles.subSectionTitle}>Profile Visibility</Text>
-            {renderRadio(
-              "Public",
-              "public",
-              formData.profileVisibility,
-              (value) => updateFormData({ profileVisibility: value }),
-              "Visible to all patients"
-            )}
-            {renderRadio(
-              "Patients Only",
-              "patients_only",
-              formData.profileVisibility,
-              (value) => updateFormData({ profileVisibility: value }),
-              "Visible only to your patients"
-            )}
-            {renderRadio(
-              "Private",
-              "private",
-              formData.profileVisibility,
-              (value) => updateFormData({ profileVisibility: value }),
-              "Hidden from all patients"
-            )}
-
-            <View style={styles.toggleGroup}>
-              {renderToggle(
-                "Show Online Status",
-                formData.showOnlineStatus,
-                (value) => updateFormData({ showOnlineStatus: value }),
-                "Display when you're available for consultations"
-              )}
-              
-              {renderToggle(
-                "Allow Patient Reviews",
-                formData.allowPatientReviews,
-                (value) => updateFormData({ allowPatientReviews: value }),
-                "Let patients leave reviews and ratings"
-              )}
-            </View>
-
-            <TouchableOpacity 
-              style={[styles.actionButton, isLoading && styles.buttonDisabled]}
-              onPress={handleSavePrivacy}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="save" size={20} color="#fff" />
-                  <Text style={styles.buttonText}>Save Privacy Settings</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Contact Support */}
-        {renderSection(
-          "support",
-          "headset",
-          "Contact Support",
-          "Get help from our support team",
-          <View style={styles.formContent}>
-            <View style={styles.quickActions}>
-              <TouchableOpacity style={styles.quickActionButton} onPress={handleCallSupport}>
-                <Ionicons name="call" size={24} color={AppTheme.colors.primary} />
-                <Text style={styles.quickActionText}>Call Support</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.quickActionButton} onPress={handleEmailSupport}>
-                <Ionicons name="mail" size={24} color={AppTheme.colors.primary} />
-                <Text style={styles.quickActionText}>Email Support</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.subSectionTitle}>Submit Support Ticket</Text>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Category</Text>
-              <View style={styles.categoryContainer}>
-                {['general', 'technical', 'billing', 'feature_request'].map(category => (
-                  <TouchableOpacity
-                    key={category}
-                    style={[
-                      styles.categoryButton,
-                      formData.supportCategory === category && styles.categoryButtonActive
-                    ]}
-                    onPress={() => updateFormData({ supportCategory: category })}
-                  >
-                    <Text style={[
-                      styles.categoryButtonText,
-                      formData.supportCategory === category && styles.categoryButtonTextActive
-                    ]}>
-                      {category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {renderInput(
-              "Subject",
-              formData.supportSubject,
-              (text) => updateFormData({ supportSubject: text }),
-              errors.supportSubject,
-              "Brief description of your issue"
-            )}
-            
-            {renderInput(
-              "Message",
-              formData.supportMessage,
-              (text) => updateFormData({ supportMessage: text }),
-              errors.supportMessage,
-              "Please describe your issue in detail...",
-              false,
-              'default',
-              true
-            )}
-
-            <View style={styles.supportInfo}>
-              <Text style={styles.supportInfoText}>
-                Your ticket will automatically include:
-              </Text>
-              <Text style={styles.supportInfoDetail}>• Doctor ID: {profileData.doctorId || 'N/A'}</Text>
-              <Text style={styles.supportInfoDetail}>• Email: {formData.currentEmail}</Text>
-              <Text style={styles.supportInfoDetail}>• Automatic ticket ID generation</Text>
-            </View>
-
-            <TouchableOpacity 
-              style={[styles.actionButton, isLoading && styles.buttonDisabled]}
-              onPress={handleSubmitSupport}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="send" size={20} color="#fff" />
-                  <Text style={styles.buttonText}>Submit Support Request</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Sign Out Section */}
-        {renderSection(
-          "signout",
-          "log-out",
-          "Sign Out",
-          "Sign out from your account",
-          <View style={styles.formContent}>
-            <Text style={styles.warningText}>
-              You will be logged out from all devices and need to sign in again to access your account.
-            </Text>
-
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.signoutButton]}
-              onPress={handleSignout}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="log-out" size={20} color="#fff" />
-                  <Text style={styles.buttonText}>Sign Out</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Account Actions Section */}
-        {renderSection(
-          "account",
-          "person",
-          "Account Actions",
-          "Manage your account status",
-          <View style={styles.accountActionsContent}>
-            <Text style={styles.warningText}>
-              These actions are irreversible and will affect your account access.
-            </Text>
-
-            <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity 
-                style={[styles.accountActionButton, styles.deactivateButton]}
-                onPress={handleDeactivateAccount}
-              >
-                <View style={styles.accountActionContent}>
-                  <Ionicons name="pause-circle" size={24} color="#fff" />
-                  <Text style={styles.accountActionText}>Deactivate Account</Text>
-                  <Text style={styles.accountActionDescription}>
-                    Temporarily disable your account
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.accountActionButton, styles.deleteButton]}
-                onPress={handleDeleteAccount}
-              >
-                <View style={styles.accountActionContent}>
-                  <Ionicons name="trash" size={24} color="#fff" />
-                  <Text style={styles.accountActionText}>Delete Account</Text>
-                  <Text style={styles.accountActionDescription}>
-                    Permanently delete your account and data
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
+        {/* Account Actions */}
+        <View style={styles.categoryContainer}>
+          <Text style={styles.categoryTitle}>Account</Text>
+          {renderSection("signout", "Sign out from your account")}
+          {renderSection("account", "Manage your account status")}
+        </View>
       </ScrollView>
+
+      {/* Main Modal */}
+      <Modal
+        visible={!!activeModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalContainer}>
+          {renderModalHeader()}
+          {renderModalContent()}
+        </View>
+      </Modal>
 
       {/* OTP Verification Modal */}
       <Modal
@@ -1054,480 +1172,5 @@ const SettingsScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: AppTheme.colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1E293B',
-  },
-  headerPlaceholder: {
-    width: 40,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingVertical: 16,
-  },
-  section: {
-    backgroundColor: AppTheme.colors.white,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  sectionHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  sectionTextContainer: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  sectionDescription: {
-    fontSize: 14,
-    color: AppTheme.colors.gray600,
-  },
-  sectionContent: {
-    overflow: 'hidden',
-  },
-  editContent: {
-    padding: 20,
-    paddingTop: 0,
-  },
-  formContent: {
-    gap: 16,
-  },
-  inputGroup: {
-    gap: 8,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  input: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#1E293B',
-  },
-  passwordInputContainer: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  passwordInput: {
-    flex: 1,
-    padding: 16,
-    fontSize: 16,
-    color: '#1E293B',
-  },
-  eyeIcon: {
-    padding: 16,
-  },
-  textArea: {
-    height: 120,
-    textAlignVertical: 'top',
-  },
-  inputError: {
-    borderColor: AppTheme.colors.danger,
-    backgroundColor: `${AppTheme.colors.danger}10`,
-  },
-  errorText: {
-    fontSize: 14,
-    color: AppTheme.colors.danger,
-    marginTop: 4,
-  },
-  currentEmailContainer: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E0F2FE',
-    marginBottom: 16,
-  },
-  currentEmailLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0369A1',
-    marginBottom: 4,
-  },
-  currentEmail: {
-    fontSize: 16,
-    color: '#1E293B',
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  verifiedText: {
-    fontSize: 12,
-    color: AppTheme.colors.success,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: AppTheme.colors.primary,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-    shadowColor: AppTheme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  signoutButton: {
-    backgroundColor: AppTheme.colors.danger,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  // Toggle Styles
-  toggleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-  },
-  toggleTextContainer: {
-    flex: 1,
-    marginRight: 16,
-  },
-  toggleLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  toggleDescription: {
-    fontSize: 14,
-    color: AppTheme.colors.gray600, 
-  },
-  toggle: {
-    width: 52,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#E2E8F0',
-    padding: 2,
-    justifyContent: 'center',
-  },
-  toggleActive: {
-    backgroundColor: AppTheme.colors.primary,
-  },
-  toggleThumb: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  toggleThumbActive: {
-    transform: [{ translateX: 24 }],
-  },
-  // Radio Styles
-  radioContainer: {
-    paddingVertical: 12,
-  },
-  radioContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#CBD5E1',
-    marginRight: 12,
-    marginTop: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  radioActive: {
-    borderColor: AppTheme.colors.primary,
-  },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: AppTheme.colors.primary,
-  },
-  radioTextContainer: {
-    flex: 1,
-  },
-  radioLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  radioDescription: {
-    fontSize: 14,
-    color: AppTheme.colors.gray600,
-  },
-  toggleGroup: {
-    marginTop: 8,
-  },
-  subSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 12,
-  },
-  // Support Styles
-  quickActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  quickActionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
-  },
-  quickActionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: AppTheme.colors.primary,
-  },
-  categoryContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 20,
-  },
-  categoryButtonActive: {
-    backgroundColor: AppTheme.colors.primary,
-    borderColor: AppTheme.colors.primary,
-  },
-  categoryButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#64748B',
-  },
-  categoryButtonTextActive: {
-    color: '#fff',
-  },
-  supportInfo: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E0F2FE',
-  },
-  supportInfoText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0369A1',
-    marginBottom: 8,
-  },
-  supportInfoDetail: {
-    fontSize: 13,
-    color: '#0369A1',
-    marginBottom: 4,
-  },
-  // Account Actions
-  accountActionsContent: {
-    gap: 20,
-  },
-  warningText: {
-    fontSize: 14,
-    color: AppTheme.colors.warning,
-    textAlign: 'center',
-    fontWeight: '500',
-    padding: 16,
-    backgroundColor: `${AppTheme.colors.warning}10`,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: `${AppTheme.colors.warning}20`,
-  },
-  actionButtonsContainer: {
-    gap: 16,
-  },
-  accountActionButton: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  accountActionContent: {
-    padding: 20,
-    alignItems: 'center',
-    borderRadius: 12,
-  },
-  deactivateButton: {
-    backgroundColor: '#FFA726',
-  },
-  deleteButton: {
-    backgroundColor: AppTheme.colors.danger,
-  },
-  accountActionText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  accountActionDescription: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  // OTP Styles
-  otpContainer: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  otpHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: AppTheme.colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  otpTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1E293B',
-  },
-  otpContent: {
-    flex: 1,
-  },
-  otpIllustration: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  otpForm: {
-    padding: 20,
-  },
-  otpLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 8,
-  },
-  otpInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  otpInput: {
-    flex: 1,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: '#1E293B',
-  },
-  otpFooter: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  footerText: {
-    fontSize: 14,
-    color: AppTheme.colors.gray600,
-  },
-  link: {
-    fontSize: 14,
-    color: AppTheme.colors.primary,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-});
 
 export default SettingsScreen;

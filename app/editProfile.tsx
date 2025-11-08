@@ -1,30 +1,31 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
   TouchableOpacity, 
-  StyleSheet, 
-  Animated,
-  Easing,
   ScrollView,
   TextInput,
-  Alert,
   ActivityIndicator,
-  FlatList
+  Modal,
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AppTheme } from '../constants/theme';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/redux/store';
-import { updateProfile } from '@/service/properties/profileApi';
+import { RootState } from '@/newStore/index';
 import { useDispatch } from 'react-redux';
 import { router } from 'expo-router';
+import Toast from 'react-native-toast-message';
+
+import { MedicalTheme } from '@/newConstants/theme';
+import { styles } from '@/assets/styles/editProfile.styles';
+import { updateProfile } from '@/newService/config/api/profileApi';
 
 const DAYS_OF_WEEK = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const ProfileSettingsScreen = () => {
   const profileData = useSelector((state: RootState) => state.profile);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [activeModal, setActiveModal] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
   
@@ -62,43 +63,8 @@ const ProfileSettingsScreen = () => {
   });
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
-  const sectionAnimations = useRef<{[key: string]: Animated.Value}>({}).current;
 
   // Helper functions
-  const getSectionAnimation = (section: string) => {
-    if (!sectionAnimations[section]) {
-      sectionAnimations[section] = new Animated.Value(0);
-    }
-    return sectionAnimations[section];
-  };
-
-  const toggleSection = (section: string) => {
-    if (activeSection === section) {
-      Animated.timing(getSectionAnimation(section), {
-        toValue: 0,
-        duration: 300,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: false
-      }).start(() => setActiveSection(null));
-    } else {
-      if (activeSection) {
-        Animated.timing(getSectionAnimation(activeSection), {
-          toValue: 0,
-          duration: 200,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: false
-        }).start();
-      }
-      setActiveSection(section);
-      Animated.timing(getSectionAnimation(section), {
-        toValue: 1,
-        duration: 400,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: false
-      }).start();
-    }
-  };
-
   const getSectionTitle = (section: string): string => {
     const titles: {[key: string]: string} = {
       name: 'Name',
@@ -116,6 +82,34 @@ const ProfileSettingsScreen = () => {
     return titles[section] || section;
   };
 
+  const getSectionIcon = (section: string): string => {
+    const icons: {[key: string]: string} = {
+      name: 'person',
+      phone: 'call',
+      bio: 'document-text',
+      about: 'information-circle',
+      specialization: 'medical',
+      experience: 'time',
+      clinic: 'business',
+      address: 'location',
+      availability: 'calendar',
+      education: 'school',
+      awards: 'trophy'
+    };
+    return icons[section] || 'settings';
+  };
+
+  // Modal functions
+  const openModal = (section: string) => {
+    setActiveModal(section);
+    setErrors({});
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+    setErrors({});
+  };
+
   // Form update functions
   const updateFormData = (updates: any) => {
     setFormData(prev => ({ ...prev, ...updates }));
@@ -131,7 +125,11 @@ const ProfileSettingsScreen = () => {
 
   const addTimeSlot = () => {
     if (!formData.newTimeSlot.startTime || !formData.newTimeSlot.endTime) {
-      Alert.alert('Error', 'Please enter both start and end time');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter both start and end time'
+      });
       return;
     }
     const newTimeSlots = [...formData.timeSlots, formData.newTimeSlot];
@@ -139,15 +137,29 @@ const ProfileSettingsScreen = () => {
       timeSlots: newTimeSlots,
       newTimeSlot: { startTime: '', endTime: '' }
     });
+    Toast.show({
+      type: 'success',
+      text1: 'Success',
+      text2: 'Time slot added successfully'
+    });
   };
 
   const removeTimeSlot = (index: number) => {
     if (formData.timeSlots.length === 1) {
-      Alert.alert('Error', 'At least one time slot is required');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'At least one time slot is required'
+      });
       return;
     }
     const newTimeSlots = formData.timeSlots.filter((_, i) => i !== index);
     updateFormData({ timeSlots: newTimeSlots });
+    Toast.show({
+      type: 'success',
+      text1: 'Success',
+      text2: 'Time slot removed successfully'
+    });
   };
 
   const updateTimeSlot = (index: number, field: 'startTime' | 'endTime', value: string) => {
@@ -160,7 +172,11 @@ const ProfileSettingsScreen = () => {
   // Education functions
   const addEducation = () => {
     if (!formData.newEducation.trim()) {
-      Alert.alert('Error', 'Please enter education details');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter education details'
+      });
       return;
     }
     const newEducationList = [...formData.education, formData.newEducation.trim()];
@@ -168,17 +184,31 @@ const ProfileSettingsScreen = () => {
       education: newEducationList,
       newEducation: ''
     });
+    Toast.show({
+      type: 'success',
+      text1: 'Success',
+      text2: 'Education added successfully'
+    });
   };
 
   const removeEducation = (index: number) => {
     const newEducation = formData.education.filter((_, i) => i !== index);
     updateFormData({ education: newEducation });
+    Toast.show({
+      type: 'success',
+      text1: 'Success',
+      text2: 'Education removed successfully'
+    });
   };
 
   // Awards functions
   const addAward = () => {
     if (!formData.newAward.trim()) {
-      Alert.alert('Error', 'Please enter award details');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter award details'
+      });
       return;
     }
     const newAwards = [...formData.awards, formData.newAward.trim()];
@@ -186,11 +216,21 @@ const ProfileSettingsScreen = () => {
       awards: newAwards,
       newAward: ''
     });
+    Toast.show({
+      type: 'success',
+      text1: 'Success',
+      text2: 'Award added successfully'
+    });
   };
 
   const removeAward = (index: number) => {
     const newAwards = formData.awards.filter((_, i) => i !== index);
     updateFormData({ awards: newAwards });
+    Toast.show({
+      type: 'success',
+      text1: 'Success',
+      text2: 'Award removed successfully'
+    });
   };
 
   // Validation
@@ -288,16 +328,28 @@ const ProfileSettingsScreen = () => {
 
     setIsLoading(true);
     try {
-      const success = await updateProfile(dispatch, updatePayload);
+      const success =dispatch(updateProfile( updatePayload));
       if (success) {
-        Alert.alert('Success', `${getSectionTitle(section)} updated successfully!`);
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: `${getSectionTitle(section)} updated successfully!`
+        });
         setErrors({});
-        toggleSection(section);
+        closeModal();
       } else {
-        Alert.alert('Error', `Failed to update ${getSectionTitle(section).toLowerCase()}`);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: `Failed to update ${getSectionTitle(section)}`
+        });
       }
     } catch (error) {
-      Alert.alert('Error', `Failed to update ${getSectionTitle(section).toLowerCase()}`);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: `Failed to update ${getSectionTitle(section)}`
+      });
     } finally {
       setIsLoading(false);
     }
@@ -316,7 +368,7 @@ const ProfileSettingsScreen = () => {
       value={value}
       onChangeText={onChange}
       placeholder={placeholder}
-      placeholderTextColor={AppTheme.colors.gray500}
+      placeholderTextColor={MedicalTheme.colors.text.tertiary}
       multiline={multiline}
       numberOfLines={multiline ? 4 : 1}
       keyboardType={keyboardType as any}
@@ -325,18 +377,18 @@ const ProfileSettingsScreen = () => {
 
   const renderSection = (
     section: string,
-    icon: string,
-    currentValue: string,
-    inputField: React.ReactNode
+    currentValue: string
   ) => (
-    <View style={styles.section}>
-      <TouchableOpacity 
-        style={styles.sectionHeader}
-        onPress={() => toggleSection(section)}
-        activeOpacity={0.7}
-      >
+    <TouchableOpacity 
+      style={styles.section}
+      onPress={() => openModal(section)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.sectionHeader}>
         <View style={styles.sectionHeaderContent}>
-          <Ionicons name={icon as any} size={24} color={AppTheme.colors.primary} />
+          <View style={styles.iconContainer}>
+            <Ionicons name={getSectionIcon(section) as any} size={22} color={MedicalTheme.colors.primary[500]} />
+          </View>
           <View style={styles.sectionTextContainer}>
             <Text style={styles.sectionTitle}>{getSectionTitle(section)}</Text>
             {currentValue ? (
@@ -346,55 +398,813 @@ const ProfileSettingsScreen = () => {
             )}
           </View>
         </View>
-        <Ionicons 
-          name={activeSection === section ? "chevron-up" : "chevron-down"} 
-          size={24} 
-          color={AppTheme.colors.gray500} 
-        />
-      </TouchableOpacity>
+        <View style={styles.chevronContainer}>
+          <Ionicons name="chevron-forward" size={20} color={MedicalTheme.colors.neutral[400]} />
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
 
-      <Animated.View 
-        style={[
-          styles.sectionContent,
-          {
-            height: getSectionAnimation(section).interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 'auto']
-            }),
-            opacity: getSectionAnimation(section)
-          }
-        ]}
-      >
-        {activeSection === section && (
-          <View style={styles.editContent}>
-            {inputField}
-            {errors[section] && <Text style={styles.errorText}>{errors[section]}</Text>}
-            <TouchableOpacity 
-              style={[styles.actionButton, isLoading && styles.buttonDisabled]}
-              onPress={() => handleUpdate(section)}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="save" size={20} color="#fff" />
-                  <Text style={styles.buttonText}>Update {getSectionTitle(section)}</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-      </Animated.View>
+  // Modal Header Component
+  const renderModalHeader = () => (
+    <View style={styles.modalHeader}>
+      <View style={styles.modalHeaderContent}>
+        <View style={styles.modalIconContainer}>
+          <Ionicons 
+            name={getSectionIcon(activeModal!) as any} 
+            size={28} 
+            color={MedicalTheme.colors.text.inverse} 
+          />
+        </View>
+        <View style={styles.modalTitleContainer}>
+          <Text style={styles.modalTitle}>Update {getSectionTitle(activeModal!)}</Text>
+        </View>
+      </View>
+      <TouchableOpacity style={styles.modalCloseButton} onPress={closeModal}>
+        <Ionicons name="close" size={24} color={MedicalTheme.colors.text.inverse} />
+      </TouchableOpacity>
     </View>
   );
+
+  // Modal Content Components
+  const renderNameModal = () => (
+    <View style={styles.modalContent}>
+      <View style={styles.formContainer}>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>First Name</Text>
+          {renderInput(
+            formData.firstName,
+            (text) => updateFormData({ firstName: text }),
+            "Enter your first name"
+          )}
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Last Name</Text>
+          {renderInput(
+            formData.lastName,
+            (text) => updateFormData({ lastName: text }),
+            "Enter your last name"
+          )}
+        </View>
+        {errors.name && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="warning" size={16} color={MedicalTheme.colors.error[500]} />
+            <Text style={styles.errorText}>{errors.name}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={() => handleUpdate('name')}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Save Changes</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderPhoneModal = () => (
+    <View style={styles.modalContent}>
+      <View style={styles.formContainer}>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Phone Number</Text>
+          {renderInput(
+            formData.phoneNumber,
+            (text) => updateFormData({ phoneNumber: text }),
+            "Enter your phone number",
+            false,
+            'phone-pad'
+          )}
+          <Text style={styles.inputHelpText}>Enter your 10-digit phone number</Text>
+        </View>
+        {errors.phone && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="warning" size={16} color={MedicalTheme.colors.error[500]} />
+            <Text style={styles.errorText}>{errors.phone}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={() => handleUpdate('phone')}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Update Phone</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderBioModal = () => (
+    <View style={styles.modalContent}>
+      <View style={styles.formContainer}>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Professional Bio</Text>
+          {renderInput(
+            formData.bio,
+            (text) => updateFormData({ bio: text }),
+            "Write a short bio about yourself, your expertise, and what makes you unique...",
+            true
+          )}
+          <Text style={styles.inputHelpText}>This will be displayed on your public profile</Text>
+        </View>
+        {errors.bio && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="warning" size={16} color={MedicalTheme.colors.error[500]} />
+            <Text style={styles.errorText}>{errors.bio}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={() => handleUpdate('bio')}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Update Bio</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderAboutModal = () => (
+    <View style={styles.modalContent}>
+      <View style={styles.formContainer}>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>About Me</Text>
+          {renderInput(
+            formData.about,
+            (text) => updateFormData({ about: text }),
+            "Tell patients more about your practice, experience, approach to treatment, and what they can expect...",
+            true
+          )}
+          <Text style={styles.inputHelpText}>Detailed information about your practice and experience</Text>
+        </View>
+        {errors.about && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="warning" size={16} color={MedicalTheme.colors.error[500]} />
+            <Text style={styles.errorText}>{errors.about}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={() => handleUpdate('about')}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Update About</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderSpecializationModal = () => (
+    <View style={styles.modalContent}>
+      <View style={styles.formContainer}>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Specialization</Text>
+          {renderInput(
+            formData.specialization,
+            (text) => updateFormData({ specialization: text }),
+            "e.g., Cardiologist, Dermatologist, Pediatrician, Surgeon...",
+            false
+          )}
+          <Text style={styles.inputHelpText}>Your medical specialty or area of expertise</Text>
+        </View>
+        {errors.specialization && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="warning" size={16} color={MedicalTheme.colors.error[500]} />
+            <Text style={styles.errorText}>{errors.specialization}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={() => handleUpdate('specialization')}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Update Specialization</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderExperienceModal = () => (
+    <View style={styles.modalContent}>
+      <View style={styles.formContainer}>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Years of Experience</Text>
+          {renderInput(
+            formData.yearsOfExperience,
+            (text) => updateFormData({ yearsOfExperience: text }),
+            "Enter years of experience",
+            false,
+            'numeric'
+          )}
+          <Text style={styles.inputHelpText}>Number of years you've been practicing</Text>
+        </View>
+        {errors.experience && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="warning" size={16} color={MedicalTheme.colors.error[500]} />
+            <Text style={styles.errorText}>{errors.experience}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={() => handleUpdate('experience')}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Update Experience</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderClinicModal = () => (
+    <View style={styles.modalContent}>
+      <View style={styles.formContainer}>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Clinic Address</Text>
+          {renderInput(
+            formData.clinicAddress,
+            (text) => updateFormData({ clinicAddress: text }),
+            "Enter your clinic or practice address",
+            true
+          )}
+          <Text style={styles.inputHelpText}>Primary address where you see patients</Text>
+        </View>
+        {errors.clinic && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="warning" size={16} color={MedicalTheme.colors.error[500]} />
+            <Text style={styles.errorText}>{errors.clinic}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={() => handleUpdate('clinic')}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Update Clinic</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderAddressModal = () => (
+    <View style={styles.modalContent}>
+      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.formContainer}>
+          <Text style={styles.sectionLabel}>Full Address Details</Text>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Street Address</Text>
+            {renderInput(
+              formData.street,
+              (text) => updateFormData({ street: text }),
+              "Enter street address",
+              false
+            )}
+          </View>
+
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, styles.flex1]}>
+              <Text style={styles.inputLabel}>City</Text>
+              {renderInput(
+                formData.city,
+                (text) => updateFormData({ city: text }),
+                "City",
+                false
+              )}
+            </View>
+            <View style={[styles.inputGroup, styles.flex1]}>
+              <Text style={styles.inputLabel}>State</Text>
+              {renderInput(
+                formData.state,
+                (text) => updateFormData({ state: text }),
+                "State",
+                false
+              )}
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, styles.flex1]}>
+              <Text style={styles.inputLabel}>Postal Code</Text>
+              {renderInput(
+                formData.postalCode,
+                (text) => updateFormData({ postalCode: text }),
+                "Postal Code",
+                false,
+                'numeric'
+              )}
+            </View>
+            <View style={[styles.inputGroup, styles.flex1]}>
+              <Text style={styles.inputLabel}>Country</Text>
+              {renderInput(
+                formData.country,
+                (text) => updateFormData({ country: text }),
+                "Country",
+                false
+              )}
+            </View>
+          </View>
+
+          {errors.address && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="warning" size={16} color={MedicalTheme.colors.error[500]} />
+              <Text style={styles.errorText}>{errors.address}</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={() => handleUpdate('address')}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Update Address</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderAvailabilityModal = () => (
+    <View style={styles.modalContent}>
+      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.formContainer}>
+          {/* Days Selection */}
+          <View style={styles.availabilitySection}>
+            <Text style={styles.sectionLabel}>Available Days</Text>
+            <Text style={styles.sectionDescription}>Select the days you are available for appointments</Text>
+            <View style={styles.daysGrid}>
+              {DAYS_OF_WEEK.map(day => (
+                <TouchableOpacity
+                  key={day}
+                  style={[
+                    styles.dayButton,
+                    formData.selectedDays.includes(day) && styles.dayButtonSelected
+                  ]}
+                  onPress={() => toggleDay(day)}
+                >
+                  <Text style={[
+                    styles.dayButtonText,
+                    formData.selectedDays.includes(day) && styles.dayButtonTextSelected
+                  ]}>
+                    {day.slice(0, 3)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.selectedDaysText}>
+              {formData.selectedDays.length > 0 ? 
+                `Selected: ${formData.selectedDays.join(', ')}` : 
+                'No days selected'
+              }
+            </Text>
+          </View>
+
+          {/* Time Slots */}
+          <View style={styles.availabilitySection}>
+            <Text style={styles.sectionLabel}>Working Hours</Text>
+            <Text style={styles.sectionDescription}>Add your available time slots for selected days</Text>
+            
+            {/* Add New Time Slot */}
+            <View style={styles.addTimeSlotContainer}>
+              <Text style={styles.timeSlotLabel}>Add New Time Slot</Text>
+              <View style={styles.timeInputRow}>
+                <View style={styles.timeInputGroup}>
+                  <Text style={styles.timeInputLabel}>Start Time</Text>
+                  <TextInput
+                    style={styles.timeInput}
+                    value={formData.newTimeSlot.startTime}
+                    onChangeText={(text) => updateFormData({ newTimeSlot: {...formData.newTimeSlot, startTime: text} })}
+                    placeholder="09:00"
+                    placeholderTextColor={MedicalTheme.colors.text.tertiary}
+                  />
+                </View>
+                <Text style={styles.timeSeparator}>to</Text>
+                <View style={styles.timeInputGroup}>
+                  <Text style={styles.timeInputLabel}>End Time</Text>
+                  <TextInput
+                    style={styles.timeInput}
+                    value={formData.newTimeSlot.endTime}
+                    onChangeText={(text) => updateFormData({ newTimeSlot: {...formData.newTimeSlot, endTime: text} })}
+                    placeholder="17:00"
+                    placeholderTextColor={MedicalTheme.colors.text.tertiary}
+                  />
+                </View>
+                <TouchableOpacity 
+                  style={styles.addTimeButton}
+                  onPress={addTimeSlot}
+                >
+                  <Ionicons name="add" size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Current Time Slots */}
+            <View style={styles.currentTimeSlots}>
+              <Text style={styles.timeSlotLabel}>Current Time Slots</Text>
+              {formData.timeSlots.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="time-outline" size={40} color={MedicalTheme.colors.neutral[400]} />
+                  <Text style={styles.emptyStateText}>No time slots added yet</Text>
+                  <Text style={styles.emptyStateSubtext}>Add your working hours above</Text>
+                </View>
+              ) : (
+                formData.timeSlots.map((slot, index) => (
+                  <View key={index} style={styles.timeSlotItem}>
+                    <View style={styles.timeSlotInfo}>
+                      <Ionicons name="time" size={16} color={MedicalTheme.colors.primary[500]} />
+                      <Text style={styles.timeSlotText}>
+                        {slot.startTime} - {slot.endTime}
+                      </Text>
+                    </View>
+                    {formData.timeSlots.length > 1 && (
+                      <TouchableOpacity 
+                        style={styles.removeTimeButton}
+                        onPress={() => removeTimeSlot(index)}
+                      >
+                        <Ionicons name="trash-outline" size={16} color={MedicalTheme.colors.error[500]} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+
+          {/* Summary */}
+          <View style={styles.summarySection}>
+            <Text style={styles.sectionLabel}>Availability Summary</Text>
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryRow}>
+                <Ionicons name="calendar-outline" size={16} color={MedicalTheme.colors.primary[500]} />
+                <Text style={styles.summaryText}>
+                  <Text style={styles.summaryLabel}>Days: </Text>
+                  {formData.selectedDays.length > 0 ? formData.selectedDays.join(', ') : 'None selected'}
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Ionicons name="time-outline" size={16} color={MedicalTheme.colors.primary[500]} />
+                <Text style={styles.summaryText}>
+                  <Text style={styles.summaryLabel}>Time Slots: </Text>
+                  {formData.timeSlots.length > 0 ? 
+                    formData.timeSlots.map(slot => `${slot.startTime}-${slot.endTime}`).join(', ') : 
+                    'No time slots'
+                  }
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {errors.availability && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="warning" size={16} color={MedicalTheme.colors.error[500]} />
+              <Text style={styles.errorText}>{errors.availability}</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={() => handleUpdate('availability')}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Update Availability</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderEducationModal = () => (
+    <View style={styles.modalContent}>
+      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.formContainer}>
+          {/* Add Education */}
+          <View style={styles.listSection}>
+            <Text style={styles.sectionLabel}>Add Education</Text>
+            <Text style={styles.sectionDescription}>Add your educational qualifications and degrees</Text>
+            <View style={styles.addItemContainer}>
+              {renderInput(
+                formData.newEducation,
+                (text) => updateFormData({ newEducation: text }),
+                "e.g., MBBS from ABC Medical College, 2015\nMD in Cardiology from XYZ University, 2020",
+                true
+              )}
+              <TouchableOpacity style={styles.addButton} onPress={addEducation}>
+                <Ionicons name="add" size={20} color="#fff" />
+                <Text style={styles.addButtonText}>Add Education</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Education List */}
+          <View style={styles.listSection}>
+            <Text style={styles.sectionLabel}>Education History</Text>
+            {formData.education.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="school-outline" size={40} color={MedicalTheme.colors.neutral[400]} />
+                <Text style={styles.emptyStateText}>No education entries yet</Text>
+                <Text style={styles.emptyStateSubtext}>Add your qualifications above</Text>
+              </View>
+            ) : (
+              <View style={styles.listContainer}>
+                {formData.education.map((item, index) => (
+                  <View key={index} style={styles.listItem}>
+                    <View style={styles.listItemIcon}>
+                      <Ionicons name="school" size={16} color={MedicalTheme.colors.primary[500]} />
+                    </View>
+                    <Text style={styles.listItemText}>{item}</Text>
+                    <TouchableOpacity 
+                      style={styles.removeButton}
+                      onPress={() => removeEducation(index)}
+                    >
+                      <Ionicons name="trash-outline" size={16} color={MedicalTheme.colors.error[500]} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      </ScrollView>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={() => handleUpdate('education')}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Update Education</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderAwardsModal = () => (
+    <View style={styles.modalContent}>
+      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.formContainer}>
+          {/* Add Award */}
+          <View style={styles.listSection}>
+            <Text style={styles.sectionLabel}>Add Award or Achievement</Text>
+            <Text style={styles.sectionDescription}>Add your professional awards, recognitions, and achievements</Text>
+            <View style={styles.addItemContainer}>
+              {renderInput(
+                formData.newAward,
+                (text) => updateFormData({ newAward: text }),
+                "e.g., Best Doctor Award 2023\nResearch Excellence Award 2022\nPatient Choice Award 2021",
+                true
+              )}
+              <TouchableOpacity style={styles.addButton} onPress={addAward}>
+                <Ionicons name="add" size={20} color="#fff" />
+                <Text style={styles.addButtonText}>Add Award</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Awards List */}
+          <View style={styles.listSection}>
+            <Text style={styles.sectionLabel}>Awards & Achievements</Text>
+            {formData.awards.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="trophy-outline" size={40} color={MedicalTheme.colors.neutral[400]} />
+                <Text style={styles.emptyStateText}>No awards entries yet</Text>
+                <Text style={styles.emptyStateSubtext}>Add your achievements above</Text>
+              </View>
+            ) : (
+              <View style={styles.listContainer}>
+                {formData.awards.map((item, index) => (
+                  <View key={index} style={styles.listItem}>
+                    <View style={styles.listItemIcon}>
+                      <Ionicons name="trophy" size={16} color={MedicalTheme.colors.primary[500]} />
+                    </View>
+                    <Text style={styles.listItemText}>{item}</Text>
+                    <TouchableOpacity 
+                      style={styles.removeButton}
+                      onPress={() => removeAward(index)}
+                    >
+                      <Ionicons name="trash-outline" size={16} color={MedicalTheme.colors.error[500]} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      </ScrollView>
+      <View style={styles.modalActions}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.buttonDisabled]}
+          onPress={closeModal}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+          onPress={() => handleUpdate('awards')}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Update Awards</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderModalContent = () => {
+    switch (activeModal) {
+      case 'name':
+        return renderNameModal();
+      case 'phone':
+        return renderPhoneModal();
+      case 'bio':
+        return renderBioModal();
+      case 'about':
+        return renderAboutModal();
+      case 'specialization':
+        return renderSpecializationModal();
+      case 'experience':
+        return renderExperienceModal();
+      case 'clinic':
+        return renderClinicModal();
+      case 'address':
+        return renderAddressModal();
+      case 'availability':
+        return renderAvailabilityModal();
+      case 'education':
+        return renderEducationModal();
+      case 'awards':
+        return renderAwardsModal();
+      default:
+        return null;
+    }
+  };
 
   return (
     <View style={styles.container}>
       {/* Header with Back Button */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={AppTheme.colors.primary} />
+          <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile Settings</Text>
         <View style={styles.headerPlaceholder} />
@@ -406,717 +1216,63 @@ const ProfileSettingsScreen = () => {
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        {/* Name Section */}
-        {renderSection(
-          "name",
-          "person",
-          `${formData.firstName} ${formData.lastName}`.trim(),
-          <View style={styles.nameContent}>
-            <View style={styles.row}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>First Name</Text>
-                {renderInput(
-                  formData.firstName,
-                  (text) => updateFormData({ firstName: text }),
-                  "Enter your first name"
-                )}
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Last Name</Text>
-                {renderInput(
-                  formData.lastName,
-                  (text) => updateFormData({ lastName: text }),
-                  "Enter your last name"
-                )}
-              </View>
-            </View>
-          </View>
-        )}
+        {/* Personal Information */}
+        <View style={styles.categoryContainer}>
+          <Text style={styles.categoryTitle}>Personal Information</Text>
+          {renderSection("name", `${formData.firstName} ${formData.lastName}`.trim())}
+          {renderSection("phone", formData.phoneNumber)}
+        </View>
 
-        {/* Phone Number Section */}
-        {renderSection(
-          "phone",
-          "call",
-          formData.phoneNumber,
-          renderInput(
-            formData.phoneNumber,
-            (text) => updateFormData({ phoneNumber: text }),
-            "Enter your phone number",
-            false,
-            'phone-pad'
-          )
-        )}
+        {/* Professional Information */}
+        <View style={styles.categoryContainer}>
+          <Text style={styles.categoryTitle}>Professional Information</Text>
+          {renderSection("bio", formData.bio)}
+          {renderSection("about", formData.about)}
+          {renderSection("specialization", formData.specialization)}
+          {renderSection("experience", formData.yearsOfExperience ? `${formData.yearsOfExperience} years` : '')}
+        </View>
 
-        {/* Bio Section */}
-        {renderSection(
-          "bio",
-          "document-text",
-          formData.bio,
-          renderInput(
-            formData.bio,
-            (text) => updateFormData({ bio: text }),
-            "Write a short bio about yourself...",
-            true
-          )
-        )}
+        {/* Address Information */}
+        <View style={styles.categoryContainer}>
+          <Text style={styles.categoryTitle}>Address Information</Text>
+          {renderSection("clinic", formData.clinicAddress)}
+          {renderSection("address", `${formData.street ? formData.street + ', ' : ''}${formData.city || ''}`)}
+        </View>
 
-        {/* About Section */}
-        {renderSection(
-          "about",
-          "information-circle",
-          formData.about,
-          renderInput(
-            formData.about,
-            (text) => updateFormData({ about: text }),
-            "Tell patients more about your practice and experience...",
-            true
-          )
-        )}
-
-        {/* Specialization Section */}
-        {renderSection(
-          "specialization",
-          "medical",
-          formData.specialization,
-          renderInput(
-            formData.specialization,
-            (text) => updateFormData({ specialization: text }),
-            "e.g., Cardiologist, Dermatologist, Pediatrician",
-            false
-          )
-        )}
-
-        {/* Years of Experience Section */}
-        {renderSection(
-          "experience",
-          "time",
-          formData.yearsOfExperience ? `${formData.yearsOfExperience} years` : '',
-          renderInput(
-            formData.yearsOfExperience,
-            (text) => updateFormData({ yearsOfExperience: text }),
-            "Enter years of experience",
-            false,
-            'numeric'
-          )
-        )}
-
-        {/* Clinic Address Section */}
-        {renderSection(
-          "clinic",
-          "business",
-          formData.clinicAddress,
-          renderInput(
-            formData.clinicAddress,
-            (text) => updateFormData({ clinicAddress: text }),
-            "Enter your clinic address",
-            true
-          )
-        )}
-
-        {/* Full Address Section */}
-        {renderSection(
-          "address",
-          "location",
-          `${formData.street ? formData.street + ', ' : ''}${formData.city || ''}`,
-          <View style={styles.addressForm}>
-            {renderInput(
-              formData.street,
-              (text) => updateFormData({ street: text }),
-              "Street Address",
-              false
-            )}
-            <View style={styles.row}>
-              {renderInput(
-                formData.city,
-                (text) => updateFormData({ city: text }),
-                "City",
-                false
-              )}
-              {renderInput(
-                formData.state,
-                (text) => updateFormData({ state: text }),
-                "State",
-                false
-              )}
-            </View>
-            <View style={styles.row}>
-              {renderInput(
-                formData.postalCode,
-                (text) => updateFormData({ postalCode: text }),
-                "Postal Code",
-                false,
-                'numeric'
-              )}
-              {renderInput(
-                formData.country,
-                (text) => updateFormData({ country: text }),
-                "Country",
-                false
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* Availability Section */}
-        {renderSection(
-          "availability",
-          "calendar",
-          formData.selectedDays.length > 0 ? 
+        {/* Practice Details */}
+        <View style={styles.categoryContainer}>
+          <Text style={styles.categoryTitle}>Practice Details</Text>
+          {renderSection("availability", formData.selectedDays.length > 0 ? 
             `${formData.selectedDays.length} day${formData.selectedDays.length > 1 ? 's' : ''} selected` : 
-            'Not set',
-          <View style={styles.availabilityContent}>
-            {/* Days Selection */}
-            <View style={styles.daysSection}>
-              <Text style={styles.sectionLabel}>Select Available Days</Text>
-              <View style={styles.daysGrid}>
-                {DAYS_OF_WEEK.map(day => (
-                  <TouchableOpacity
-                    key={day}
-                    style={[
-                      styles.dayButton,
-                      formData.selectedDays.includes(day) && styles.dayButtonSelected
-                    ]}
-                    onPress={() => toggleDay(day)}
-                  >
-                    <Text style={[
-                      styles.dayButtonText,
-                      formData.selectedDays.includes(day) && styles.dayButtonTextSelected
-                    ]}>
-                      {day}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={styles.selectedDaysText}>
-                {formData.selectedDays.length > 0 ? 
-                  `Selected: ${formData.selectedDays.join(', ')}` : 
-                  'No days selected'
-                }
-              </Text>
-            </View>
+            'Not set'
+          )}
+        </View>
 
-            {/* Time Slots */}
-            <View style={styles.timeSlotsSection}>
-              <Text style={styles.sectionLabel}>Time Slots (Common for all selected days)</Text>
-              
-              {/* Add New Time Slot */}
-              <View style={styles.addTimeSlotContainer}>
-                <Text style={styles.timeSlotLabel}>Add New Time Slot</Text>
-                <View style={styles.timeInputRow}>
-                  <View style={styles.timeInputGroup}>
-                    <Text style={styles.timeInputLabel}>Start Time</Text>
-                    <TextInput
-                      style={styles.timeInput}
-                      value={formData.newTimeSlot.startTime}
-                      onChangeText={(text) => updateFormData({ newTimeSlot: {...formData.newTimeSlot, startTime: text} })}
-                      placeholder="09:00"
-                      placeholderTextColor={AppTheme.colors.gray500}
-                    />
-                  </View>
-                  <Text style={styles.timeSeparator}>to</Text>
-                  <View style={styles.timeInputGroup}>
-                    <Text style={styles.timeInputLabel}>End Time</Text>
-                    <TextInput
-                      style={styles.timeInput}
-                      value={formData.newTimeSlot.endTime}
-                      onChangeText={(text) => updateFormData({ newTimeSlot: {...formData.newTimeSlot, endTime: text} })}
-                      placeholder="17:00"
-                      placeholderTextColor={AppTheme.colors.gray500}
-                    />
-                  </View>
-                  <TouchableOpacity 
-                    style={styles.addTimeButton}
-                    onPress={addTimeSlot}
-                  >
-                    <Ionicons name="add" size={20} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Current Time Slots */}
-              <View style={styles.currentTimeSlots}>
-                <Text style={styles.timeSlotLabel}>Current Time Slots</Text>
-                {formData.timeSlots.length === 0 ? (
-                  <Text style={styles.emptyStateText}>No time slots added</Text>
-                ) : (
-                  formData.timeSlots.map((slot, index) => (
-                    <View key={index} style={styles.timeSlotItem}>
-                      <View style={styles.timeSlotInfo}>
-                        <Text style={styles.timeSlotText}>
-                          {slot.startTime} - {slot.endTime}
-                        </Text>
-                      </View>
-                      {formData.timeSlots.length > 1 && (
-                        <TouchableOpacity 
-                          style={styles.removeTimeButton}
-                          onPress={() => removeTimeSlot(index)}
-                        >
-                          <Ionicons name="trash" size={16} color={AppTheme.colors.danger} />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  ))
-                )}
-              </View>
-            </View>
-
-            {/* Summary */}
-            <View style={styles.summarySection}>
-              <Text style={styles.sectionLabel}>Availability Summary</Text>
-              <View style={styles.summaryCard}>
-                <Text style={styles.summaryText}>
-                  <Text style={styles.summaryLabel}>Days: </Text>
-                  {formData.selectedDays.length > 0 ? formData.selectedDays.join(', ') : 'None selected'}
-                </Text>
-                <Text style={styles.summaryText}>
-                  <Text style={styles.summaryLabel}>Time Slots: </Text>
-                  {formData.timeSlots.length > 0 ? 
-                    formData.timeSlots.map(slot => `${slot.startTime}-${slot.endTime}`).join(', ') : 
-                    'No time slots'
-                  }
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Education Section */}
-        {renderSection(
-          "education",
-          "school",
-          formData.education.length > 0 ? `${formData.education.length} entries` : 'Not set',
-          <View style={styles.listContent}>
-            <Text style={styles.subSectionTitle}>Add Education</Text>
-            <View style={styles.addItemContainer}>
-              {renderInput(
-                formData.newEducation,
-                (text) => updateFormData({ newEducation: text }),
-                "e.g., MBBS from ABC Medical College, 2015",
-                true
-              )}
-              <TouchableOpacity style={styles.addButton} onPress={addEducation}>
-                <Ionicons name="add" size={20} color="#fff" />
-                <Text style={styles.addButtonText}>Add Education</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.subSectionTitle}>Education History</Text>
-            {formData.education.length === 0 ? (
-              <Text style={styles.emptyStateText}>No education entries yet</Text>
-            ) : (
-              <FlatList
-                data={formData.education}
-                scrollEnabled={false}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item, index }) => (
-                  <View style={styles.listItem}>
-                    <Text style={styles.listItemText}>{item}</Text>
-                    <TouchableOpacity 
-                      style={styles.removeButton}
-                      onPress={() => removeEducation(index)}
-                    >
-                      <Ionicons name="trash" size={16} color={AppTheme.colors.danger} />
-                    </TouchableOpacity>
-                  </View>
-                )}
-              />
-            )}
-          </View>
-        )}
-
-        {/* Awards Section */}
-        {renderSection(
-          "awards",
-          "trophy",
-          formData.awards.length > 0 ? `${formData.awards.length} awards` : 'Not set',
-          <View style={styles.listContent}>
-            <Text style={styles.subSectionTitle}>Add Award or Achievement</Text>
-            <View style={styles.addItemContainer}>
-              {renderInput(
-                formData.newAward,
-                (text) => updateFormData({ newAward: text }),
-                "e.g., Best Doctor Award 2023, Research Excellence Award",
-                true
-              )}
-              <TouchableOpacity style={styles.addButton} onPress={addAward}>
-                <Ionicons name="add" size={20} color="#fff" />
-                <Text style={styles.addButtonText}>Add Award</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.subSectionTitle}>Awards & Achievements</Text>
-            {formData.awards.length === 0 ? (
-              <Text style={styles.emptyStateText}>No awards entries yet</Text>
-            ) : (
-              <FlatList
-                data={formData.awards}
-                scrollEnabled={false}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item, index }) => (
-                  <View style={styles.listItem}>
-                    <Text style={styles.listItemText}>{item}</Text>
-                    <TouchableOpacity 
-                      style={styles.removeButton}
-                      onPress={() => removeAward(index)}
-                    >
-                      <Ionicons name="trash" size={16} color={AppTheme.colors.danger} />
-                    </TouchableOpacity>
-                  </View>
-                )}
-              />
-            )}
-          </View>
-        )}
+        {/* Qualifications */}
+        <View style={styles.categoryContainer}>
+          <Text style={styles.categoryTitle}>Qualifications</Text>
+          {renderSection("education", formData.education.length > 0 ? `${formData.education.length} entries` : 'Not set')}
+          {renderSection("awards", formData.awards.length > 0 ? `${formData.awards.length} awards` : 'Not set')}
+        </View>
       </ScrollView>
+
+      {/* Modal */}
+      <Modal
+        visible={!!activeModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalContainer}>
+          {renderModalHeader()}
+          {renderModalContent()}
+        </View>
+      </Modal>
+
+      {/* Toast Component */}
+      <Toast />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: AppTheme.colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1E293B',
-  },
-  headerPlaceholder: {
-    width: 40,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingVertical: 16,
-  },
-  section: {
-    backgroundColor: AppTheme.colors.white,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  sectionHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  sectionTextContainer: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  currentValue: {
-    fontSize: 14,
-    color: AppTheme.colors.gray600,
-  },
-  emptyValue: {
-    fontSize: 14,
-    color: AppTheme.colors.gray400,
-    fontStyle: 'italic',
-  },
-  sectionContent: {
-    overflow: 'hidden',
-  },
-  editContent: {
-    padding: 20,
-    paddingTop: 0,
-  },
-  input: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#1E293B',
-    marginBottom: 16,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  nameContent: {
-    gap: 16,
-  },
-  inputGroup: {
-    flex: 1,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 6,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  errorText: {
-    fontSize: 14,
-    color: AppTheme.colors.danger,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: AppTheme.colors.primary,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: AppTheme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  addressForm: {
-    gap: 12,
-  },
-  availabilityContent: {
-    gap: 24,
-  },
-  sectionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 12,
-  },
-  daysSection: {
-    gap: 12,
-  },
-  daysGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'space-between',
-  },
-  dayButton: {
-    width: '30%',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    alignItems: 'center',
-  },
-  dayButtonSelected: {
-    backgroundColor: AppTheme.colors.primary,
-    borderColor: AppTheme.colors.primary,
-  },
-  dayButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#64748B',
-  },
-  dayButtonTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  selectedDaysText: {
-    fontSize: 14,
-    color: AppTheme.colors.gray600,
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
-  timeSlotsSection: {
-    gap: 16,
-  },
-  addTimeSlotContainer: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  timeSlotLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  timeInputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 12,
-  },
-  timeInputGroup: {
-    flex: 1,
-  },
-  timeInputLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  timeInput: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: '#1E293B',
-    textAlign: 'center',
-  },
-  timeSeparator: {
-    fontSize: 14,
-    color: '#64748B',
-    fontWeight: '500',
-    marginBottom: 20,
-  },
-  addTimeButton: {
-    backgroundColor: AppTheme.colors.primary,
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  currentTimeSlots: {
-    gap: 8,
-  },
-  timeSlotItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  timeSlotInfo: {
-    flex: 1,
-  },
-  timeSlotText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1E293B',
-  },
-  removeTimeButton: {
-    padding: 4,
-  },
-  summarySection: {
-    gap: 12,
-  },
-  summaryCard: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E0F2FE',
-  },
-  summaryText: {
-    fontSize: 14,
-    color: '#0369A1',
-    marginBottom: 4,
-  },
-  summaryLabel: {
-    fontWeight: '600',
-  },
-  listContent: {
-    gap: 16,
-  },
-  subSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  addItemContainer: {
-    gap: 12,
-    marginBottom: 20,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: AppTheme.colors.primary,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  listItemText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#374151',
-    lineHeight: 20,
-  },
-  removeButton: {
-    padding: 4,
-  },
-  emptyStateText: {
-    textAlign: 'center',
-    fontSize: 14,
-    color: AppTheme.colors.gray500,
-    fontStyle: 'italic',
-    padding: 20,
-  },
-});
 
 export default ProfileSettingsScreen;

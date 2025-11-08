@@ -40,8 +40,10 @@ export const getProfile = () => async (dispatch: AppDispatch): Promise<boolean> 
   }
 };
 
-export const updateProfile = (updateData: Record<string, any>) =>
+export const updateProfile =
+  (updateData: Record<string, any>) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
+    console.log(updateData); // this now works correctly
     try {
       dispatch(setLoading(true));
       dispatch(setError(null));
