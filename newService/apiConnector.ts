@@ -5,6 +5,7 @@ import axios, {
   Method,
 } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 export const axiosInstance: AxiosInstance = axios.create({});
 
@@ -29,6 +30,7 @@ axiosInstance.interceptors.request.use(async (config) => {
   if (tokenRequired) {
     const token = await AsyncStorage.getItem("token");
     if (!token) {
+      router.replace('/(auth)')
       return Promise.reject({
         response: {
           status: 401,
