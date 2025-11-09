@@ -1,4 +1,4 @@
-import SafeScreen from "@/componets/SafeScreen";
+import SafeScreen from "@/newComponents/SafeScreen";
 import { store } from "@/newStore/index";
 import {Stack} from "expo-router";
 import {StatusBar} from "expo-status-bar";
@@ -17,7 +17,6 @@ export default function RootLayout() {
                         <Stack.Screen name="index"/>
                         <Stack.Screen name="(auth)"/>
                         <Stack.Screen name="(tabs)"/>
-                        <Stack.Screen name="(newscreen)"/>
                     </Stack>
                 </SafeScreen>
                 <StatusBar style="dark"/>

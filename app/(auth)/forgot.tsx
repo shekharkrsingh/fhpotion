@@ -21,7 +21,7 @@ import { styles } from '@/assets/styles/forget.styles';
 import { MedicalTheme } from '@/newConstants/theme';
 import OTPModal from '@/newComponents/OTPVerificationPopup';
 import { sendOtp } from '@/newService/config/api/authApi';
-import { forgotPassword } from '@/service/properties/authApi';
+import { forgotPassword } from '@/newService/config/api/authApi';
 
 export default function Forget() {
     const [email, setEmailState] = useState("");

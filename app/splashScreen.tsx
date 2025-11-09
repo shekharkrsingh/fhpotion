@@ -1,10 +1,9 @@
-// splashScreen.tsx
 import React, { useEffect, useState } from "react";
 import { View, Image, Animated, Easing } from "react-native";
 import { router } from "expo-router";
 import { useDispatch } from "react-redux";
 import { getProfile } from "@/newService/config/api/profileApi";
-import { AppTheme } from "@/constants/theme";
+import { MedicalTheme } from "@/newConstants/theme";
 import { fetchDoctorStatistics } from "@/newService/config/api/statisticsApi";
 import { getAppointments } from "@/newService/config/api/appointmentApi";
 import { fetchAllNotifications } from "@/newService/config/api/notificationApi";
@@ -88,7 +87,15 @@ export default function SplashScreen() {
 
     const animatedBg = bgColor.interpolate({
         inputRange: [0, 1],
-        outputRange: [AppTheme.colors.white, AppTheme.colors.gray100],
+        outputRange: [
+            MedicalTheme.colors.background.primary, 
+            MedicalTheme.colors.background.secondary
+        ],
+    });
+
+    const animatedLoadingBar = loadingWidth.interpolate({
+        inputRange: [0, 1],
+        outputRange: ["0%", "100%"],
     });
 
     return (
@@ -114,11 +121,8 @@ export default function SplashScreen() {
                     style={[
                         splashScreenStyles.loadingBar,
                         {
-                            width: loadingWidth.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: ["0%", "100%"],
-                            }),
-                            backgroundColor: AppTheme.colors.primary,
+                            width: animatedLoadingBar,
+                            backgroundColor: MedicalTheme.colors.primary[500],
                         },
                     ]}
                 />
@@ -134,7 +138,10 @@ export default function SplashScreen() {
                     <Animated.Text
                         style={[
                             splashScreenStyles.tagline,
-                            { opacity: logoOpacity },
+                            { 
+                                opacity: logoOpacity,
+                                color: MedicalTheme.colors.text.secondary,
+                            },
                         ]}
                     >
                         Modern Solutions, Magical Results
