@@ -203,7 +203,7 @@ export const changeDoctorEmail = async (
   password: string
 ): Promise<boolean> => {
   try {
-    const response = await apiConnector<ApiResponse<null>>({
+    const response = await apiConnector<ApiResponse<string>>({
       method: "POST",
       url: doctorEndpoints.updateDoctorEmail,
       bodyData: { newEmail, otp, password },
@@ -213,8 +213,7 @@ export const changeDoctorEmail = async (
       console.error("Failed to change email:", response.data?.message);
       return false;
     }
-
-    console.log("Email changed successfully");
+    await AsyncStorage.setItem("token", response.data.data);
     return true;
   } catch (error: any) {
     console.error(
