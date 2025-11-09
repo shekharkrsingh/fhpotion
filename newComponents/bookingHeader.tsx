@@ -61,7 +61,7 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onEmergency }) 
         
         <View style={bookingHeaderStyles.headerButtons}>
           {/* Emergency Button */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={bookingHeaderStyles.emergencyButton}
             onPress={handleEmergency}
           >
@@ -73,7 +73,7 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onEmergency }) 
             <Text style={bookingHeaderStyles.emergencyButtonText}>
               Emergency
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Search Toggle Button */}
           <TouchableOpacity
