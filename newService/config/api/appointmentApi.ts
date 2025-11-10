@@ -77,6 +77,75 @@ export const updateAppointment =
     }
   };
 
+export const updateEmergencyStatus =
+  (appointmentId: string, isEmergency: boolean) =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
+    try {
+      dispatch(setLoading(true));
+      dispatch(setError(null));
+
+      const response = await apiConnector({
+        method: "PATCH",
+        url: appointmentEndpoints.updateEmergencyStatus(appointmentId),
+        bodyData: { isEmergency },
+        tokenRequired: true,
+      });
+
+      if (response.status === 200 && response.data?.success) {
+        dispatch(updateAppointmentInStore(response.data.data));
+        dispatch(setSuccess(true));
+        return true;
+      }
+
+      dispatch(setError(response.data?.message || "Failed to update emergency status"));
+      return false;
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        (error?.response?.status === 401
+          ? "Unauthorized. Please log in again."
+          : "Something went wrong while updating emergency status.");
+      dispatch(setError(message));
+      return false;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+export const cancelAppointment =
+  (appointmentId: string) =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
+    try {
+      dispatch(setLoading(true));
+      dispatch(setError(null));
+
+      const response = await apiConnector({
+        method: "PATCH",
+        url: appointmentEndpoints.cancelAppointment(appointmentId),
+        tokenRequired: true,
+      });
+
+      if (response.status === 200 && response.data?.success) {
+        dispatch(updateAppointmentInStore(response.data.data));
+        dispatch(setSuccess(true));
+        return true;
+      }
+
+      dispatch(setError(response.data?.message || "Failed to cancel appointment"));
+      return false;
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        (error?.response?.status === 401
+          ? "Unauthorized. Please log in again."
+          : "Something went wrong while cancelling appointment.");
+      dispatch(setError(message));
+      return false;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
 export const addAppointment =
   (newAppointment: Omit<Appointment, "appointmentId">) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
@@ -105,6 +174,75 @@ export const addAppointment =
         (error?.response?.status === 401
           ? "Unauthorized. Please log in again."
           : "Something went wrong while creating appointment.");
+      dispatch(setError(message));
+      return false;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+// Get appointment by ID
+export const getAppointmentById =
+  (appointmentId: string) =>
+  async (dispatch: AppDispatch): Promise<Appointment | null> => {
+    try {
+      dispatch(setLoading(true));
+      dispatch(setError(null));
+
+      const response = await apiConnector({
+        method: "GET",
+        url: appointmentEndpoints.getAppointmentById(appointmentId),
+        tokenRequired: true,
+      });
+
+      if (response.status === 200 && response.data?.success) {
+        dispatch(setSuccess(true));
+        return response.data.data;
+      }
+
+      dispatch(setError(response.data?.message || "Failed to fetch appointment"));
+      return null;
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        (error?.response?.status === 401
+          ? "Unauthorized. Please log in again."
+          : "Something went wrong while fetching appointment.");
+      dispatch(setError(message));
+      return null;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+// Get appointments by specific date
+export const getAppointmentsByDate =
+  (date: string) =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
+    try {
+      dispatch(setLoading(true));
+      dispatch(setError(null));
+
+      const response = await apiConnector({
+        method: "GET",
+        url: `${appointmentEndpoints.getAppointmentsByDate}?date=${date}`,
+        tokenRequired: true,
+      });
+
+      if (response.status === 200 && response.data?.success) {
+        dispatch(setAppointments(response.data.data || []));
+        dispatch(setSuccess(true));
+        return true;
+      }
+
+      dispatch(setError(response.data?.message || "Failed to fetch appointments by date"));
+      return false;
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        (error?.response?.status === 401
+          ? "Unauthorized. Please log in again."
+          : "Something went wrong while fetching appointments by date.");
       dispatch(setError(message));
       return false;
     } finally {

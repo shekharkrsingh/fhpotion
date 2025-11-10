@@ -262,7 +262,6 @@ export const styles = StyleSheet.create({
     fontSize: MedicalTheme.typography.fontSize.sm,
     color: MedicalTheme.colors.text.secondary,
     marginBottom: MedicalTheme.spacing[4],
-    lineHeight: MedicalTheme.typography.lineHeight.normal,
   },
   daysGrid: {
     flexDirection: 'row',
@@ -399,7 +398,6 @@ export const styles = StyleSheet.create({
     fontSize: MedicalTheme.typography.fontSize.sm,
     color: MedicalTheme.colors.primary[700],
     flex: 1,
-    lineHeight: MedicalTheme.typography.lineHeight.normal,
   },
   summaryLabel: {
     fontWeight: MedicalTheme.typography.fontWeight.semibold,
@@ -446,7 +444,6 @@ export const styles = StyleSheet.create({
     flex: 1,
     fontSize: MedicalTheme.typography.fontSize.sm,
     color: MedicalTheme.colors.text.primary,
-    lineHeight: MedicalTheme.typography.lineHeight.normal,
   },
   removeButton: {
     padding: MedicalTheme.spacing[1],
