@@ -1,3 +1,4 @@
+// booking.tsx - Fixed appointment lookup
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -18,6 +19,19 @@ import BookingFilterButtons from '@/newComponents/bookingFilterButtons';
 import BookingList from '@/newComponents/bookingList';
 import AlertPopup from '@/newComponents/alertPopup';
 import { bookingStyles } from '@/assets/styles/booking.styles';
+import { 
+  canMarkAvailable, 
+  canMarkUnavailable, 
+  canMarkPaid, 
+  canMarkUnpaid, 
+  canMarkTreated, 
+  canMarkUntreated, 
+  canCancel, 
+  canEdit, 
+  canMarkEmergency,
+  sortAppointments,
+  ActionValidation 
+} from '@/utils/bookingActionHelpers';
 
 export default function BookingScreen() {
   const { appointments, loading, error, success } = useSelector((state: RootState) => state.appointments);
@@ -25,15 +39,26 @@ export default function BookingScreen() {
   
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'treated'>('all');
+  const [availabilityFilter, setAvailabilityFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkAction, setSelectedMarkAction] = useState<'treated' | 'emergency' | 'cancel' | 'edit'>('treated');
 
-  // Confirmation Popup States
+  // Single Confirmation Popup State
   const [confirmationPopupVisible, setConfirmationPopupVisible] = useState(false);
-  const [confirmationMessage, setConfirmationMessage] = useState('');
-  const [confirmationAction, setConfirmationAction] = useState<(() => Promise<void>) | null>(null);
+  const [confirmationData, setConfirmationData] = useState<{
+    message: string;
+    action: () => Promise<void>;
+    appointmentId?: string;
+  } | null>(null);
+
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Helper function to find appointment safely
+  const findAppointment = (id: string) => {
+    return Array.isArray(appointments) 
+      ? appointments.find(item => item.appointmentId === id)
+      : undefined;
+  };
 
   const fetchData = async () => {
     try {
@@ -45,9 +70,14 @@ export default function BookingScreen() {
     }
   };
 
-  const update = async (id: string, change: any) => {
+  const updateAppointmentHandler = async (id: string, change: any) => {
     try {
-      const result = await dispatch(updateAppointment( id,change ));
+      // If editing, ensure status becomes ACCEPTED
+      const updateData = selectedMarkAction === 'edit' 
+        ? { ...change, status: "ACCEPTED" as const }
+        : change;
+        
+      const result = await dispatch(updateAppointment(id, updateData));
       if (result) {
         return true;
       } else {
@@ -55,7 +85,7 @@ export default function BookingScreen() {
       }
     } catch (error) {
       console.error('Failed to update appointment:', error);
-      showToast('Failed to update appointment. Please try again.', 'error');
+      // State is automatically reverted by the API error handler
       throw error;
     }
   };
@@ -70,9 +100,11 @@ export default function BookingScreen() {
 
   const handleMarkAction = (action: 'treated' | 'emergency' | 'cancel' | 'edit') => {
     setSelectedMarkAction(action);
+    // Reset filter when changing mark action
+    setAvailabilityFilter('all');
     
     if (action === 'emergency') {
-      showToast('Emergency protocol activated! All appointments will now show emergency action buttons.', 'info');
+      showToast('Emergency protocol activated!', 'info');
     }
   };
 
@@ -87,19 +119,22 @@ export default function BookingScreen() {
     });
   };
 
-  const showConfirmation = (message: string, action: () => Promise<void>) => {
-    setConfirmationMessage(message);
-    setConfirmationAction(() => action);
+  // Single confirmation popup handler
+  const showConfirmation = (message: string, action: () => Promise<void>, appointmentId?: string) => {
+    // Prevent multiple popups
+    if (confirmationPopupVisible) return;
+    
+    setConfirmationData({ message, action, appointmentId });
     setConfirmationPopupVisible(true);
   };
 
   const handleConfirmationClose = async (confirmed: boolean) => {
     setConfirmationPopupVisible(false);
     
-    if (confirmed && confirmationAction && !isProcessing) {
+    if (confirmed && confirmationData?.action && !isProcessing) {
       setIsProcessing(true);
       try {
-        await confirmationAction();
+        await confirmationData.action();
       } catch (error) {
         console.error('Error in confirmation action:', error);
       } finally {
@@ -107,25 +142,89 @@ export default function BookingScreen() {
       }
     }
     
-    // Reset the confirmation action to prevent multiple calls
-    setConfirmationAction(null);
+    // Clear confirmation data after handling
+    setConfirmationData(null);
   };
 
-  // Safe filtering with fallback to empty array
+  // Enhanced filtering logic
   const filteredData = useMemo(() => {
     const safeAppointments = Array.isArray(appointments) ? appointments : [];
     
     let filtered = [...safeAppointments];
     
-    switch (availabilityFilter) {
-      case 'available':
-        filtered = filtered.filter(item => item.availableAtClinic && !item.treated);
-        break;
+    // Apply filters based on selected mark action and availability filter
+    switch (selectedMarkAction) {
       case 'treated':
-        filtered = filtered.filter(item => item.treated);
+        switch (availabilityFilter) {
+          case 'available':
+            filtered = filtered.filter(item => 
+              item.availableAtClinic && 
+              !item.treated && 
+              item.status === "ACCEPTED"
+            );
+            break;
+          case 'treated':
+            filtered = filtered.filter(item => 
+              item.treated && 
+              item.status === "ACCEPTED"
+            );
+            break;
+          case 'all':
+            filtered = filtered.filter(item => item.status === "ACCEPTED");
+            break;
+        }
+        break;
+      
+      case 'emergency':
+        switch (availabilityFilter) {
+          case 'emergency':
+            filtered = filtered.filter(item => 
+              item.isEmergency && 
+              item.status === "ACCEPTED"
+            );
+            break;
+          case 'non-emergency':
+            filtered = filtered.filter(item => 
+              !item.isEmergency && 
+              item.status === "ACCEPTED"
+            );
+            break;
+          case 'all':
+            filtered = filtered.filter(item => item.status === "ACCEPTED");
+            break;
+        }
+        break;
+      
+      case 'cancel':
+        switch (availabilityFilter) {
+          case 'cancelled':
+            filtered = filtered.filter(item => item.status === "CANCELLED");
+            break;
+          case 'cancellable':
+            filtered = filtered.filter(item => 
+              item.status === "ACCEPTED" && 
+              !item.treated
+            );
+            break;
+          case 'all':
+            // Include all appointments in cancel mode
+            break;
+        }
+        break;
+      
+      case 'edit':
+        switch (availabilityFilter) {
+          case 'editable':
+            filtered = filtered.filter(item => !item.treated);
+            break;
+          case 'all':
+            // Include all appointments in edit mode
+            break;
+        }
         break;
     }
 
+    // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(item => 
         item.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -133,30 +232,80 @@ export default function BookingScreen() {
       );
     }
 
-    return filtered;
-  }, [appointments, availabilityFilter, searchQuery]);
+    // Apply emergency sorting (only for ACCEPTED emergency appointments)
+    return sortAppointments(filtered);
+  }, [appointments, selectedMarkAction, availabilityFilter, searchQuery]);
 
+  // Action handlers with validation - FIXED APPOINTMENT LOOKUP
   const toggleAvailability = async (id: string, value: boolean) => {
-    const itemToToggle = appointments?.find((item) => item.appointmentId === id);
+    const appointment = findAppointment(id);
+    if (!appointment) {
+      showToast("Appointment not found.", 'error');
+      return;
+    }
 
-    if (itemToToggle && itemToToggle.paymentStatus) {
+    const validation: ActionValidation = value ? canMarkAvailable(appointment) : canMarkUnavailable(appointment);
+    
+    if (!validation.allowed) {
+      showToast(validation.message || "Action not allowed", 'error');
+      return;
+    }
+
+    if (validation.needsConfirmation) {
+      showConfirmation(
+        `Are you sure you want to mark this appointment as ${value ? 'available' : 'unavailable'}?`,
+        async () => {
+          try {
+            await updateAppointmentHandler(id, { availableAtClinic: value });
+            showToast(`Appointment ${value ? 'marked as available' : 'marked as unavailable'}`, 'success');
+          } catch (error) {
+            // Error handled in update function
+          }
+        },
+        id
+      );
+    } else {
       try {
-        await update(id, { availableAtClinic: value });
+        await updateAppointmentHandler(id, { availableAtClinic: value });
         showToast(`Appointment ${value ? 'marked as available' : 'marked as unavailable'}`, 'success');
       } catch (error) {
         // Error handled in update function
       }
-    } else {
-      showToast("Cannot change availability status. Payment is required before changing availability.", 'error');
     }
   };
 
   const togglePaymentStatus = async (id: string) => {
-    const itemToUpdate = appointments?.find(item => item.appointmentId === id);
-    if (itemToUpdate) {
+    const appointment = findAppointment(id);
+    if (!appointment) {
+      showToast("Appointment not found.", 'error');
+      return;
+    }
+
+    const newPaymentStatus = !appointment.paymentStatus;
+    const validation: ActionValidation = newPaymentStatus ? canMarkPaid(appointment) : canMarkUnpaid(appointment);
+    
+    if (!validation.allowed) {
+      showToast(validation.message || "Action not allowed", 'error');
+      return;
+    }
+
+    if (validation.needsConfirmation) {
+      showConfirmation(
+        `Are you sure you want to mark this appointment as ${newPaymentStatus ? 'paid' : 'unpaid'}?`,
+        async () => {
+          try {
+            await updateAppointmentHandler(id, { paymentStatus: newPaymentStatus });
+            showToast(`Payment status ${newPaymentStatus ? 'marked as paid' : 'marked as unpaid'}`, 'success');
+          } catch (error) {
+            // Error handled in update function
+          }
+        },
+        id
+      );
+    } else {
       try {
-        await update(id, { paymentStatus: !itemToUpdate.paymentStatus });
-        showToast(`Payment status ${!itemToUpdate.paymentStatus ? 'marked as paid' : 'marked as unpaid'}`, 'success');
+        await updateAppointmentHandler(id, { paymentStatus: newPaymentStatus });
+        showToast(`Payment status ${newPaymentStatus ? 'marked as paid' : 'marked as unpaid'}`, 'success');
       } catch (error) {
         // Error handled in update function
       }
@@ -164,134 +313,136 @@ export default function BookingScreen() {
   };
 
   const toggleTreatedStatus = async (id: string) => {
-    const itemToUpdate = appointments?.find(item => item.appointmentId === id);
-
-    if (!itemToUpdate) {
+    console.log(id)
+    const appointment = findAppointment(id);
+    if (!appointment) {
       showToast("Appointment not found.", 'error');
       return;
     }
 
-    if (!itemToUpdate.paymentStatus || !itemToUpdate.availableAtClinic) {
-      showToast("Item must be paid and available to toggle the treated status.", 'error');
+    const newTreatedStatus = !appointment.treated;
+    const validation: ActionValidation = newTreatedStatus ? canMarkTreated(appointment) : canMarkUntreated(appointment);
+    
+    if (!validation.allowed) {
+      showToast(validation.message || "Action not allowed", 'error');
       return;
     }
 
-    try {
-      await update(id, { treated: !itemToUpdate.treated });
-      showToast(`Appointment ${!itemToUpdate.treated ? 'marked as treated' : 'marked as untreated'}`, 'success');
-    } catch (error) {
-      // Error handled in update function
+    if (validation.needsConfirmation) {
+      showConfirmation(
+        `Are you sure you want to mark this appointment as ${newTreatedStatus ? 'treated' : 'untreated'}?`,
+        async () => {
+          try {
+            await updateAppointmentHandler(id, { treated: newTreatedStatus });
+            showToast(`Appointment ${newTreatedStatus ? 'marked as treated' : 'marked as untreated'}`, 'success');
+          } catch (error) {
+            // Error handled in update function
+          }
+        },
+        id
+      );
+    } else {
+      try {
+        await updateAppointmentHandler(id, { treated: newTreatedStatus });
+        showToast(`Appointment ${newTreatedStatus ? 'marked as treated' : 'marked as untreated'}`, 'success');
+      } catch (error) {
+        // Error handled in update function
+      }
     }
   };
 
   const markAsEmergency = async (id: string) => {
-    const itemToUpdate = appointments?.find(item => item.appointmentId === id);
-    
-    if (!itemToUpdate) {
+    const appointment = findAppointment(id);
+    if (!appointment) {
       showToast("Appointment not found.", 'error');
       return;
     }
 
-    const isCurrentlyEmergency = itemToUpdate.isEmergency || false;
-    const actionMessage = isCurrentlyEmergency 
-      ? `Are you sure you want to remove emergency status from ${itemToUpdate.patientName}'s appointment?`
-      : `Are you sure you want to mark ${itemToUpdate.patientName}'s appointment as emergency?`;
-
-    const successMessage = isCurrentlyEmergency
-      ? 'Emergency status removed successfully.'
-      : 'Appointment marked as emergency.';
+    const newEmergencyStatus = !appointment.isEmergency;
+    const validation: ActionValidation = canMarkEmergency(appointment);
+    
+    if (!validation.allowed) {
+      showToast(validation.message || "Action not allowed", 'error');
+      return;
+    }
 
     showConfirmation(
-      actionMessage,
+      `Are you sure you want to ${newEmergencyStatus ? 'mark as emergency' : 'remove emergency status'}?`,
       async () => {
         try {
-          const result = await dispatch(updateEmergencyStatus( 
-            itemToUpdate.appointmentId,
-            !isCurrentlyEmergency 
-          ));
-          
+          const result = await dispatch(updateEmergencyStatus(id, newEmergencyStatus));
           if (result) {
-            showToast(successMessage, 'success');
+            showToast(`Appointment ${newEmergencyStatus ? 'marked as emergency' : 'emergency status removed'}`, 'success');
           } else {
-            showToast(`Failed to ${isCurrentlyEmergency ? 'remove emergency status' : 'mark as emergency'}.`, 'error');
+            showToast(`Failed to ${newEmergencyStatus ? 'mark as emergency' : 'remove emergency status'}.`, 'error');
           }
         } catch (error) {
           console.error('Failed to update emergency status:', error);
-          showToast(`Failed to ${isCurrentlyEmergency ? 'remove emergency status' : 'mark as emergency'}.`, 'error');
+          showToast(`Failed to ${newEmergencyStatus ? 'mark as emergency' : 'remove emergency status'}.`, 'error');
         }
-      }
+      },
+      id
     );
   };
 
   const cancelAppointmentHandler = async (id: string) => {
-    const itemToUpdate = appointments?.find(item => item.appointmentId === id);
-    
-    if (!itemToUpdate) {
+    const appointment = findAppointment(id);
+    if (!appointment) {
       showToast("Appointment not found.", 'error');
       return;
     }
 
-    const isCurrentlyCancelled = itemToUpdate.status === 'cancelled';
-    const actionMessage = isCurrentlyCancelled
-      ? `Are you sure you want to restore ${itemToUpdate.patientName}'s appointment?`
-      : `Are you sure you want to cancel ${itemToUpdate.patientName}'s appointment?`;
-
-    const successMessage = isCurrentlyCancelled
-      ? 'Appointment restored successfully.'
-      : 'Appointment cancelled successfully.';
+    const validation: ActionValidation = canCancel(appointment);
+    
+    if (!validation.allowed) {
+      showToast(validation.message || "Action not allowed", 'error');
+      return;
+    }
 
     showConfirmation(
-      actionMessage,
+      'Are you sure you want to cancel this appointment?',
       async () => {
         try {
-          let result;
-          if (isCurrentlyCancelled) {
-            // Restore appointment - mark as scheduled and available
-            result = await update(id, { 
-              status: 'scheduled',
-              availableAtClinic: true 
-            });
-          } else {
-            // Cancel appointment
-            result = await dispatch(cancelAppointment(itemToUpdate.appointmentId));
-          }
-          
+          const result = await dispatch(cancelAppointment(id));
           if (result) {
-            showToast(successMessage, 'success');
+            showToast('Appointment cancelled successfully.', 'success');
           } else {
-            showToast(`Failed to ${isCurrentlyCancelled ? 'restore' : 'cancel'} appointment.`, 'error');
+            showToast('Failed to cancel appointment.', 'error');
           }
         } catch (error) {
-          console.error('Failed to cancel/restore appointment:', error);
-          showToast(`Failed to ${isCurrentlyCancelled ? 'restore' : 'cancel'} appointment.`, 'error');
+          console.error('Failed to cancel appointment:', error);
+          showToast('Failed to cancel appointment.', 'error');
         }
-      }
+      },
+      id
     );
   };
 
   const editAppointment = async (id: string, updates: any) => {
-    const itemToUpdate = appointments?.find(item => item.appointmentId === id);
-    
-    if (!itemToUpdate) {
+    const appointment = findAppointment(id);
+    if (!appointment) {
       showToast("Appointment not found.", 'error');
       return;
     }
 
-    // For now, we'll show a simple edit example
-    // In a real app, you would have a proper edit form with more fields
+    const validation: ActionValidation = canEdit(appointment);
+    
+    if (!validation.allowed) {
+      showToast(validation.message || "Action not allowed", 'error');
+      return;
+    }
+
     showConfirmation(
-      'Edit Patient Name - This will update the patient name. Continue?',
+      'Save changes to this appointment?',
       async () => {
         try {
-          await update(id, { 
-            patientName: itemToUpdate.patientName + ' (Updated)',
-            ...updates
-          });
+          await updateAppointmentHandler(id, updates);
           showToast('Appointment updated successfully.', 'success');
         } catch (error) {
           // Error handled in update function
         }
-      }
+      },
+      id
     );
   };
 
@@ -310,6 +461,7 @@ export default function BookingScreen() {
         <BookingFilterButtons
           availabilityFilter={availabilityFilter}
           setAvailabilityFilter={setAvailabilityFilter}
+          selectedMarkAction={selectedMarkAction}
         />
 
         <BookingList
@@ -327,9 +479,9 @@ export default function BookingScreen() {
           selectedMarkAction={selectedMarkAction}
         />
 
-        {/* Confirmation Popup for actions */}
+        {/* Single Confirmation Popup */}
         <AlertPopup
-          message={confirmationMessage}
+          message={confirmationData?.message || ''}
           visible={confirmationPopupVisible}
           onClose={handleConfirmationClose}
           type="confirmation"

@@ -1,4 +1,4 @@
-// appointmentHeader.tsx
+// appointmentHeader.tsx - Fixed version
 import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ interface AppointmentHeaderProps {
     paymentStatus: boolean;
     avatar?: string;
     isEmergency?: boolean;
+    status: "ACCEPTED" | "CANCELLED";
   };
   onToggleExpand: () => void;
   onToggleTreatedStatus: () => void;
@@ -36,12 +37,41 @@ const AppointmentHeader: React.FC<AppointmentHeaderProps> = ({
   onEditAction,
   selectedMarkAction,
 }) => {
+  // Fix: Prevent event propagation and call the correct functions
+  const handleToggleAvailability = (value: boolean) => {
+    onToggleAvailability(value);
+  };
+
+  const handleToggleTreatedStatus = (e: any) => {
+    e?.stopPropagation?.(); // Prevent event bubbling
+    onToggleTreatedStatus();
+  };
+
+  const handleEmergencyAction = (e: any) => {
+    e?.stopPropagation?.(); // Prevent event bubbling
+    onEmergencyAction();
+  };
+
+  const handleCancelAction = (e: any) => {
+    e?.stopPropagation?.(); // Prevent event bubbling
+    onCancelAction();
+  };
+
+  const handleEditAction = (e: any) => {
+    e?.stopPropagation?.(); // Prevent event bubbling
+    onEditAction();
+  };
+
+  const handleHeaderPress = (e: any) => {
+    onToggleExpand();
+  };
+
   const renderActionButton = () => {
     switch (selectedMarkAction) {
       case 'emergency':
         return (
           <TouchableOpacity 
-            onPress={onEmergencyAction}
+            onPress={handleEmergencyAction}
             style={appointmentCardStyles.emergencyButton}
           >
             <MaterialIcons 
@@ -55,7 +85,7 @@ const AppointmentHeader: React.FC<AppointmentHeaderProps> = ({
       case 'cancel':
         return (
           <TouchableOpacity 
-            onPress={onCancelAction}
+            onPress={handleCancelAction}
             style={appointmentCardStyles.cancelButton}
           >
             <MaterialIcons 
@@ -69,7 +99,7 @@ const AppointmentHeader: React.FC<AppointmentHeaderProps> = ({
       case 'edit':
         return (
           <TouchableOpacity 
-            onPress={onEditAction}
+            onPress={handleEditAction}
             style={appointmentCardStyles.editButton}
           >
             <MaterialIcons 
@@ -84,7 +114,7 @@ const AppointmentHeader: React.FC<AppointmentHeaderProps> = ({
       default:
         return (
           <TouchableOpacity 
-            onPress={onToggleTreatedStatus}
+            onPress={handleToggleTreatedStatus}
             style={appointmentCardStyles.treatedButton}
           >
             <MaterialIcons 
@@ -100,13 +130,13 @@ const AppointmentHeader: React.FC<AppointmentHeaderProps> = ({
   return (
     <TouchableOpacity
       activeOpacity={0.9}
-      onPress={onToggleExpand}
+      onPress={handleHeaderPress}
       style={appointmentCardStyles.header}
     >
       <View style={appointmentCardStyles.availabilityContainer}>
         <Switch
           value={item.availableAtClinic}
-          onValueChange={onToggleAvailability}
+          onValueChange={handleToggleAvailability}
           thumbColor={item.availableAtClinic ? MedicalTheme.colors.success[500] : MedicalTheme.colors.neutral[100]}
           trackColor={{ 
             false: MedicalTheme.colors.neutral[100], 

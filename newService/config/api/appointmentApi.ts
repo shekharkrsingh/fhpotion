@@ -1,4 +1,5 @@
-import { AppDispatch } from "@/newStore";
+// appointmentApi.ts - Fixed version
+import { AppDispatch, RootState } from "@/newStore";
 import { apiConnector } from "@/newService/apiConnector";
 import { appointmentEndpoints } from "@/newService/config/apiEndpoints/appointmentEndpoints";
 import {
@@ -8,8 +9,27 @@ import {
   setSuccess,
   updateAppointment as updateAppointmentInStore,
   addAppointment as addAppointmentInStore,
+  revertAppointmentUpdate,
 } from "@/newStore/slices/appointmentSlice";
 import { Appointment } from "@/newStore/slices/appointmentSlice";
+
+// Helper function to handle API errors without state changes
+const handleApiError = (error: any, dispatch: AppDispatch, originalAppointment?: Appointment) => {
+  const message =
+    error?.response?.data?.message ||
+    (error?.response?.status === 401
+      ? "Unauthorized. Please log in again."
+      : "Something went wrong.");
+  
+  dispatch(setError(message));
+  
+  // Revert state if we have original appointment data
+  if (originalAppointment) {
+    dispatch(revertAppointmentUpdate(originalAppointment));
+  }
+  
+  return false;
+};
 
 export const getAppointments = () => async (dispatch: AppDispatch): Promise<boolean> => {
   try {
@@ -30,13 +50,7 @@ export const getAppointments = () => async (dispatch: AppDispatch): Promise<bool
     dispatch(setError(response.data?.message || "Failed to fetch appointments"));
     return false;
   } catch (error: any) {
-    const message =
-      error?.response?.data?.message ||
-      (error?.response?.status === 401
-        ? "Unauthorized. Please log in again."
-        : "Something went wrong while fetching appointments.");
-    dispatch(setError(message));
-    return false;
+    return handleApiError(error, dispatch);
   } finally {
     dispatch(setLoading(false));
   }
@@ -44,10 +58,18 @@ export const getAppointments = () => async (dispatch: AppDispatch): Promise<bool
 
 export const updateAppointment =
   (appointmentId: string, updateData: Partial<Appointment>) =>
-  async (dispatch: AppDispatch): Promise<boolean> => {
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
+    let originalAppointment: Appointment | undefined;
+    
     try {
       dispatch(setLoading(true));
       dispatch(setError(null));
+
+      // Get current state and store original appointment for rollback
+      const state = getState();
+      originalAppointment = state.appointments.appointments.find(
+        (appt: Appointment) => appt.appointmentId === appointmentId
+      );
 
       const response = await apiConnector({
         method: "PUT",
@@ -65,13 +87,7 @@ export const updateAppointment =
       dispatch(setError(response.data?.message || "Failed to update appointment"));
       return false;
     } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        (error?.response?.status === 401
-          ? "Unauthorized. Please log in again."
-          : "Something went wrong while updating appointment.");
-      dispatch(setError(message));
-      return false;
+      return handleApiError(error, dispatch, originalAppointment);
     } finally {
       dispatch(setLoading(false));
     }
@@ -79,10 +95,18 @@ export const updateAppointment =
 
 export const updateEmergencyStatus =
   (appointmentId: string, isEmergency: boolean) =>
-  async (dispatch: AppDispatch): Promise<boolean> => {
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
+    let originalAppointment: Appointment | undefined;
+    
     try {
       dispatch(setLoading(true));
       dispatch(setError(null));
+
+      // Get current state and store original appointment for rollback
+      const state = getState();
+      originalAppointment = state.appointments.appointments.find(
+        (appt: Appointment) => appt.appointmentId === appointmentId
+      );
 
       const response = await apiConnector({
         method: "PATCH",
@@ -100,13 +124,7 @@ export const updateEmergencyStatus =
       dispatch(setError(response.data?.message || "Failed to update emergency status"));
       return false;
     } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        (error?.response?.status === 401
-          ? "Unauthorized. Please log in again."
-          : "Something went wrong while updating emergency status.");
-      dispatch(setError(message));
-      return false;
+      return handleApiError(error, dispatch, originalAppointment);
     } finally {
       dispatch(setLoading(false));
     }
@@ -114,10 +132,18 @@ export const updateEmergencyStatus =
 
 export const cancelAppointment =
   (appointmentId: string) =>
-  async (dispatch: AppDispatch): Promise<boolean> => {
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
+    let originalAppointment: Appointment | undefined;
+    
     try {
       dispatch(setLoading(true));
       dispatch(setError(null));
+
+      // Get current state and store original appointment for rollback
+      const state = getState();
+      originalAppointment = state.appointments.appointments.find(
+        (appt: Appointment) => appt.appointmentId === appointmentId
+      );
 
       const response = await apiConnector({
         method: "PATCH",
@@ -134,13 +160,7 @@ export const cancelAppointment =
       dispatch(setError(response.data?.message || "Failed to cancel appointment"));
       return false;
     } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        (error?.response?.status === 401
-          ? "Unauthorized. Please log in again."
-          : "Something went wrong while cancelling appointment.");
-      dispatch(setError(message));
-      return false;
+      return handleApiError(error, dispatch, originalAppointment);
     } finally {
       dispatch(setLoading(false));
     }
@@ -169,13 +189,7 @@ export const addAppointment =
       dispatch(setError(response.data?.message || "Failed to create appointment"));
       return false;
     } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        (error?.response?.status === 401
-          ? "Unauthorized. Please log in again."
-          : "Something went wrong while creating appointment.");
-      dispatch(setError(message));
-      return false;
+      return handleApiError(error, dispatch);
     } finally {
       dispatch(setLoading(false));
     }
@@ -203,13 +217,7 @@ export const getAppointmentById =
       dispatch(setError(response.data?.message || "Failed to fetch appointment"));
       return null;
     } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        (error?.response?.status === 401
-          ? "Unauthorized. Please log in again."
-          : "Something went wrong while fetching appointment.");
-      dispatch(setError(message));
-      return null;
+      return handleApiError(error, dispatch);
     } finally {
       dispatch(setLoading(false));
     }
@@ -238,13 +246,7 @@ export const getAppointmentsByDate =
       dispatch(setError(response.data?.message || "Failed to fetch appointments by date"));
       return false;
     } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        (error?.response?.status === 401
-          ? "Unauthorized. Please log in again."
-          : "Something went wrong while fetching appointments by date.");
-      dispatch(setError(message));
-      return false;
+      return handleApiError(error, dispatch);
     } finally {
       dispatch(setLoading(false));
     }
