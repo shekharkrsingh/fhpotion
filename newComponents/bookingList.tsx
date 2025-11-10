@@ -17,6 +17,11 @@ interface BookingListProps {
   toggleAvailability: (id: string, value: boolean) => void;
   togglePaymentStatus: (id: string) => void;
   toggleTreatedStatus: (id: string) => void;
+  markAsEmergency: (id: string) => void;
+  cancelAppointment: (id: string) => void;
+  editAppointment: (id: string, updates: any) => void;
+  selectedMarkAction: 'treated' | 'emergency' | 'cancel' | 'edit';
+  onAppointmentAction?: (id: string) => void;
 }
 
 const BookingList: React.FC<BookingListProps> = ({
@@ -28,6 +33,11 @@ const BookingList: React.FC<BookingListProps> = ({
   toggleAvailability,
   togglePaymentStatus,
   toggleTreatedStatus,
+  markAsEmergency,
+  cancelAppointment,
+  editAppointment,
+  selectedMarkAction,
+  onAppointmentAction,
 }) => {
   const { success, loading } = useSelector((state: RootState) => state.appointments);
 
@@ -39,6 +49,10 @@ const BookingList: React.FC<BookingListProps> = ({
       toggleAvailability={toggleAvailability}
       togglePaymentStatus={togglePaymentStatus}
       toggleTreatedStatus={toggleTreatedStatus}
+      markAsEmergency={markAsEmergency}
+      cancelAppointment={cancelAppointment}
+      editAppointment={editAppointment}
+      selectedMarkAction={selectedMarkAction}
     />
   );
 

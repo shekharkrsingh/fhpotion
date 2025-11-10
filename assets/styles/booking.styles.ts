@@ -100,4 +100,58 @@ export const bookingHeaderStyles = StyleSheet.create({
   hidden: {
     display: 'none',
   },
+   markButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: MedicalTheme.colors.primary[50],
+    paddingHorizontal: MedicalTheme.spacing[3],
+    paddingVertical: MedicalTheme.spacing[2],
+    borderRadius: MedicalTheme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: MedicalTheme.colors.primary[200],
+  },
+  markButtonText: {
+    color: MedicalTheme.colors.primary[700],
+    fontWeight: MedicalTheme.typography.fontWeight.medium,
+    fontSize: MedicalTheme.typography.fontSize.sm,
+    marginLeft: MedicalTheme.spacing[1],
+    marginRight: MedicalTheme.spacing[1],
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 100,
+    paddingRight: 20,
+  },
+  dropdownContainer: {
+    backgroundColor: MedicalTheme.colors.background.primary,
+    borderRadius: MedicalTheme.borderRadius.lg,
+    padding: MedicalTheme.spacing[2],
+    minWidth: 150,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: MedicalTheme.spacing[2],
+    paddingHorizontal: MedicalTheme.spacing[3],
+    borderRadius: MedicalTheme.borderRadius.md,
+  },
+  dropdownItemSelected: {
+    backgroundColor: MedicalTheme.colors.primary[50],
+  },
+  dropdownItemText: {
+    flex: 1,
+    marginLeft: MedicalTheme.spacing[2],
+    fontSize: MedicalTheme.typography.fontSize.sm,
+    color: MedicalTheme.colors.text.primary,
+    fontWeight: MedicalTheme.typography.fontWeight.medium,
+  },
 });
+

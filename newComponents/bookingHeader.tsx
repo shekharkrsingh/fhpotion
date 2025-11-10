@@ -1,20 +1,25 @@
+// bookingHeader.tsx
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Animated, Modal, TouchableWithoutFeedback } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { bookingHeaderStyles } from '@/assets/styles/booking.styles';
 import { MedicalTheme } from '@/newConstants/theme';
 
 interface BookingHeaderProps {
   onSearch: (query: string) => void;
-  onEmergency?: () => void;
+  onMarkAction?: (action: 'treated' | 'emergency' | 'cancel' | 'edit') => void;
 }
 
-const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onEmergency }) => {
+type MarkAction = 'treated' | 'emergency' | 'cancel' | 'edit';
+
+const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onMarkAction }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [showMarkDropdown, setShowMarkDropdown] = useState(false);
+  const [selectedMarkAction, setSelectedMarkAction] = useState<MarkAction>('treated');
   
   // Animation for slide effect
-  const searchSlide = useRef(new Animated.Value(-60)).current; // Start above the header
+  const searchSlide = useRef(new Animated.Value(-60)).current;
 
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
@@ -23,7 +28,6 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onEmergency }) 
 
   const handleSearchToggle = () => {
     if (showSearch) {
-      // Slide up and hide
       Animated.timing(searchSlide, {
         toValue: -60,
         duration: 300,
@@ -34,7 +38,6 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onEmergency }) 
         onSearch('');
       });
     } else {
-      // Show and slide down
       setShowSearch(true);
       setTimeout(() => {
         Animated.timing(searchSlide, {
@@ -46,11 +49,39 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onEmergency }) 
     }
   };
 
-  const handleEmergency = () => {
-    if (onEmergency) {
-      onEmergency();
-    } else {
-      alert('Emergency protocol activated!');
+  const handleMarkActionSelect = (action: MarkAction) => {
+    setSelectedMarkAction(action);
+    setShowMarkDropdown(false);
+    if (onMarkAction) {
+      onMarkAction(action);
+    }
+  };
+
+  const getMarkActionIcon = (action: MarkAction) => {
+    switch (action) {
+      case 'emergency':
+        return 'emergency';
+      case 'cancel':
+        return 'cancel';
+      case 'edit':
+        return 'edit';
+      case 'treated':
+      default:
+        return 'check-circle';
+    }
+  };
+
+  const getMarkActionColor = (action: MarkAction) => {
+    switch (action) {
+      case 'emergency':
+        return MedicalTheme.colors.error[600];
+      case 'cancel':
+        return MedicalTheme.colors.warning[600];
+      case 'edit':
+        return MedicalTheme.colors.primary[500];
+      case 'treated':
+      default:
+        return MedicalTheme.colors.success[600];
     }
   };
 
@@ -60,20 +91,25 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onEmergency }) 
         <Text style={bookingHeaderStyles.title}>Booking List</Text>
         
         <View style={bookingHeaderStyles.headerButtons}>
-          {/* Emergency Button */}
-          {/* <TouchableOpacity
-            style={bookingHeaderStyles.emergencyButton}
-            onPress={handleEmergency}
+          {/* Mark Dropdown Button */}
+          <TouchableOpacity
+            style={bookingHeaderStyles.markButton}
+            onPress={() => setShowMarkDropdown(true)}
           >
             <MaterialIcons 
-              name="emergency" 
+              name={getMarkActionIcon(selectedMarkAction)} 
               size={20} 
-              color={MedicalTheme.colors.error[600]} 
+              color={getMarkActionColor(selectedMarkAction)} 
             />
-            <Text style={bookingHeaderStyles.emergencyButtonText}>
-              Emergency
+            <Text style={bookingHeaderStyles.markButtonText}>
+              Mark
             </Text>
-          </TouchableOpacity> */}
+            <MaterialIcons 
+              name="arrow-drop-down" 
+              size={16} 
+              color={MedicalTheme.colors.text.secondary} 
+            />
+          </TouchableOpacity>
 
           {/* Search Toggle Button */}
           <TouchableOpacity
@@ -89,7 +125,109 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onEmergency }) 
         </View>
       </View>
 
-      {/* Animated Search Input - Slides in from top */}
+      {/* Mark Dropdown Modal */}
+      <Modal
+        visible={showMarkDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowMarkDropdown(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowMarkDropdown(false)}>
+          <View style={bookingHeaderStyles.dropdownOverlay}>
+            <View style={bookingHeaderStyles.dropdownContainer}>
+              <TouchableOpacity
+                style={[
+                  bookingHeaderStyles.dropdownItem,
+                  selectedMarkAction === 'treated' && bookingHeaderStyles.dropdownItemSelected
+                ]}
+                onPress={() => handleMarkActionSelect('treated')}
+              >
+                <MaterialIcons 
+                  name="check-circle" 
+                  size={20} 
+                  color={MedicalTheme.colors.success[600]} 
+                />
+                <Text style={bookingHeaderStyles.dropdownItemText}>Treated</Text>
+                {selectedMarkAction === 'treated' && (
+                  <MaterialIcons 
+                    name="check" 
+                    size={16} 
+                    color={MedicalTheme.colors.success[600]} 
+                  />
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  bookingHeaderStyles.dropdownItem,
+                  selectedMarkAction === 'emergency' && bookingHeaderStyles.dropdownItemSelected
+                ]}
+                onPress={() => handleMarkActionSelect('emergency')}
+              >
+                <MaterialIcons 
+                  name="emergency" 
+                  size={20} 
+                  color={MedicalTheme.colors.error[600]} 
+                />
+                <Text style={bookingHeaderStyles.dropdownItemText}>Emergency</Text>
+                {selectedMarkAction === 'emergency' && (
+                  <MaterialIcons 
+                    name="check" 
+                    size={16} 
+                    color={MedicalTheme.colors.error[600]} 
+                  />
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  bookingHeaderStyles.dropdownItem,
+                  selectedMarkAction === 'cancel' && bookingHeaderStyles.dropdownItemSelected
+                ]}
+                onPress={() => handleMarkActionSelect('cancel')}
+              >
+                <MaterialIcons 
+                  name="cancel" 
+                  size={20} 
+                  color={MedicalTheme.colors.warning[600]} 
+                />
+                <Text style={bookingHeaderStyles.dropdownItemText}>Cancel</Text>
+                {selectedMarkAction === 'cancel' && (
+                  <MaterialIcons 
+                    name="check" 
+                    size={16} 
+                    color={MedicalTheme.colors.warning[600]} 
+                  />
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  bookingHeaderStyles.dropdownItem,
+                  selectedMarkAction === 'edit' && bookingHeaderStyles.dropdownItemSelected
+                ]}
+                onPress={() => handleMarkActionSelect('edit')}
+              >
+                <MaterialIcons 
+                  name="edit" 
+                  size={20} 
+                  color={MedicalTheme.colors.primary[500]} 
+                />
+                <Text style={bookingHeaderStyles.dropdownItemText}>Edit</Text>
+                {selectedMarkAction === 'edit' && (
+                  <MaterialIcons 
+                    name="check" 
+                    size={16} 
+                    color={MedicalTheme.colors.primary[500]} 
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Animated Search Input */}
       {showSearch && (
         <Animated.View 
           style={[

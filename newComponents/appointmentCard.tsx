@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Animated } from 'react-native';
+import { View, Animated, Modal, TouchableOpacity, Text } from 'react-native';
 import { appointmentCardStyles } from '@/assets/styles/appointmentCard.styles';
 import AlertPopup from '@/newComponents/alertPopup';
 import AppointmentHeader from '@/newComponents/appointmentHeader';
@@ -29,6 +29,10 @@ interface AppointmentCardProps {
   toggleAvailability: (id: string, value: boolean) => void;
   togglePaymentStatus: (id: string) => void;
   toggleTreatedStatus: (id: string) => void;
+  markAsEmergency: (id: string) => void;
+  cancelAppointment: (id: string) => void;
+  editAppointment: (id: string, updates: any) => void;
+  selectedMarkAction: 'treated' | 'emergency' | 'cancel' | 'edit';
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -38,6 +42,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   toggleAvailability,
   togglePaymentStatus,
   toggleTreatedStatus,
+  markAsEmergency,
+  cancelAppointment,
+  editAppointment,
+  selectedMarkAction,
 }) => {
   const [popupVisible, setPopupVisible] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState('');
@@ -45,6 +53,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   
   const [alertPopupVisible, setAlertPopupVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+
+  const [editModalVisible, setEditModalVisible] = useState(false);
 
   const showPopup = (message: string, action: () => void) => {
     setConfirmationMessage(message);
@@ -79,6 +89,24 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     }
   };
 
+  const handleEmergencyAction = () => {
+    showPopup(
+      'Are you sure you want to mark this appointment as emergency?',
+      () => markAsEmergency(item.appointmentId)
+    );
+  };
+
+  const handleCancelAction = () => {
+    showPopup(
+      'Are you sure you want to cancel this appointment?',
+      () => cancelAppointment(item.appointmentId)
+    );
+  };
+
+  const handleEditAction = () => {
+    setEditModalVisible(true);
+  };
+
   const handleToggleAvailability = (value: boolean) => {
     if (value && !item.paymentStatus) {
       showAlert('Cannot mark as available. Payment has not been received for this appointment.');
@@ -95,6 +123,11 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
   const handleToggleExpand = () => {
     onToggleExpand(isExpanded ? null : item.appointmentId);
+  };
+
+  const handleSaveEdit = (updates: any) => {
+    editAppointment(item.appointmentId, updates);
+    setEditModalVisible(false);
   };
 
   const emergencyCardStyle = item.isEmergency ? {
@@ -133,6 +166,41 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         confirmText="OK"
         showIcon={true}
       />
+
+      {/* Edit Modal */}
+      <Modal
+        visible={editModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={appointmentCardStyles.editModalOverlay}>
+          <View style={appointmentCardStyles.editModalContainer}>
+            <Text style={appointmentCardStyles.editModalTitle}>Edit Appointment</Text>
+            
+            {/* Add your edit form fields here */}
+            <Text style={appointmentCardStyles.editModalText}>
+              Edit functionality for: {item.patientName}
+            </Text>
+            
+            <View style={appointmentCardStyles.editModalButtons}>
+              <TouchableOpacity
+                style={appointmentCardStyles.editModalCancelButton}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={appointmentCardStyles.editModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={appointmentCardStyles.editModalSaveButton}
+                onPress={() => handleSaveEdit({})}
+              >
+                <Text style={appointmentCardStyles.editModalSaveText}>Save Changes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       
       <View style={[appointmentCardStyles.container, emergencyCardStyle]}>
         <AppointmentHeader
@@ -140,6 +208,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           onToggleExpand={handleToggleExpand}
           onToggleTreatedStatus={handleToggleTreatedStatus}
           onToggleAvailability={handleToggleAvailability}
+          onEmergencyAction={handleEmergencyAction}
+          onCancelAction={handleCancelAction}
+          onEditAction={handleEditAction}
+          selectedMarkAction={selectedMarkAction}
         />
 
         {isExpanded && (

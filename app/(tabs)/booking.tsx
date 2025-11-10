@@ -20,6 +20,7 @@ export default function BookingScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'treated'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMarkAction, setSelectedMarkAction] = useState<'treated' | 'emergency' | 'cancel' | 'edit'>('treated');
 
   const fetchData = async () => {
     try {
@@ -47,24 +48,17 @@ export default function BookingScreen() {
 
   const handleSearch = (query: string) => setSearchQuery(query);
 
-  const handleEmergency = () => {
-    Alert.alert(
-      'Emergency Protocol',
-      'Are you sure you want to activate emergency protocol? This will prioritize emergency cases.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Activate',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Emergency', 'Emergency protocol activated! Prioritizing emergency cases.');
-          },
-        },
-      ]
-    );
+  const handleMarkAction = (action: 'treated' | 'emergency' | 'cancel' | 'edit') => {
+    setSelectedMarkAction(action);
+    
+    // Show confirmation for emergency action
+    if (action === 'emergency') {
+      Alert.alert(
+        'Emergency Protocol',
+        'Emergency protocol activated! All appointments will now show emergency action buttons.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   // Safe filtering with fallback to empty array
@@ -126,6 +120,104 @@ export default function BookingScreen() {
     await update(id, { treated: !itemToUpdate.treated });
   };
 
+  const markAsEmergency = async (id: string) => {
+    const itemToUpdate = appointments?.find(item => item.appointmentId === id);
+    
+    if (!itemToUpdate) {
+      alert("Appointment not found.");
+      return;
+    }
+
+    Alert.alert(
+      'Mark as Emergency',
+      `Are you sure you want to mark ${itemToUpdate.patientName}'s appointment as emergency?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Mark as Emergency',
+          style: 'destructive',
+          onPress: async () => {
+            await update(id, { 
+              isEmergency: true,
+              status: 'emergency'
+            });
+            Alert.alert('Success', 'Appointment marked as emergency.');
+          },
+        },
+      ]
+    );
+  };
+
+  const cancelAppointment = async (id: string) => {
+    const itemToUpdate = appointments?.find(item => item.appointmentId === id);
+    
+    if (!itemToUpdate) {
+      alert("Appointment not found.");
+      return;
+    }
+
+    Alert.alert(
+      'Cancel Appointment',
+      `Are you sure you want to cancel ${itemToUpdate.patientName}'s appointment?`,
+      [
+        {
+          text: 'Keep Appointment',
+          style: 'cancel',
+        },
+        {
+          text: 'Cancel Appointment',
+          style: 'destructive',
+          onPress: async () => {
+            await update(id, { 
+              status: 'cancelled',
+              availableAtClinic: false
+            });
+            Alert.alert('Success', 'Appointment cancelled successfully.');
+          },
+        },
+      ]
+    );
+  };
+
+  const editAppointment = async (id: string, updates: any) => {
+    const itemToUpdate = appointments?.find(item => item.appointmentId === id);
+    
+    if (!itemToUpdate) {
+      alert("Appointment not found.");
+      return;
+    }
+
+    // For now, we'll show a simple edit example
+    // In a real app, you would have a proper edit form with more fields
+    Alert.prompt(
+      'Edit Patient Name',
+      'Enter new patient name:',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Save',
+          onPress: async (newName) => {
+            if (newName && newName.trim()) {
+              await update(id, { 
+                patientName: newName.trim(),
+                ...updates
+              });
+              Alert.alert('Success', 'Appointment updated successfully.');
+            }
+          },
+        },
+      ],
+      'plain-text',
+      itemToUpdate.patientName
+    );
+  };
+
   useEffect(() => {
     fetchData();
   }, [dispatch]);
@@ -135,7 +227,7 @@ export default function BookingScreen() {
       <View style={bookingStyles.container}>
         <BookingHeader 
           onSearch={handleSearch}
-          onEmergency={handleEmergency}
+          onMarkAction={handleMarkAction}
         />
         
         <BookingFilterButtons
@@ -152,6 +244,10 @@ export default function BookingScreen() {
           toggleAvailability={toggleAvailability}
           togglePaymentStatus={togglePaymentStatus}
           toggleTreatedStatus={toggleTreatedStatus}
+          markAsEmergency={markAsEmergency}
+          cancelAppointment={cancelAppointment}
+          editAppointment={editAppointment}
+          selectedMarkAction={selectedMarkAction}
         />
       </View>
     </GestureHandlerRootView>
