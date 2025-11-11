@@ -1,9 +1,11 @@
+// appointmentCard.tsx (Updated version)
 import React, { useState } from 'react';
-import { View, Modal, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text } from 'react-native';
 import { appointmentCardStyles } from '@/assets/styles/appointmentCard.styles';
 import AlertPopup from '@/newComponents/alertPopup';
 import AppointmentHeader from '@/newComponents/appointmentHeader';
 import AppointmentDetails from '@/newComponents/appointmentDetails';
+import EditAppointmentForm from '@/newComponents/EditAppointmentForm';
 import { MedicalTheme } from '@/newConstants/theme';
 
 interface AppointmentCardProps {
@@ -49,7 +51,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 }) => {
   const [alertPopupVisible, setAlertPopupVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editFormVisible, setEditFormVisible] = useState(false);
 
   const showAlert = (message: string) => {
     setAlertMessage(message);
@@ -82,12 +84,16 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   };
 
   const handleEditAction = () => {
-    setEditModalVisible(true);
+    setEditFormVisible(true);
   };
 
   const handleSaveEdit = (updates: any) => {
     editAppointment(item.appointmentId, updates);
-    setEditModalVisible(false);
+    setEditFormVisible(false);
+  };
+
+  const handleCloseEditForm = () => {
+    setEditFormVisible(false);
   };
 
   // Enhanced card styling for different states
@@ -128,49 +134,13 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         showIcon={true}
       />
 
-      {/* Edit Modal */}
-      <Modal
-        visible={editModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setEditModalVisible(false)}
-      >
-        <View style={appointmentCardStyles.editModalOverlay}>
-          <View style={appointmentCardStyles.editModalContainer}>
-            <Text style={appointmentCardStyles.editModalTitle}>
-              Edit Appointment - {item.patientName}
-            </Text>
-            
-            <Text style={appointmentCardStyles.editModalText}>
-              {item.status === "CANCELLED" 
-                ? "This appointment is currently cancelled. Editing will change status to ACCEPTED."
-                : "Make changes to the appointment details."
-              }
-            </Text>
-            
-            <View style={appointmentCardStyles.editModalButtons}>
-              <TouchableOpacity
-                style={appointmentCardStyles.editModalCancelButton}
-                onPress={() => setEditModalVisible(false)}
-              >
-                <Text style={appointmentCardStyles.editModalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={appointmentCardStyles.editModalSaveButton}
-                onPress={() => handleSaveEdit({
-                  patientName: item.patientName, // Example field
-                  // Add more editable fields here
-                })}
-              >
-                <Text style={appointmentCardStyles.editModalSaveText}>
-                  {item.status === "CANCELLED" ? "Save & Restore" : "Save Changes"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* Edit Appointment Form Modal */}
+      <EditAppointmentForm
+        visible={editFormVisible}
+        onClose={handleCloseEditForm}
+        onSave={handleSaveEdit}
+        appointment={item}
+      />
       
       <View style={[appointmentCardStyles.container, getCardStyle()]}>
         <AppointmentHeader
