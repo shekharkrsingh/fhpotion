@@ -22,6 +22,7 @@ interface ApiConnectorParams<T = any> {
   headers?: Record<string, string>;
   params?: Record<string, any>;
   tokenRequired?: boolean;
+  responseType?: 'arraybuffer' | 'blob' | 'document' | 'json' | 'text' | 'stream';
 }
 
 axiosInstance.interceptors.request.use(async (config) => {
@@ -30,7 +31,7 @@ axiosInstance.interceptors.request.use(async (config) => {
   if (tokenRequired) {
     const token = await AsyncStorage.getItem("token");
     if (!token) {
-      router.replace('/(auth)')
+      router.replace('/(auth)');
       return Promise.reject({
         response: {
           status: 401,
@@ -57,13 +58,18 @@ export const apiConnector = async <T = any>({
   headers,
   params,
   tokenRequired = true,
+  responseType = 'json',
 }: ApiConnectorParams): Promise<AxiosResponse<T>> => {
   const config: AxiosRequestConfig = {
     method,
     url,
     data: bodyData ?? null,
-    headers,
+    headers: {
+      ...headers,
+      ...(responseType === 'arraybuffer' && { 'Accept': 'application/pdf' }),
+    },
     params,
+    responseType,
   };
 
   (config as any).tokenRequired = tokenRequired;
