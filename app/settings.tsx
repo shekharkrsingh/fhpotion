@@ -5,7 +5,6 @@ import {
   TouchableOpacity, 
   ScrollView,
   TextInput,
-  Alert,
   ActivityIndicator,
   Modal
 } from 'react-native';
@@ -17,11 +16,22 @@ import { router } from 'expo-router';
 import { changeDoctorPassword, changeDoctorEmail, sendOtp, signOutDoctor } from '@/newService/config/api/authApi';
 import { MedicalTheme } from '@/newConstants/theme';
 import { styles } from '@/assets/styles/settings.styles';
+import AlertPopup from '@/newComponents/alertPopup';
+import OTPVerificationPopup from '@/newComponents/OTPVerificationPopup';
 
 const SettingsScreen = () => {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title?: string;
+    message: string;
+    type?: 'alert' | 'confirmation';
+    variant?: 'default' | 'success' | 'warning' | 'error';
+    onConfirm?: () => void;
+  }>({ visible: false, message: '' });
+  
   const dispatch = useDispatch();
   const profileData = useSelector((state: RootState) => state.profile);
   
@@ -87,6 +97,24 @@ const SettingsScreen = () => {
       account: 'person'
     };
     return icons[section] || 'settings';
+  };
+
+  // Alert functions
+  const showAlert = (config: {
+    title?: string;
+    message: string;
+    type?: 'alert' | 'confirmation';
+    variant?: 'default' | 'success' | 'warning' | 'error';
+    onConfirm?: () => void;
+  }) => {
+    setAlertConfig({ ...config, visible: true });
+  };
+
+  const hideAlert = (response?: boolean) => {
+    if (response && alertConfig.onConfirm) {
+      alertConfig.onConfirm();
+    }
+    setAlertConfig({ ...alertConfig, visible: false });
   };
 
   // Modal functions
@@ -172,15 +200,27 @@ const SettingsScreen = () => {
     try {
       const res = await changeDoctorPassword(formData.oldPassword, formData.newPassword);
       if (res) {
-        Alert.alert('Success', 'Password changed successfully!');
+        showAlert({
+          title: 'Success',
+          message: 'Password changed successfully!',
+          variant: 'success'
+        });
         updateFormData({ oldPassword: '', newPassword: '', confirmPassword: '' });
         setErrors({});
         closeModal();
       } else {
-        Alert.alert('Failed', 'Password change failed!');
+        showAlert({
+          title: 'Failed',
+          message: 'Password change failed!',
+          variant: 'error'
+        });
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to change password. Please try again.');
+      showAlert({
+        title: 'Error',
+        message: 'Failed to change password. Please try again.',
+        variant: 'error'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -194,24 +234,40 @@ const SettingsScreen = () => {
       const success = await sendOtp(formData.newEmail);
       if (success) {
         setShowOTPModal(true);
-        Alert.alert('OTP Sent', 'Verification code has been sent to your new email address.');
+        showAlert({
+          title: 'OTP Sent',
+          message: 'Verification code has been sent to your new email address.',
+          variant: 'success'
+        });
       } else {
-        Alert.alert('Error', 'Failed to send verification code. Please try again.');
+        showAlert({
+          title: 'Error',
+          message: 'Failed to send verification code. Please try again.',
+          variant: 'error'
+        });
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to send verification code. Please try again.');
+      showAlert({
+        title: 'Error',
+        message: 'Failed to send verification code. Please try again.',
+        variant: 'error'
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleVerifyOTP = async (otp: string) => {
+  const handleVerifyOTP = async (otp: string): Promise<boolean> => {
     setIsLoading(true);
     try {
       const success = await changeDoctorEmail(formData.newEmail, otp, formData.emailPassword);
       if (success) {
         setShowOTPModal(false);
-        Alert.alert('Success', 'Email updated successfully!');
+        showAlert({
+          title: 'Success',
+          message: 'Email updated successfully!',
+          variant: 'success'
+        });
         updateFormData({ 
           newEmail: '', 
           emailPassword: '', 
@@ -219,29 +275,49 @@ const SettingsScreen = () => {
         });
         setErrors({});
         closeModal();
+        return true;
       } else {
-        Alert.alert('Error', 'Failed to update email. Please try again.');
+        showAlert({
+          title: 'Error',
+          message: 'Failed to update email. Please try again.',
+          variant: 'error'
+        });
+        return false;
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to update email. Please try again.');
+      showAlert({
+        title: 'Error',
+        message: 'Failed to update email. Please try again.',
+        variant: 'error'
+      });
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResendOTP = async (): Promise<boolean> => {
+  const handleResendOTP = async (): Promise<void> => {
     try {
       const success = await sendOtp(formData.newEmail);
       if (success) {
-        Alert.alert('Success', 'OTP resent successfully!');
-        return true;
+        showAlert({
+          title: 'Success',
+          message: 'OTP resent successfully!',
+          variant: 'success'
+        });
       } else {
-        Alert.alert('Error', 'Failed to resend OTP. Please try again.');
-        return false;
+        showAlert({
+          title: 'Error',
+          message: 'Failed to resend OTP. Please try again.',
+          variant: 'error'
+        });
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to resend OTP. Please try again.');
-      return false;
+      showAlert({
+        title: 'Error',
+        message: 'Failed to resend OTP. Please try again.',
+        variant: 'error'
+      });
     }
   };
 
@@ -249,10 +325,18 @@ const SettingsScreen = () => {
     setIsLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
-      Alert.alert('Success', 'Preferences updated successfully!');
+      showAlert({
+        title: 'Success',
+        message: 'Preferences updated successfully!',
+        variant: 'success'
+      });
       closeModal();
     } catch (error) {
-      Alert.alert('Error', 'Failed to update preferences.');
+      showAlert({
+        title: 'Error',
+        message: 'Failed to update preferences.',
+        variant: 'error'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -262,10 +346,18 @@ const SettingsScreen = () => {
     setIsLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
-      Alert.alert('Success', 'Privacy settings updated successfully!');
+      showAlert({
+        title: 'Success',
+        message: 'Privacy settings updated successfully!',
+        variant: 'success'
+      });
       closeModal();
     } catch (error) {
-      Alert.alert('Error', 'Failed to update privacy settings.');
+      showAlert({
+        title: 'Error',
+        message: 'Failed to update privacy settings.',
+        variant: 'error'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -292,73 +384,101 @@ const SettingsScreen = () => {
 
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      Alert.alert(
-        'Support Ticket Created',
-        `Your support request has been submitted successfully!\n\nTicket ID: ${ticketId}\nWe'll get back to you within 24 hours.`,
-        [{ text: 'OK', onPress: () => {
+      showAlert({
+        title: 'Support Ticket Created',
+        message: `Your support request has been submitted successfully!\n\nTicket ID: ${ticketId}\nWe'll get back to you within 24 hours.`,
+        variant: 'success',
+        onConfirm: () => {
           updateFormData({ supportSubject: '', supportMessage: '', supportCategory: 'general' });
           setErrors({});
           closeModal();
-        }}]
-      );
+        }
+      });
     } catch (error) {
-      Alert.alert('Error', 'Failed to submit support request. Please try again.');
+      showAlert({
+        title: 'Error',
+        message: 'Failed to submit support request. Please try again.',
+        variant: 'error'
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // In SettingsScreen.tsx, update the handleSignout function:
-
-const handleSignout = async () => {
-  setIsLoading(true);
-  try {
-    console.log("Direct signout started");
-    await signOutDoctor();
-    closeModal();
-    router.replace('/(auth)');
-  } catch (error) {
-    console.error("Signout error:", error);
-    Alert.alert('Error', 'Failed to sign out.');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  const handleSignout = async () => {
+    setIsLoading(true);
+    try {
+      console.log("Direct signout started");
+      await signOutDoctor();
+      closeModal();
+      router.replace('/(auth)');
+    } catch (error) {
+      console.error("Signout error:", error);
+      showAlert({
+        title: 'Error',
+        message: 'Failed to sign out.',
+        variant: 'error'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleDeactivateAccount = () => {
-    Alert.alert(
-      'Deactivate Account',
-      'Are you sure you want to deactivate your account? This action can be reversed by contacting support.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Deactivate', 
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Account Deactivated', 'Your account has been deactivated successfully.');
-            closeModal();
-          }
-        }
-      ]
-    );
+    showAlert({
+      title: 'Deactivate Account',
+      message: 'Are you sure you want to deactivate your account? This action can be reversed by contacting support.',
+      type: 'confirmation',
+      variant: 'warning',
+      onConfirm: () => {
+        showAlert({
+          title: 'Account Deactivated',
+          message: 'Your account has been deactivated successfully.',
+          variant: 'success'
+        });
+        closeModal();
+      }
+    });
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'This action cannot be undone. All your data will be permanently deleted.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Account Deleted', 'Your account has been permanently deleted.');
-            closeModal();
-          }
-        }
-      ]
-    );
+    showAlert({
+      title: 'Delete Account',
+      message: 'This action cannot be undone. All your data will be permanently deleted.',
+      type: 'confirmation',
+      variant: 'error',
+      onConfirm: () => {
+        showAlert({
+          title: 'Account Deleted',
+          message: 'Your account has been permanently deleted.',
+          variant: 'success'
+        });
+        closeModal();
+      }
+    });
+  };
+
+  // Navigation handlers
+  const handleNavigateToReports = () => {
+    router.push('/ReportScreen');
+  };
+
+  const handleNavigateToTerms = () => {
+    // Placeholder for terms navigation
+    showAlert({
+      title: 'Terms & Conditions',
+      message: 'Terms and conditions screen will be implemented soon.',
+      variant: 'default'
+    });
+  };
+
+  const handleNavigateToPrivacy = () => {
+    // Placeholder for privacy navigation
+    showAlert({
+      title: 'Privacy Policy',
+      message: 'Privacy policy screen will be implemented soon.',
+      variant: 'default'
+    });
   };
 
   // UI Components
@@ -948,122 +1068,6 @@ const handleSignout = async () => {
     </View>
   );
 
-  // OTP Verification Component
-  const OTPVerification = ({ email, onSubmit, onResend }: { 
-    email: string; 
-    onSubmit: (otp: string) => Promise<void>; 
-    onResend: () => Promise<boolean>;
-  }) => {
-    const [otp, setOtp] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [isResendEnabled, setIsResendEnabled] = useState(false);
-    const [timer, setTimer] = useState(30);
-
-    let countdownInterval: NodeJS.Timeout;
-
-    const startTimer = () => {
-      let timeLeft = 30;
-      countdownInterval = setInterval(() => {
-        setTimer((prev) => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval);
-            setIsResendEnabled(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    };
-
-    React.useEffect(() => {
-      startTimer();
-      return () => clearInterval(countdownInterval);
-    }, []);
-
-    const handleResendOtp = async () => {
-      setIsResendEnabled(false);
-      setTimer(30);
-      setIsLoading(true);
-      try {
-        await onResend();
-        startTimer();
-      } catch (error) {
-        console.error("Error sending OTP:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const handleOtpSubmit = async () => {
-      if (!otp.trim()) return;
-      setIsLoading(true);
-      try {
-        await onSubmit(otp);
-      } catch (error) {
-        console.error("OTP Verification Failed:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    return (
-      <View style={styles.otpContainer}>
-        <View style={styles.otpHeader}>
-          <TouchableOpacity onPress={() => setShowOTPModal(false)} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
-          </TouchableOpacity>
-          <Text style={styles.otpTitle}>Verify OTP</Text>
-          <View style={styles.headerPlaceholder} />
-        </View>
-
-        <ScrollView style={styles.otpContent}>
-          <View style={styles.otpIllustration}>
-            <Ionicons name="mail" size={80} color={MedicalTheme.colors.primary[500]} />
-          </View>
-
-          <View style={styles.otpForm}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.otpLabel}>Enter OTP sent to {email}</Text>
-              <View style={styles.otpInputContainer}>
-                <Ionicons name='key' size={20} color={MedicalTheme.colors.primary[500]} style={styles.inputIcon} />
-                <TextInput 
-                  style={styles.otpInput} 
-                  placeholder="******" 
-                  placeholderTextColor={MedicalTheme.colors.text.tertiary} 
-                  value={otp} 
-                  onChangeText={setOtp} 
-                  autoCapitalize='none' 
-                  keyboardType="numeric" 
-                />
-              </View>
-            </View>
-
-            <TouchableOpacity 
-              style={[styles.actionButton, isLoading && styles.buttonDisabled]} 
-              onPress={handleOtpSubmit} 
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Verify & Change Email</Text>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.otpFooter}>
-              <Text style={styles.footerText}>
-                {isResendEnabled ? "Didn't receive OTP? " : `Resend OTP in ${timer}s`}
-              </Text>
-              <TouchableOpacity disabled={!isResendEnabled} onPress={handleResendOtp}>
-                <Text style={[styles.link, !isResendEnabled && { color: MedicalTheme.colors.text.disabled }]}>Resend</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
-      </View>
-    );
-  };
-
   const renderModalContent = () => {
     switch (activeModal) {
       case 'password':
@@ -1084,6 +1088,64 @@ const handleSignout = async () => {
         return null;
     }
   };
+
+  // Additional Links Section
+  const renderAdditionalLinks = () => (
+    <View style={styles.categoryContainer}>
+      <Text style={styles.categoryTitle}>More</Text>
+      
+      <TouchableOpacity 
+        style={styles.linkSection}
+        onPress={handleNavigateToReports}
+        activeOpacity={0.7}
+      >
+        <View style={styles.linkContent}>
+          <View style={styles.linkIconContainer}>
+            <Ionicons name="document-text" size={22} color={MedicalTheme.colors.primary[500]} />
+          </View>
+          <View style={styles.linkTextContainer}>
+            <Text style={styles.linkTitle}>Medical Reports</Text>
+            <Text style={styles.linkDescription}>Generate and download patient reports</Text>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={MedicalTheme.colors.neutral[400]} />
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={styles.linkSection}
+        onPress={handleNavigateToTerms}
+        activeOpacity={0.7}
+      >
+        <View style={styles.linkContent}>
+          <View style={styles.linkIconContainer}>
+            <Ionicons name="document" size={22} color={MedicalTheme.colors.primary[500]} />
+          </View>
+          <View style={styles.linkTextContainer}>
+            <Text style={styles.linkTitle}>Terms & Conditions</Text>
+            <Text style={styles.linkDescription}>Read our terms of service</Text>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={MedicalTheme.colors.neutral[400]} />
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={styles.linkSection}
+        onPress={handleNavigateToPrivacy}
+        activeOpacity={0.7}
+      >
+        <View style={styles.linkContent}>
+          <View style={styles.linkIconContainer}>
+            <Ionicons name="shield-checkmark" size={22} color={MedicalTheme.colors.primary[500]} />
+          </View>
+          <View style={styles.linkTextContainer}>
+            <Text style={styles.linkTitle}>Privacy Policy</Text>
+            <Text style={styles.linkDescription}>Learn about our privacy practices</Text>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={MedicalTheme.colors.neutral[400]} />
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -1128,6 +1190,9 @@ const handleSignout = async () => {
           {renderSection("signout", "Sign out from your account")}
           {/* {renderSection("account", "Manage your account status")} */}
         </View>
+
+        {/* Additional Links */}
+        {renderAdditionalLinks()}
       </ScrollView>
 
       {/* Main Modal */}
@@ -1144,18 +1209,30 @@ const handleSignout = async () => {
       </Modal>
 
       {/* OTP Verification Modal */}
-      <Modal
+      <OTPVerificationPopup
         visible={showOTPModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowOTPModal(false)}
-      >
-        <OTPVerification
-          email={formData.newEmail}
-          onSubmit={handleVerifyOTP}
-          onResend={handleResendOTP}
-        />
-      </Modal>
+        onClose={() => setShowOTPModal(false)}
+        onVerifySuccess={() => setShowOTPModal(false)}
+        onVerifyOtp={handleVerifyOTP}
+        email={formData.newEmail}
+        resendOtp={handleResendOTP}
+        title="Verify Your Email"
+        subtitle="Enter the 6-digit code sent to"
+        successMessage="Email Verified Successfully"
+        errorMessage="Invalid Verification Code"
+      />
+
+      {/* Custom Alert Popup */}
+      <AlertPopup
+        visible={alertConfig.visible}
+        onClose={hideAlert}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        variant={alertConfig.variant}
+        confirmText="OK"
+        cancelText="Cancel"
+      />
     </View>
   );
 };

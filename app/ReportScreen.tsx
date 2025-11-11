@@ -28,6 +28,85 @@ const ReportScreen: React.FC = () => {
   const [fileName, setFileName] = useState<string>('');
   const [showAlert, setShowAlert] = useState(false);
 
+  // Date validation helpers
+  const isValidMonth = (month: number): boolean => month >= 1 && month <= 12;
+  
+  const isValidDay = (day: number, month: number, year: number): boolean => {
+    if (day < 1 || day > 31) return false;
+    
+    // Check for months with 30 days
+    if ([4, 6, 9, 11].includes(month) && day > 30) return false;
+    
+    // Check for February
+    if (month === 2) {
+      const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+      return isLeapYear ? day <= 29 : day <= 28;
+    }
+    
+    return true;
+  };
+
+  const formatDateInput = (text: string): string => {
+    // Remove all non-digit characters
+    const cleaned = text.replace(/\D/g, '');
+    
+    // Limit to 8 characters (YYYYMMDD)
+    const limited = cleaned.slice(0, 8);
+    
+    // Format based on length
+    if (limited.length <= 4) {
+      return limited;
+    } else if (limited.length <= 6) {
+      return `${limited.slice(0, 4)}-${limited.slice(4)}`;
+    } else {
+      return `${limited.slice(0, 4)}-${limited.slice(4, 6)}-${limited.slice(6, 8)}`;
+    }
+  };
+
+  const validateDateInput = (text: string): boolean => {
+    if (text.length === 0) return true;
+    
+    // Check format YYYY-MM-DD
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(text)) return false;
+    
+    const [yearStr, monthStr, dayStr] = text.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    const day = parseInt(dayStr, 10);
+    
+    // Validate year (reasonable range)
+    if (year < 1900 || year > 2100) return false;
+    
+    // Validate month
+    if (!isValidMonth(month)) return false;
+    
+    // Validate day
+    if (!isValidDay(day, month, year)) return false;
+    
+    return true;
+  };
+
+  const handleFromDateChange = (text: string) => {
+    const formatted = formatDateInput(text);
+    setFromDate(formatted);
+    
+    // Clear error when user starts typing
+    if (error && error.includes('date')) {
+      setError(null);
+    }
+  };
+
+  const handleToDateChange = (text: string) => {
+    const formatted = formatDateInput(text);
+    setToDate(formatted);
+    
+    // Clear error when user starts typing
+    if (error && error.includes('date')) {
+      setError(null);
+    }
+  };
+
   // Date calculation helpers
   const getTodayDate = () => new Date().toISOString().split('T')[0];
   const getYesterdayDate = () => {
@@ -45,14 +124,41 @@ const ReportScreen: React.FC = () => {
   };
 
   const validateDates = (): boolean => {
+    // Check if fromDate is in correct format and valid
     if (!fromDate) {
       setError('Please select a from date');
       return false;
     }
+    
+    if (!validateDateInput(fromDate)) {
+      setError('Please enter a valid from date in YYYY-MM-DD format');
+      return false;
+    }
+    
+    // Check if toDate is provided and valid
+    if (toDate && !validateDateInput(toDate)) {
+      setError('Please enter a valid to date in YYYY-MM-DD format');
+      return false;
+    }
+    
+    // Check date range
     if (toDate && fromDate > toDate) {
       setError('From date cannot be after to date');
       return false;
     }
+    
+    // Check if fromDate is not in future
+    const today = getTodayDate();
+    if (fromDate > today) {
+      setError('From date cannot be in the future');
+      return false;
+    }
+    
+    if (toDate && toDate > today) {
+      setError('To date cannot be in the future');
+      return false;
+    }
+    
     setError(null);
     return true;
   };
@@ -218,6 +324,21 @@ const ReportScreen: React.FC = () => {
     console.log('Contact us button pressed');
   };
 
+  // Get current placeholder based on input state
+  const getFromDatePlaceholder = () => {
+    if (fromDate.length === 0) return 'YYYY-MM-DD';
+    if (fromDate.length <= 4) return 'YYYY-MM-DD';
+    if (fromDate.length <= 7) return `${fromDate.slice(0, 4)}-MM-DD`;
+    return 'YYYY-MM-DD';
+  };
+
+  const getToDatePlaceholder = () => {
+    if (toDate.length === 0) return 'YYYY-MM-DD';
+    if (toDate.length <= 4) return 'YYYY-MM-DD';
+    if (toDate.length <= 7) return `${toDate.slice(0, 4)}-MM-DD`;
+    return 'YYYY-MM-DD';
+  };
+
   return (
     <>
       {/* Improved Header */}
@@ -307,24 +428,29 @@ const ReportScreen: React.FC = () => {
             <TextInput
               style={[styles.input, error && !fromDate && styles.inputError]}
               value={fromDate}
-              onChangeText={setFromDate}
-              placeholder="YYYY-MM-DD"
+              onChangeText={handleFromDateChange}
+              placeholder={getFromDatePlaceholder()}
               placeholderTextColor={MedicalTheme.colors.text.tertiary}
               editable={!loading}
+              keyboardType="numeric"
+              maxLength={10} // YYYY-MM-DD
             />
+            <Text style={styles.hint}>Format: YYYY-MM-DD (e.g., 2024-12-25)</Text>
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>To Date (Optional)</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, error && toDate && !validateDateInput(toDate) && styles.inputError]}
               value={toDate}
-              onChangeText={setToDate}
-              placeholder="YYYY-MM-DD"
+              onChangeText={handleToDateChange}
+              placeholder={getToDatePlaceholder()}
               placeholderTextColor={MedicalTheme.colors.text.tertiary}
               editable={!loading}
+              keyboardType="numeric"
+              maxLength={10} // YYYY-MM-DD
             />
-            <Text style={styles.hint}>Leave empty for today's date</Text>
+            <Text style={styles.hint}>Leave empty for today's date. Format: YYYY-MM-DD</Text>
           </View>
 
           {error && (
@@ -382,7 +508,11 @@ const ReportScreen: React.FC = () => {
           <Text style={styles.infoTitle}>How to use:</Text>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
-            <Text style={styles.infoText}>Select dates in YYYY-MM-DD format</Text>
+            <Text style={styles.infoText}>Enter dates in YYYY-MM-DD format (auto-formatted)</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
+            <Text style={styles.infoText}>Month must be between 01-12, days are validated</Text>
           </View>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
@@ -391,10 +521,6 @@ const ReportScreen: React.FC = () => {
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
             <Text style={styles.infoText}>Report will be generated and ready for download</Text>
-          </View>
-          <View style={styles.infoItem}>
-            <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
-            <Text style={styles.infoText}>Use download/share buttons to save the report</Text>
           </View>
         </View>
       </ScrollView>

@@ -566,4 +566,54 @@ chevronContainer: {
     fontWeight: MedicalTheme.typography.fontWeight.semibold,
     marginLeft: MedicalTheme.spacing[1],
   },
+
+  // Add these styles to your existing settings.styles.ts file
+
+// Additional Links Styles
+linkSection: {
+  backgroundColor: MedicalTheme.colors.background.primary,
+  marginHorizontal: MedicalTheme.spacing[4],
+  marginVertical: MedicalTheme.spacing[1],
+  borderRadius: MedicalTheme.borderRadius.lg,
+  padding: MedicalTheme.spacing[4],
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  ...MedicalTheme.shadow.card,
+  borderWidth: 1,
+  borderColor: MedicalTheme.colors.border.light,
+  minHeight: 80,
+},
+linkContent: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  flex: 1,
+},
+linkIconContainer: {
+  width: 40,
+  height: 40,
+  borderRadius: MedicalTheme.borderRadius.md,
+  backgroundColor: MedicalTheme.colors.primary[50],
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginRight: MedicalTheme.spacing[3],
+  flexShrink: 0,
+},
+linkTextContainer: {
+  flex: 1,
+  minHeight: 40,
+  justifyContent: 'center',
+},
+linkTitle: {
+  fontSize: MedicalTheme.typography.fontSize.base,
+  fontWeight: MedicalTheme.typography.fontWeight.semibold,
+  color: MedicalTheme.colors.text.primary,
+  marginBottom: 2,
+  lineHeight: 20,
+},
+linkDescription: {
+  fontSize: MedicalTheme.typography.fontSize.sm,
+  color: MedicalTheme.colors.text.secondary,
+  lineHeight: 18,
+},
 });
