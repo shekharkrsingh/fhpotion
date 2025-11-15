@@ -4,14 +4,10 @@ import { MaterialIcons, Ionicons, FontAwesome } from '@expo/vector-icons';
 import { notificationStyles } from '@/assets/styles/notification.styles';
 import { MedicalTheme } from '@/newConstants/theme';
 
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  createdAt: string;
-  isRead: boolean;
-}
+import { Notification } from "@/newStore/slices/notificationSlice";
+
+// Re-export Notification type for backward compatibility
+// Notification type now uses NotificationType enum instead of string
 
 interface NotificationCardProps {
   notification: Notification;

@@ -20,8 +20,8 @@ interface AppointmentCardProps {
     availableAtClinic: boolean;
     treated: boolean;
     treatedDateTime: string | null;
-    status: "ACCEPTED" | "CANCELLED";
-    appointmentType: string;
+    status: "BOOKED" | "ACCEPTED" | "CANCELLED"; // Updated to match AppointmentStatus enum
+    appointmentType: "IN_PERSON" | "ONLINE"; // Updated to match backend enum
     paymentStatus: boolean;
     isEmergency: boolean;
     avatar?: string;

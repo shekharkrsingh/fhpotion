@@ -8,6 +8,7 @@ import {
   setLoading,
   setSuccess,
   setError,
+  Notification,
 } from "@/newStore/slices/notificationSlice";
 
 interface ApiResponse<T> {
@@ -16,14 +17,8 @@ interface ApiResponse<T> {
   message?: string;
 }
 
-export interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-}
+// Re-export Notification type from slice for backward compatibility
+export type { Notification };
 
 export const fetchAllNotifications = () => async (dispatch: AppDispatch): Promise<boolean> => {
   try {

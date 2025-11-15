@@ -10,7 +10,7 @@ import { MedicalTheme } from '@/newConstants/theme';
 interface Appointment {
   appointmentId: string;
   patientName: string;
-  appointmentType: string;
+  appointmentType: "IN_PERSON" | "ONLINE"; // Updated to match backend enum
   appointmentDateTime: string;
   treated: boolean;
   availableAtClinic: boolean;

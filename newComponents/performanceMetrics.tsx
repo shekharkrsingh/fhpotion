@@ -8,6 +8,7 @@ import { MedicalTheme } from '@/newConstants/theme';
 interface Statistics {
   lastActiveDayAppointments?: number;
   lastActiveDayTreatedAppointments?: number;
+  lastActiveDayPercentageTreatedAppointments?: number; // Added to match backend DTO
 }
 
 interface PerformanceMetricsProps {
@@ -15,7 +16,10 @@ interface PerformanceMetricsProps {
 }
 
 const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ statistics }) => {
-  const successRate = statistics?.lastActiveDayAppointments && statistics.lastActiveDayTreatedAppointments
+  // Use backend's calculated percentage if available, otherwise calculate locally
+  const successRate = statistics?.lastActiveDayPercentageTreatedAppointments !== undefined
+    ? Math.round(statistics.lastActiveDayPercentageTreatedAppointments) + "%"
+    : statistics?.lastActiveDayAppointments && statistics.lastActiveDayTreatedAppointments
     ? Math.round((statistics.lastActiveDayTreatedAppointments / statistics.lastActiveDayAppointments) * 100) + "%"
     : "0%";
 

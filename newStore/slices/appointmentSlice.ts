@@ -1,6 +1,8 @@
-// appointmentSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "@/newStore";
+
+export type AppointmentStatus = "BOOKED" | "ACCEPTED" | "CANCELLED";
+export type AppointmentType = "IN_PERSON" | "ONLINE";
 
 export interface Appointment {
   appointmentId: string;
@@ -13,22 +15,22 @@ export interface Appointment {
   availableAtClinic: boolean;
   treated: boolean;
   treatedDateTime: string | null;
-  status: "ACCEPTED" | "CANCELLED";
-  appointmentType: string;
+  status: AppointmentStatus;
+  appointmentType: AppointmentType;
   paymentStatus: boolean;
   isEmergency: boolean;
 }
 
 interface AppointmentState {
   appointments: Appointment[];
-  loading: boolean;
+  isLoading: boolean;
   success: boolean;
   error: string | null;
 }
 
 const initialState: AppointmentState = {
   appointments: [],
-  loading: false,
+  isLoading: false,
   success: false,
   error: null,
 };
@@ -46,7 +48,6 @@ const appointmentSlice = createSlice({
       const index = state.appointments.findIndex(
         (a) => a.appointmentId === action.payload.appointmentId
       );
-
       if (index !== -1) {
         state.appointments[index] = action.payload;
       } else {
@@ -72,17 +73,6 @@ const appointmentSlice = createSlice({
       state.success = true;
       state.error = null;
     },
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
-    },
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-      state.success = false;
-    },
-    setSuccess: (state, action: PayloadAction<boolean>) => {
-      state.success = action.payload;
-    },
-    // New action to revert state in case of API failure
     revertAppointmentUpdate: (state, action: PayloadAction<Appointment>) => {
       const index = state.appointments.findIndex(
         (a) => a.appointmentId === action.payload.appointmentId
@@ -91,26 +81,33 @@ const appointmentSlice = createSlice({
         state.appointments[index] = action.payload;
       }
     },
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.isLoading = action.payload;
+    },
+    setSuccess: (state, action: PayloadAction<boolean>) => {
+      state.success = action.payload;
+    },
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+      state.success = false;
+    },
     resetAppointments: () => initialState,
   },
 });
 
-export const selectAppointments = (state: RootState) =>
-  state.appointments.appointments;
-export const selectAppointmentsLoading = (state: RootState) =>
-  state.appointments.loading;
-export const selectAppointmentsError = (state: RootState) =>
-  state.appointments.error;
+export const selectAppointments = (state: RootState) => state.appointments.appointments;
+export const selectAppointmentsLoading = (state: RootState) => state.appointments.isLoading;
+export const selectAppointmentsError = (state: RootState) => state.appointments.error;
 
 export const {
   setAppointments,
   addAppointment,
   updateAppointment,
   removeAppointment,
-  setLoading,
-  setError,
-  setSuccess,
   revertAppointmentUpdate,
+  setLoading,
+  setSuccess,
+  setError,
   resetAppointments,
 } = appointmentSlice.actions;
 

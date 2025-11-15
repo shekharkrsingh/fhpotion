@@ -26,11 +26,11 @@ import { getAppointments } from '@/newService/config/api/appointmentApi';
 const DoctorDashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
   const profileData = useSelector((state: RootState) => state.profile);
-  const { data: statistics, loading, error } = useSelector(
+  const { data: statistics, isLoading, error } = useSelector(
     (state: RootState) => state.statistics
   );
 
-  const { appointments: upcomingAppointments, loading: upcomingAppointmentsLoading } = useSelector(
+  const { appointments: upcomingAppointments, isLoading: upcomingAppointmentsLoading } = useSelector(
     (state: RootState) => state.appointments
   );
 
@@ -70,7 +70,7 @@ const DoctorDashboard = () => {
     statistics.totalAvailableAtClinic > 0
   );
 
-  if (loading && !refreshing) {
+  if (isLoading && !refreshing) {
     return <LoadingState />;
   }
 
@@ -108,7 +108,7 @@ const DoctorDashboard = () => {
   }
 
   // Show empty state if no data
-  if (!statistics && !loading && !refreshing) {
+  if (!statistics && !isLoading && !refreshing) {
     return (
       <EmptyScreen
         type="no-data"

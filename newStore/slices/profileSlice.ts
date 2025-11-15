@@ -1,21 +1,36 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "@/newStore";
 
+export type AvailableDayEnum = 'SUNDAY' | 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY';
+
+export interface TimeSlot {
+  startTime: string;
+  endTime: string;
+}
+
+export interface Address {
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  pincode: string | null;
+}
+
 interface ProfileState {
   firstName: string;
   lastName: string;
   doctorId: string;
   specialization: string | null;
   phoneNumber: string | null;
-  availableDays: string | null;
-  availableTimeSlots: string | null;
+  availableDays: AvailableDayEnum[] | null;
+  availableTimeSlots: TimeSlot[] | null;
   clinicAddress: string | null;
-  address: string | null;
-  education: string | null;
-  achievementsAndAwards: string | null;
+  address: Address | null;
+  education: string[] | null;
+  achievementsAndAwards: string[] | null;
   about: string | null;
   bio: string | null;
-  yearsOfExperience: string | null;
+  yearsOfExperience: number | null;
   gender: string | null;
   profilePicture: string | null;
   coverPicture: string | null;
@@ -75,7 +90,12 @@ export const selectProfile = (state: RootState) => state.profile;
 export const selectProfileLoading = (state: RootState) => state.profile.isLoading;
 export const selectProfileError = (state: RootState) => state.profile.error;
 
-export const { setProfileData, setLoading, setSuccess, setError, resetProfile } =
-  profileSlice.actions;
+export const {
+  setProfileData,
+  setLoading,
+  setSuccess,
+  setError,
+  resetProfile,
+} = profileSlice.actions;
 
 export default profileSlice.reducer;

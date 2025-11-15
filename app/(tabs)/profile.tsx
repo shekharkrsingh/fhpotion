@@ -56,7 +56,7 @@ const DoctorProfileScreen = () => {
     }
   }, [dispatch]); // dispatch is stable from Redux
 
-  const formatAvailableDays = (days: string[]) => {
+  const formatAvailableDays = (days: string[] | null | undefined) => {
     if (!days || days.length === 0) return 'Not specified';
     return days.join(', ');
   };

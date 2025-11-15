@@ -34,7 +34,7 @@ import {
 } from '@/utils/bookingActionHelpers';
 
 export default function BookingScreen() {
-  const { appointments, loading, error, success } = useSelector((state: RootState) => state.appointments);
+  const { appointments, isLoading, error, success } = useSelector((state: RootState) => state.appointments);
   const dispatch = useDispatch<AppDispatch>();
   
   const [expandedId, setExpandedId] = useState<string | null>(null);

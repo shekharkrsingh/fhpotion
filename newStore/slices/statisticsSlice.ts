@@ -6,7 +6,7 @@ interface TreatedData {
   count: number;
 }
 
-interface DoctorStatistics {
+export interface DoctorStatistics {
   totalAppointment: number;
   totalUntreatedAppointmentAndNotAvailable: number;
   totalTreatedAppointment: number;
@@ -14,28 +14,35 @@ interface DoctorStatistics {
   lastWeekTreatedData: TreatedData[];
   lastActiveDayAppointments: number;
   lastActiveDayTreatedAppointments: number;
+  lastActiveDayPercentageTreatedAppointments: number;
 }
 
 interface StatisticsState {
   data: DoctorStatistics | null;
-  loading: boolean;
-  error: string | null;
+  isLoading: boolean;
   success: boolean;
+  error: string | null;
 }
 
 const initialState: StatisticsState = {
   data: null,
-  loading: false,
-  error: null,
+  isLoading: false,
   success: false,
+  error: null,
 };
 
 const statisticsSlice = createSlice({
   name: "statistics",
   initialState,
   reducers: {
+    setStatistics: (state, action: PayloadAction<DoctorStatistics>) => {
+      state.data = action.payload;
+      state.success = true;
+      state.error = null;
+      state.isLoading = false;
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
+      state.isLoading = action.payload;
     },
     setSuccess: (state, action: PayloadAction<boolean>) => {
       state.success = action.payload;
@@ -43,27 +50,21 @@ const statisticsSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-    setStatistics: (state, action: PayloadAction<DoctorStatistics>) => {
-      state.data = action.payload;
-      state.success = true;
-      state.error = null;
-      state.loading = false;
-    },
     resetStatistics: () => initialState,
   },
 });
 
+export const selectStatistics = (state: RootState) => state.statistics;
+export const selectStatisticsData = (state: RootState) => state.statistics.data;
+export const selectStatisticsLoading = (state: RootState) => state.statistics.isLoading;
+export const selectStatisticsError = (state: RootState) => state.statistics.error;
+
 export const {
+  setStatistics,
   setLoading,
   setSuccess,
   setError,
-  setStatistics,
   resetStatistics,
 } = statisticsSlice.actions;
-
-export const selectStatistics = (state: RootState) => state.statistics;
-export const selectStatisticsData = (state: RootState) => state.statistics.data;
-export const selectStatisticsLoading = (state: RootState) => state.statistics.loading;
-export const selectStatisticsError = (state: RootState) => state.statistics.error;
 
 export default statisticsSlice.reducer;

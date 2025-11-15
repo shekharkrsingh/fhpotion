@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { AppState, AppStateStatus } from "react-native";
 import { store } from "@/newStore";
 import { addAppointment } from "@/newStore/slices/appointmentSlice";
-import { addNotification } from "@/newStore/slices/notificationSlice";
+import { addNotification, Notification, NotificationType } from "@/newStore/slices/notificationSlice";
 import { webSocketEndpoints } from "@/newService/config/websocketEndpoints";
 import { getValidToken } from "@/utils/tokenService";
 
@@ -172,12 +172,18 @@ class WebsocketService {
   }
 
   private handleNotificationUpdate(notificationData: any): void {
+    // Validate and ensure type matches NotificationType enum
+    const validType: NotificationType = 
+      ['SYSTEM', 'INFO', 'UPDATE', 'ALERT', 'EMERGENCY'].includes(notificationData.type)
+        ? notificationData.type as NotificationType
+        : 'SYSTEM'; // Default to SYSTEM if invalid type
+    
     const notification: Notification = {
       id: notificationData.id || `notification-${Date.now()}`,
-      type: notificationData.type || 'general',
+      type: validType,
       title: notificationData.title || 'New Notification',
       message: notificationData.message || '',
-      isRead: false,
+      isRead: notificationData.isRead || false,
       createdAt: notificationData.createdAt || new Date().toISOString(),
     };
 

@@ -1,9 +1,11 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "@/newStore";
 
+export type NotificationType = "SYSTEM" | "INFO" | "UPDATE" | "ALERT" | "EMERGENCY";
+
 export interface Notification {
   id: string;
-  type: string;
+  type: NotificationType;
   title: string;
   message: string;
   isRead: boolean;
@@ -66,14 +68,11 @@ const notificationSlice = createSlice({
   },
 });
 
-export const selectNotifications = (state: RootState) =>
-  state.notification.notifications;
+export const selectNotifications = (state: RootState) => state.notification.notifications;
 export const selectUnreadCount = (state: RootState) =>
-  state.notification.notifications.filter((n:any) => !n.isRead).length;
-export const selectNotificationLoading = (state: RootState) =>
-  state.notification.isLoading;
-export const selectNotificationError = (state: RootState) =>
-  state.notification.error;
+  state.notification.notifications.filter((n) => !n.isRead).length;
+export const selectNotificationLoading = (state: RootState) => state.notification.isLoading;
+export const selectNotificationError = (state: RootState) => state.notification.error;
 
 export const {
   setNotifications,

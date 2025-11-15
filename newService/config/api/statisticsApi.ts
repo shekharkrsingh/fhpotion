@@ -27,6 +27,7 @@ interface DoctorStatistics {
   lastWeekTreatedData: TreatedData[];
   lastActiveDayAppointments: number;
   lastActiveDayTreatedAppointments: number;
+  lastActiveDayPercentageTreatedAppointments: number; // Added to match backend DTO
 }
 
 export const fetchDoctorStatistics = () => async (dispatch: AppDispatch): Promise<boolean> => {

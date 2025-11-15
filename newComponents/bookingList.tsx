@@ -39,7 +39,7 @@ const BookingList: React.FC<BookingListProps> = ({
   selectedMarkAction,
   onAppointmentAction,
 }) => {
-  const { success, loading } = useSelector((state: RootState) => state.appointments);
+  const { success, isLoading } = useSelector((state: RootState) => state.appointments);
 
   const renderItem = ({ item }: { item: any }) => (
     <AppointmentCard
@@ -56,7 +56,7 @@ const BookingList: React.FC<BookingListProps> = ({
     />
   );
 
-  if (loading && !refreshing) {
+  if (isLoading && !refreshing) {
     return (
       <View style={bookingStyles.loadingContainer}>
         <ActivityIndicator size="large" color={MedicalTheme.colors.primary[500]} />
