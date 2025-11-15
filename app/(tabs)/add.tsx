@@ -153,10 +153,15 @@ const ModernAppointmentForm = () => {
       return;
     }
     
-    // Validate contact number format
-    const contactRegex = /^[0-9+\-\s()]{10,}$/;
-    if (!contactRegex.test(patientData.contact.replace(/\s/g, ''))) {
-      Alert.alert("Invalid Contact", "Please enter a valid contact number");
+    // Validate contact number format - must be exactly 10 digits (matches backend validation)
+    const cleanedContact = patientData.contact.replace(/\D/g, ''); // Remove all non-digits
+    const contactRegex = /^\d{10}$/; // Exactly 10 digits (matches backend pattern: ^\d{10}$)
+    
+    if (cleanedContact.length !== 10 || !contactRegex.test(cleanedContact)) {
+      Alert.alert(
+        "Invalid Contact Number",
+        "Please enter exactly 10 digits for the contact number"
+      );
       return;
     }
     
@@ -164,7 +169,7 @@ const ModernAppointmentForm = () => {
     try {
       const response = await dispatch(addAppointment({
         patientName: `${patientData.firstName.trim()} ${patientData.lastName.trim()}`.trim(), 
-        contact: patientData.contact.trim(), 
+        contact: cleanedContact, // Use cleaned contact (exactly 10 digits, no formatting)
         paymentStatus: patientData.paymentStatus, 
         availableAtClinic: patientData.availableAtClinic, 
         email: patientData.email?.trim() || '', 
@@ -276,10 +281,14 @@ const ModernAppointmentForm = () => {
                 icon="phone-outline"
                 placeholder="Contact Number *"
                 value={patientData.contact}
-                onChangeText={(text) => handleChange('contact', text)}
+                onChangeText={(text) => {
+                  // Only allow digits, max 10 characters
+                  const digitsOnly = text.replace(/\D/g, '').slice(0, 10);
+                  handleChange('contact', digitsOnly);
+                }}
                 required={true}
                 keyboardType="phone-pad"
-                maxLength={15}
+                maxLength={10}
               />
             </View>
 

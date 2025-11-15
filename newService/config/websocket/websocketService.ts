@@ -21,15 +21,36 @@ class WebsocketService {
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private subscription: StompSubscription | null = null;
   private appStateListener: ((state: AppStateStatus) => void) | null = null;
+  private connectionPromise: Promise<void> | null = null; // Promise-based locking
 
   private get isConnected(): boolean {
     return !!this.stompClient?.connected;
   }
 
   public async connect(): Promise<void> {
-    if (this.isConnected || this.isConnecting) return;
+    // If already connected, return immediately
+    if (this.isConnected) {
+      return;
+    }
 
+    // If connection is in progress, return the existing promise (prevents race condition)
+    if (this.isConnecting && this.connectionPromise) {
+      return this.connectionPromise;
+    }
+
+    // Create new connection promise
     this.isConnecting = true;
+    this.connectionPromise = this.attemptConnection();
+
+    try {
+      await this.connectionPromise;
+    } finally {
+      // Clear promise after connection completes (success or failure)
+      this.connectionPromise = null;
+    }
+  }
+
+  private async attemptConnection(): Promise<void> {
 
     try {
       const token = await AsyncStorage.getItem("token");
@@ -97,6 +118,9 @@ class WebsocketService {
       }
       
       this.handleDisconnect();
+    } finally {
+      // Ensure isConnecting is reset even if there's an unexpected error
+      this.isConnecting = false;
     }
   }
 

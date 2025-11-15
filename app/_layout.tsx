@@ -7,6 +7,7 @@ import {Provider} from "react-redux";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { websocketAppointment } from "@/newService/config/websocket/websocketService";
+import ErrorBoundary from "@/newComponents/ErrorBoundary";
 
 // Prevent the default Expo splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -30,20 +31,22 @@ export default function RootLayout() {
     }, []);
 
     return (
-        <Provider store={store}>
-            <SafeAreaProvider>
-                <SafeScreen>
-                    <Stack
-                        screenOptions={{
-                            headerShown: false
-                        }}>
-                        <Stack.Screen name="index"/>
-                        <Stack.Screen name="(auth)"/>
-                        <Stack.Screen name="(tabs)"/>
-                    </Stack>
-                </SafeScreen>
-                <StatusBar style="dark"/>
-            </SafeAreaProvider>
-        </Provider>
+        <ErrorBoundary>
+            <Provider store={store}>
+                <SafeAreaProvider>
+                    <SafeScreen>
+                        <Stack
+                            screenOptions={{
+                                headerShown: false
+                            }}>
+                            <Stack.Screen name="index"/>
+                            <Stack.Screen name="(auth)"/>
+                            <Stack.Screen name="(tabs)"/>
+                        </Stack>
+                    </SafeScreen>
+                    <StatusBar style="dark"/>
+                </SafeAreaProvider>
+            </Provider>
+        </ErrorBoundary>
     )
 }

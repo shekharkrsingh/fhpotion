@@ -61,7 +61,7 @@ export default function BookingScreen() {
       : undefined;
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       await dispatch(getAppointments());
       await websocketAppointment.connect();
@@ -69,7 +69,7 @@ export default function BookingScreen() {
       console.error('Failed to fetch appointments:', error);
       showToast('Failed to fetch appointments. Please try again.', 'error');
     }
-  };
+  }, [dispatch, showToast]); // Include all dependencies
 
   const updateAppointmentHandler = async (id: string, change: any) => {
     try {
@@ -93,9 +93,12 @@ export default function BookingScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchData();
-    setRefreshing(false);
-  }, [dispatch]);
+    try {
+      await fetchData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchData]); // Include fetchData dependency for correctness
 
   const handleSearch = (query: string) => setSearchQuery(query);
 
@@ -109,8 +112,8 @@ export default function BookingScreen() {
     }
   };
 
-  // Toast helper function
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+  // Toast helper function - stable, no dependencies
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     Toast.show({
       type: type,
       text1: type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Info',
@@ -118,7 +121,7 @@ export default function BookingScreen() {
       position: 'bottom',
       visibilityTime: 3000,
     });
-  };
+  }, []); // No dependencies - Toast.show is stable
 
   // Single confirmation popup handler
   const showConfirmation = (message: string, action: () => Promise<void>, appointmentId?: string) => {
@@ -456,7 +459,7 @@ export default function BookingScreen() {
     }
     // Note: WebSocket cleanup is handled at app level in _layout.tsx
     // We don't disconnect here to keep connection alive across screens
-  }, [dispatch]); // Only depend on dispatch - prevents re-running on state changes
+  }, []); // Empty deps - only run once on mount (dispatch is stable from Redux)
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

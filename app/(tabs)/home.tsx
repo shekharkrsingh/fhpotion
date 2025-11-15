@@ -50,7 +50,7 @@ const DoctorDashboard = () => {
     } finally {
       setRefreshing(false);
     }
-  }, [dispatch]);
+  }, [dispatch]); // dispatch is stable from Redux, but including it for completeness
 
   // Load initial data on component mount - ONLY ONCE
   React.useEffect(() => {
@@ -61,7 +61,7 @@ const DoctorDashboard = () => {
       dispatch(getProfile());
       dispatch(getAppointments());
     }
-  }, [dispatch]); // Only depend on dispatch - prevents re-running on state changes
+  }, []); // Empty deps - only run once on mount (dispatch is stable from Redux)
 
   // Check if we have meaningful data to display
   const hasData = statistics && (

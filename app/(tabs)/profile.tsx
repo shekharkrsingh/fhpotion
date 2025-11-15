@@ -47,14 +47,14 @@ const DoctorProfileScreen = () => {
     try {
       setRefreshing(true);
       setError(null);
-      await getProfile();
+      await dispatch(getProfile()); // Fixed: Use dispatch instead of direct function call
     } catch (err) {
       setError('Failed to refresh profile data');
       console.error('Failed to refresh profile:', err);
     } finally {
       setRefreshing(false);
     }
-  }, [dispatch]);
+  }, [dispatch]); // dispatch is stable from Redux
 
   const formatAvailableDays = (days: string[]) => {
     if (!days || days.length === 0) return 'Not specified';
