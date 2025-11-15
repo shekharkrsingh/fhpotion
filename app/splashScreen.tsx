@@ -54,9 +54,9 @@ export default function SplashScreen() {
         const initializeApp = async () => {
             try {
                 // Step 1️⃣: Fetch statistics (blocking)
-                const statisticsSuccess = await dispatch(fetchDoctorStatistics());
+                const statisticsResult = await dispatch(fetchDoctorStatistics());
 
-                if (statisticsSuccess) {
+                if (statisticsResult.type.endsWith('/fulfilled')) {
                     // Step 2️⃣: Lazy load other data
                     await Promise.allSettled([
                         dispatch(getProfile()),

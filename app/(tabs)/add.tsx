@@ -177,7 +177,7 @@ const ModernAppointmentForm = () => {
       }));
 
       // Handle the response based on your thunk structure
-      if (response?.payload || response === true) {
+      if (response.type.endsWith('/fulfilled')) {
         Alert.alert("Success", "Appointment created successfully!");
         setPatientData({
           firstName: '',

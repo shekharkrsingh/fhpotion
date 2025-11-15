@@ -89,15 +89,14 @@ export default function BookingScreen() {
         ? { ...change, status: "ACCEPTED" as const }
         : change;
         
-      const result = await dispatch(updateAppointment(id, updateData));
-      if (result) {
+      const result = await dispatch(updateAppointment({ appointmentId: id, updateData }));
+      if (result.type.endsWith('/fulfilled')) {
         return true;
       } else {
         throw new Error('Update failed');
       }
     } catch (error) {
       console.error('Failed to update appointment:', error);
-      // State is automatically reverted by the API error handler
       throw error;
     }
   };
@@ -374,8 +373,8 @@ export default function BookingScreen() {
       `Are you sure you want to ${newEmergencyStatus ? 'mark as emergency' : 'remove emergency status'}?`,
       async () => {
         try {
-          const result = await dispatch(updateEmergencyStatus(id, newEmergencyStatus));
-          if (result) {
+          const result = await dispatch(updateEmergencyStatus({ appointmentId: id, isEmergency: newEmergencyStatus }));
+          if (result.type.endsWith('/fulfilled')) {
             showToast(`Appointment ${newEmergencyStatus ? 'marked as emergency' : 'emergency status removed'}`, 'success');
           } else {
             showToast(`Failed to ${newEmergencyStatus ? 'mark as emergency' : 'remove emergency status'}.`, 'error');
@@ -408,7 +407,7 @@ export default function BookingScreen() {
       async () => {
         try {
           const result = await dispatch(cancelAppointment(id));
-          if (result) {
+          if (result.type.endsWith('/fulfilled')) {
             showToast('Appointment cancelled successfully.', 'success');
           } else {
             showToast('Failed to cancel appointment.', 'error');

@@ -3,7 +3,7 @@ import SockJS from "sockjs-client";
 import { router } from "expo-router";
 import { AppState, AppStateStatus } from "react-native";
 import { store } from "@/newStore";
-import { addAppointment } from "@/newStore/slices/appointmentSlice";
+import { updateAppointmentLocal, addAppointment, Appointment } from "@/newStore/slices/appointmentSlice";
 import { addNotification, Notification, NotificationType } from "@/newStore/slices/notificationSlice";
 import { webSocketEndpoints } from "@/newService/config/websocketEndpoints";
 import { getValidToken } from "@/utils/tokenService";
@@ -194,7 +194,25 @@ class WebsocketService {
   }
 
   private handleAppointmentUpdate(updatedAppointment: any): void {
-    store.dispatch(addAppointment(updatedAppointment))
+    try {
+      // Validate that we have an appointment object
+      if (!updatedAppointment || typeof updatedAppointment !== 'object') {
+        console.warn('WebSocket: Invalid appointment data received');
+        return;
+      }
+
+      // If appointment has appointmentId, it's an update - use updateAppointmentLocal
+      // Otherwise, it's a new appointment - use addAppointment thunk
+      if (updatedAppointment.appointmentId) {
+        // Update existing appointment using sync action (WebSocket updates are already from server)
+        store.dispatch(updateAppointmentLocal(updatedAppointment as Appointment));
+      } else {
+        // New appointment - use thunk (though WebSocket usually sends full objects with IDs)
+        store.dispatch(addAppointment(updatedAppointment));
+      }
+    } catch (error) {
+      console.error('WebSocket: Error handling appointment update:', error);
+    }
   }
 
   private handleNotificationUpdate(notificationData: any): void {

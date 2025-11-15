@@ -28,31 +28,37 @@ export interface LoginResponse {
   token: string;
 }
 
-const {dispatch}=store;
+const { dispatch } = store;
 
 /**
- * SIGNUP
+ * Signup a new doctor
+ * @param firstName - Doctor's first name
+ * @param lastName - Doctor's last name
+ * @param email - Doctor's email address
+ * @param password - Doctor's password
+ * @param otp - OTP verification code
+ * @returns Promise<boolean> - true if signup successful, false otherwise
  */
 export const signupDoctor = async (
-    firstName: string,
-    lastName: string,
-    email: string,
-    password: string,
-    otp: string,
+  firstName: string,
+  lastName: string,
+  email: string,
+  password: string,
+  otp: string,
 ): Promise<boolean> => {
   dispatch(setLoading(true));
-
 
   try {
     const response = await apiConnector<ApiResponse<DoctorData>>({
       method: "POST",
       url: authEndpoints.createDoctor,
-      bodyData: {firstName, lastName, email, password, otp},
+      bodyData: { firstName, lastName, email, password, otp },
       tokenRequired: false,
     });
 
     if (!response.data?.data) {
-      dispatch(setError(response.data?.message || "Signup failed"));
+      const errorMessage = response.data?.message || "Signup failed";
+      dispatch(setError(errorMessage));
       dispatch(setLoading(false));
       return false;
     }
@@ -73,7 +79,9 @@ export const signupDoctor = async (
 };
 
 /**
- * SEND OTP
+ * Send OTP to doctor's email
+ * @param email - Doctor's email address
+ * @returns Promise<boolean> - true if OTP sent successfully, false otherwise
  */
 export const sendOtp = async (email: string): Promise<boolean> => {
   try {
@@ -101,11 +109,14 @@ export const sendOtp = async (email: string): Promise<boolean> => {
 };
 
 /**
- * LOGIN
+ * Login a doctor
+ * @param email - Doctor's email address
+ * @param password - Doctor's password
+ * @returns Promise<boolean> - true if login successful, false otherwise
  */
 export const loginDoctor = async (
   email: string,
-  password: string
+  password: string,
 ): Promise<boolean> => {
   try {
     const response = await apiConnector<ApiResponse<LoginResponse>>({
@@ -125,6 +136,7 @@ export const loginDoctor = async (
       console.error("Failed to store token securely");
       return false;
     }
+
     console.log("Login successful, token stored securely");
     return true;
   } catch (error: any) {
@@ -137,12 +149,16 @@ export const loginDoctor = async (
 };
 
 /**
- * FORGOT PASSWORD
+ * Reset password for forgot password flow
+ * @param email - Doctor's email address
+ * @param newPassword - New password to set
+ * @param otp - OTP verification code
+ * @returns Promise<boolean> - true if password reset successful, false otherwise
  */
 export const forgotPassword = async (
   email: string,
   newPassword: string,
-  otp: string
+  otp: string,
 ): Promise<boolean> => {
   try {
     const response = await apiConnector<ApiResponse<null>>({
@@ -168,17 +184,22 @@ export const forgotPassword = async (
   }
 };
 
-
+/**
+ * Change doctor's password
+ * @param oldPassword - Current password
+ * @param newPassword - New password to set
+ * @returns Promise<boolean> - true if password changed successfully, false otherwise
+ */
 export const changeDoctorPassword = async (
   oldPassword: string,
-  newPassword: string
+  newPassword: string,
 ): Promise<boolean> => {
   try {
-
     const response = await apiConnector<ApiResponse<null>>({
       method: "POST",
       url: doctorEndpoints.changeDoctorPassword,
       bodyData: { oldPassword, newPassword },
+      tokenRequired: true,
     });
 
     if (response.status !== 200) {
@@ -197,27 +218,37 @@ export const changeDoctorPassword = async (
   }
 };
 
+/**
+ * Change doctor's email address
+ * @param newEmail - New email address
+ * @param otp - OTP verification code
+ * @param password - Current password for verification
+ * @returns Promise<boolean> - true if email changed successfully, false otherwise
+ */
 export const changeDoctorEmail = async (
   newEmail: string,
   otp: string,
-  password: string
+  password: string,
 ): Promise<boolean> => {
   try {
     const response = await apiConnector<ApiResponse<string>>({
       method: "POST",
       url: doctorEndpoints.updateDoctorEmail,
       bodyData: { newEmail, otp, password },
+      tokenRequired: true,
     });
 
     if (response.status !== 200) {
       console.error("Failed to change email:", response.data?.message);
       return false;
     }
+
     const tokenStored = await setToken(response.data.data);
     if (!tokenStored) {
       console.error("Failed to store new token securely after email change");
       return false;
     }
+
     return true;
   } catch (error: any) {
     console.error(
@@ -229,7 +260,8 @@ export const changeDoctorEmail = async (
 };
 
 /**
- * LOGOUT
+ * Logout doctor (removes token from secure storage)
+ * @returns Promise<void>
  */
 export const logoutDoctor = async (): Promise<void> => {
   try {
@@ -243,15 +275,15 @@ export const logoutDoctor = async (): Promise<void> => {
   }
 };
 
-
+/**
+ * Sign out doctor (removes token from secure storage)
+ * @returns Promise<boolean> - true if sign out successful, false otherwise
+ */
 export const signOutDoctor = async (): Promise<boolean> => {
   try {
-    // Simply remove the token - this is the most important part
     await removeToken();
-    
     console.log("Signed out successfully - token removed from secure storage");
     return true;
-
   } catch (error: any) {
     console.error(
       "Error signing out:",

@@ -328,8 +328,8 @@ const ProfileSettingsScreen = () => {
 
     setIsLoading(true);
     try {
-      const success =dispatch(updateProfile( updatePayload));
-      if (success) {
+      const result = await dispatch(updateProfile(updatePayload));
+      if (result.type.endsWith('/fulfilled')) {
         Toast.show({
           type: 'success',
           text1: 'Success',

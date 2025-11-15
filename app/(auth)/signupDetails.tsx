@@ -151,8 +151,29 @@ export default function SignupDetails() {
   };
 
   const handleResendOtp = async (): Promise<void> => {
-    // Replace with your actual resend OTP API
-     await dispatch(sendOtp(email));
+    try {
+      const otpSent = await sendOtp(email);
+      if (otpSent) {
+        Toast.show({
+          type: 'success',
+          text1: 'OTP Sent',
+          text2: 'Verification code sent to your email',
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to send OTP',
+          text2: 'Please try again later',
+        });
+      }
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to send OTP',
+        text2: 'An unexpected error occurred. Please try again.',
+      });
+    }
   };
 
   const handleOTPVerifySuccess = () => {
