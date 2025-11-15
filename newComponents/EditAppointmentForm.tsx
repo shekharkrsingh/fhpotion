@@ -278,8 +278,9 @@ const EditAppointmentForm: React.FC<EditAppointmentFormProps> = ({
         transparent={true}
         animationType="slide"
         onRequestClose={handleClose}
+        accessible={false}
       >
-        <View style={editFormStyles.modalOverlay}>
+        <View style={editFormStyles.modalOverlay} accessible={false} importantForAccessibility="no-hide-descendants">
           <View style={editFormStyles.modalContainer}>
             {/* Header */}
             <View style={editFormStyles.modalHeader}>

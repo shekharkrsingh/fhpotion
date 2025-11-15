@@ -55,10 +55,18 @@ export const reportScreenStyles = StyleSheet.create({
     textAlign: 'center',
   },
   contactButton: {
-    padding: MedicalTheme.spacing[2],
+    paddingHorizontal: MedicalTheme.spacing[2],
+    paddingVertical: MedicalTheme.spacing[1.5],
     backgroundColor: MedicalTheme.colors.primary[50],
     borderRadius: MedicalTheme.borderRadius.md,
-    marginLeft: MedicalTheme.spacing[2],
+    borderWidth: 1,
+    borderColor: MedicalTheme.colors.primary[200],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  contactButtonPressed: {
+    opacity: 0.7,
+    backgroundColor: MedicalTheme.colors.primary[100],
   },
 
   // Content Styles

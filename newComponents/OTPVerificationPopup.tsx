@@ -242,9 +242,15 @@ const OTPModal: React.FC<OTPModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
       statusBarTranslucent={false}
+      accessible={false}
     >
-      <Pressable onPress={dismissKeyboard} style={{ flex: 1 }}>
-        <View style={styles.container}>
+      <Pressable 
+        onPress={dismissKeyboard} 
+        style={{ flex: 1 }}
+        accessible={false}
+        importantForAccessibility="no-hide-descendants"
+      >
+        <View style={styles.container} accessible={false}>
           {/* Header */}
           <View style={styles.header}>
             <Pressable 

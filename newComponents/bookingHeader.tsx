@@ -88,9 +88,12 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onMarkAction })
   return (
     <View style={[
       bookingHeaderStyles.boookingHeader,
-      { paddingTop: insets.top + MedicalTheme.spacing[3] }
+      { 
+        paddingTop: insets.top + MedicalTheme.spacing[3],
+        minHeight: 56 + insets.top,
+      }
     ]}>
-      <View style={bookingHeaderStyles.headerRow}>
+      <View style={[bookingHeaderStyles.headerRow, { minHeight: 56 }]}>
         <Text style={bookingHeaderStyles.title}>Booking List</Text>
         
         <View style={bookingHeaderStyles.headerButtons}>
@@ -137,14 +140,18 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onMarkAction })
         transparent={true}
         animationType="fade"
         onRequestClose={() => setShowMarkDropdown(false)}
+        accessible={false}
       >
         <Pressable 
           style={bookingHeaderStyles.dropdownOverlay}
           onPress={() => setShowMarkDropdown(false)}
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
         >
           <Pressable 
             style={bookingHeaderStyles.dropdownContainer}
             onPress={(e) => e.stopPropagation()}
+            accessible={false}
           >
             <Pressable
               style={({ pressed }) => [
@@ -250,6 +257,8 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onMarkAction })
               marginTop: MedicalTheme.spacing[2],
             }
           ]}
+          accessible={true}
+          importantForAccessibility="yes"
         >
           <TextInput
             style={bookingHeaderStyles.searchInput}
@@ -258,6 +267,8 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onMarkAction })
             value={searchQuery}
             onChangeText={handleSearchChange}
             autoFocus={true}
+            accessible={true}
+            accessibilityLabel="Search appointments by patient name or contact"
           />
         </Animated.View>
       )}

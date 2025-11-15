@@ -91,8 +91,9 @@ const AlertPopup: React.FC<AlertPopupProps> = ({
       visible={visible}
       onRequestClose={() => onClose(false)}
       statusBarTranslucent
+      accessible={false}
     >
-      <View style={styles.overlay}>
+      <View style={styles.overlay} accessible={false} importantForAccessibility="no-hide-descendants">
         <View style={styles.popupContainer}>
           {/* Icon in Top Right Corner */}
           {showIcon && (

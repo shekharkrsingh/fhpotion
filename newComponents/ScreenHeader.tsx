@@ -43,6 +43,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
         {
           paddingTop: insets.top + MedicalTheme.spacing[3],
           backgroundColor,
+          minHeight: 56 + insets.top,
         },
       ]}
     >
@@ -118,6 +119,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: MedicalTheme.spacing[4],
     paddingBottom: MedicalTheme.spacing[3],
+    minHeight: 56,
   },
   leftSection: {
     width: 40,
@@ -146,8 +148,10 @@ const styles = StyleSheet.create({
     marginTop: MedicalTheme.spacing[0.5],
   },
   rightSection: {
-    width: 40,
+    minWidth: 100,
+    maxWidth: 180,
     alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   placeholder: {
     width: 40,

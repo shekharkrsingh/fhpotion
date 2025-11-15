@@ -1,6 +1,6 @@
 import React from 'react';
-import { Text, Pressable } from 'react-native';
-import { notificationStyles } from '@/assets/styles/notification.styles';
+import { Text, Pressable, View, StyleSheet } from 'react-native';
+import { MedicalTheme } from '@/newConstants/theme';
 import ScreenHeader from '@/newComponents/ScreenHeader';
 
 interface NotificationHeaderProps {
@@ -21,12 +21,14 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({
           onPress={onMarkAllAsRead} 
           disabled={isLoading}
           style={({ pressed }) => [
-            pressed && { opacity: 0.7 }
+            styles.button,
+            pressed && styles.buttonPressed,
+            isLoading && styles.buttonDisabled
           ]}
         >
           <Text style={[
-            notificationStyles.markAllRead,
-            { opacity: isLoading ? 0.5 : 1 }
+            styles.buttonText,
+            isLoading && styles.buttonTextDisabled
           ]}>
             Mark all as read
           </Text>
@@ -35,5 +37,33 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({
     />
   );
 };
+
+const styles = StyleSheet.create({
+  button: {
+    paddingHorizontal: MedicalTheme.spacing[2],
+    paddingVertical: MedicalTheme.spacing[1.5],
+    borderRadius: MedicalTheme.borderRadius.md,
+    backgroundColor: MedicalTheme.colors.primary[50],
+    borderWidth: 1,
+    borderColor: MedicalTheme.colors.primary[200],
+  },
+  buttonPressed: {
+    opacity: 0.7,
+    backgroundColor: MedicalTheme.colors.primary[100],
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    fontSize: MedicalTheme.typography.fontSize.xs,
+    fontWeight: MedicalTheme.typography.fontWeight.semibold,
+    color: MedicalTheme.colors.primary[600],
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  buttonTextDisabled: {
+    color: MedicalTheme.colors.primary[400],
+  },
+});
 
 export default NotificationHeader;

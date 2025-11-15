@@ -355,13 +355,13 @@ const ReportScreen: React.FC = () => {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={({ pressed }) => [
               styles.contactButton,
-              pressed && { opacity: 0.7 },
+              pressed && styles.contactButtonPressed,
             ]}
           >
             <Ionicons 
               name="headset-outline" 
-              size={24} 
-              color={MedicalTheme.colors.primary[500]} 
+              size={20} 
+              color={MedicalTheme.colors.primary[600]} 
             />
           </Pressable>
         }

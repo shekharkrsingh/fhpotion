@@ -357,6 +357,8 @@ const ModernAppointmentForm = () => {
                     opacity: additionalFieldsOpacity
                   }
                 ]}
+                accessible={true}
+                importantForAccessibility="yes"
               >
                 <FormInput
                   icon="email-outline"
