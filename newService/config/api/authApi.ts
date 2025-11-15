@@ -26,10 +26,6 @@ export interface DoctorData {
 
 export interface LoginResponse {
   token: string;
-  doctorId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
 }
 
 const {dispatch}=store;
