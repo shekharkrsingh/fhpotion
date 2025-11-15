@@ -1262,8 +1262,9 @@ const ProfileSettingsScreen = () => {
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={closeModal}
+        accessible={false}
       >
-        <View style={styles.modalContainer}>
+        <View style={styles.modalContainer} accessible={false} importantForAccessibility="no-hide-descendants">
           {renderModalHeader()}
           {renderModalContent()}
         </View>
