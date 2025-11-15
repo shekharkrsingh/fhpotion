@@ -1,6 +1,5 @@
 import { apiConnector } from "@/newService/apiConnector";
 import { reportEndpoints } from "@/newService/config/apiEndpoints";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const getDoctorReports = async (
   fromDate: string, 

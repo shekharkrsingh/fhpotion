@@ -1,6 +1,5 @@
 import { apiConnector } from "@/newService/apiConnector";
 import { authEndpoints, doctorEndpoints } from "@/newService/config/apiEndpoints";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   setLoading,
   setSuccess,
@@ -8,6 +7,7 @@ import {
   setSignupData,
 } from "@/newStore/slices/signupSlice";
 import { store } from "@/newStore";
+import { setToken, removeToken } from "@/utils/tokenService";
 
 interface ApiResponse<T> {
   data: T;
@@ -124,8 +124,12 @@ export const loginDoctor = async (
       return false;
     }
 
-    await AsyncStorage.setItem("token", response.data.data.token);
-    console.log("Login successful, token stored");
+    const tokenStored = await setToken(response.data.data.token);
+    if (!tokenStored) {
+      console.error("Failed to store token securely");
+      return false;
+    }
+    console.log("Login successful, token stored securely");
     return true;
   } catch (error: any) {
     console.error(
@@ -213,7 +217,11 @@ export const changeDoctorEmail = async (
       console.error("Failed to change email:", response.data?.message);
       return false;
     }
-    await AsyncStorage.setItem("token", response.data.data);
+    const tokenStored = await setToken(response.data.data);
+    if (!tokenStored) {
+      console.error("Failed to store new token securely after email change");
+      return false;
+    }
     return true;
   } catch (error: any) {
     console.error(
@@ -229,8 +237,8 @@ export const changeDoctorEmail = async (
  */
 export const logoutDoctor = async (): Promise<void> => {
   try {
-    await AsyncStorage.removeItem("token");
-    console.log("Logged out successfully");
+    await removeToken();
+    console.log("Logged out successfully, token removed from secure storage");
   } catch (error: any) {
     console.error(
       "Error logging out:",
@@ -243,9 +251,9 @@ export const logoutDoctor = async (): Promise<void> => {
 export const signOutDoctor = async (): Promise<boolean> => {
   try {
     // Simply remove the token - this is the most important part
-    await AsyncStorage.removeItem("token");
+    await removeToken();
     
-    console.log("Signed out successfully - token removed");
+    console.log("Signed out successfully - token removed from secure storage");
     return true;
 
   } catch (error: any) {

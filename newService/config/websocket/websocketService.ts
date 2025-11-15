@@ -1,12 +1,12 @@
 import { Client, IMessage, StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { AppState, AppStateStatus } from "react-native";
 import { store } from "@/newStore";
 import { addAppointment } from "@/newStore/slices/appointmentSlice";
 import { addNotification } from "@/newStore/slices/notificationSlice";
 import { webSocketEndpoints } from "@/newService/config/websocketEndpoints";
+import { getValidToken } from "@/utils/tokenService";
 
 interface WebSocketMessage {
   type: 'APPOINTMENT' | 'NOTIFICATION';
@@ -51,13 +51,13 @@ class WebsocketService {
   }
 
   private async attemptConnection(): Promise<void> {
-
     try {
-      const token = await AsyncStorage.getItem("token");
+      // getValidToken automatically checks expiration and redirects if invalid
+      const token = await getValidToken();
       if (!token) {
-        console.warn("WebSocket: Authentication token not found");
+        // getValidToken already handled redirect
+        console.warn("WebSocket: Authentication token not found or expired");
         this.isConnecting = false;
-        router.replace('/(auth)');
         return;
       }
 
