@@ -54,6 +54,17 @@ export default function BookingScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const hasAttemptedInitialLoad = React.useRef(false);
 
+  // Toast helper function - stable, no dependencies (moved before fetchData to avoid ReferenceError)
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    Toast.show({
+      type: type,
+      text1: type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Info',
+      text2: message,
+      position: 'bottom',
+      visibilityTime: 3000,
+    });
+  }, []); // No dependencies - Toast.show is stable
+
   // Helper function to find appointment safely
   const findAppointment = (id: string) => {
     return Array.isArray(appointments) 
@@ -111,17 +122,6 @@ export default function BookingScreen() {
       showToast('Emergency protocol activated!', 'info');
     }
   };
-
-  // Toast helper function - stable, no dependencies
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    Toast.show({
-      type: type,
-      text1: type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Info',
-      text2: message,
-      position: 'bottom',
-      visibilityTime: 3000,
-    });
-  }, []); // No dependencies - Toast.show is stable
 
   // Single confirmation popup handler
   const showConfirmation = (message: string, action: () => Promise<void>, appointmentId?: string) => {
