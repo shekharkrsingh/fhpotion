@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Modal
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/newStore/rootReducer';
@@ -18,6 +19,7 @@ import { MedicalTheme } from '@/newConstants/theme';
 import { styles } from '@/assets/styles/settings.styles';
 import AlertPopup from '@/newComponents/alertPopup';
 import OTPVerificationPopup from '@/newComponents/OTPVerificationPopup';
+import ScreenHeader from '@/newComponents/ScreenHeader';
 
 const SettingsScreen = () => {
   const [activeModal, setActiveModal] = useState<string | null>(null);
@@ -1148,15 +1150,13 @@ const SettingsScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
-      {/* Header with Back Button */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerPlaceholder} />
-      </View>
+    <>
+      <StatusBar style="dark" translucent={false} />
+      <View style={styles.container}>
+        <ScreenHeader
+          title="Settings"
+          showBack={true}
+        />
 
       <ScrollView 
         style={styles.scrollView}

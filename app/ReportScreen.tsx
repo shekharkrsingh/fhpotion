@@ -8,7 +8,9 @@ import {
   ActivityIndicator,
   Share,
   Platform,
+  Pressable,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as FileSystem from 'expo-file-system';
@@ -17,6 +19,7 @@ import { getDoctorReports } from '@/newService/config/api/reportsAPI';
 import { MedicalTheme } from '@/newConstants/theme';
 import AlertPopup from '@/newComponents/alertPopup';
 import { reportScreenStyles as styles } from '@/assets/styles/ReportScreen.styles';
+import ScreenHeader from '@/newComponents/ScreenHeader';
 
 const ReportScreen: React.FC = () => {
   const router = useRouter();
@@ -341,37 +344,28 @@ const ReportScreen: React.FC = () => {
 
   return (
     <>
-      {/* Improved Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={handleBackPress}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons 
-            name="arrow-back" 
-            size={24} 
-            color={MedicalTheme.colors.primary[500]} 
-          />
-        </TouchableOpacity>
-        
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Medical Reports</Text>
-          <Text style={styles.headerSubtitle}>Generate and download patient reports</Text>
-        </View>
-        
-        <TouchableOpacity
-          style={styles.contactButton}
-          onPress={handleContactUs}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons 
-            name="headset-outline" 
-            size={24} 
-            color={MedicalTheme.colors.primary[500]} 
-          />
-        </TouchableOpacity>
-      </View>
+      <StatusBar style="dark" translucent={false} />
+      <ScreenHeader
+        title="Medical Reports"
+        subtitle="Generate and download patient reports"
+        showBack={true}
+        rightAction={
+          <Pressable
+            onPress={handleContactUs}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={({ pressed }) => [
+              styles.contactButton,
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Ionicons 
+              name="headset-outline" 
+              size={24} 
+              color={MedicalTheme.colors.primary[500]} 
+            />
+          </Pressable>
+        }
+      />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         <Text style={styles.title}>Generate Doctor Report</Text>

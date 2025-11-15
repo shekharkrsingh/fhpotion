@@ -1,6 +1,7 @@
 // booking.tsx - Fixed appointment lookup
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSelector, useDispatch } from 'react-redux';
 import Toast from 'react-native-toast-message';
@@ -461,8 +462,10 @@ export default function BookingScreen() {
   }, []); // Empty deps - only run once on mount (dispatch is stable from Redux)
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={bookingStyles.container}>
+    <>
+      <StatusBar style="dark" translucent={false} />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={bookingStyles.container}>
         <BookingHeader 
           onSearch={handleSearch}
           onMarkAction={handleMarkAction}
@@ -506,5 +509,6 @@ export default function BookingScreen() {
         <Toast />
       </View>
     </GestureHandlerRootView>
+    </>
   );
 }

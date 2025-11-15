@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, Pressable, Animated, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { bookingHeaderStyles } from '@/assets/styles/booking.styles';
 import { MedicalTheme } from '@/newConstants/theme';
@@ -12,6 +13,7 @@ interface BookingHeaderProps {
 type MarkAction = 'treated' | 'emergency' | 'cancel' | 'edit';
 
 const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onMarkAction }) => {
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showMarkDropdown, setShowMarkDropdown] = useState(false);
@@ -84,7 +86,10 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onMarkAction })
   };
 
   return (
-    <View style={bookingHeaderStyles.boookingHeader}>
+    <View style={[
+      bookingHeaderStyles.boookingHeader,
+      { paddingTop: insets.top + MedicalTheme.spacing[3] }
+    ]}>
       <View style={bookingHeaderStyles.headerRow}>
         <Text style={bookingHeaderStyles.title}>Booking List</Text>
         

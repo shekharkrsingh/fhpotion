@@ -1,5 +1,6 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { View, ScrollView, Text, RefreshControl, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
@@ -143,8 +144,10 @@ const DoctorProfileScreen = () => {
   }
 
   return (
-    <GestureHandlerRootView style={profileStyles.container}>
-      <View style={profileStyles.container}>
+    <>
+      <StatusBar style="light" translucent={false} />
+      <GestureHandlerRootView style={profileStyles.container}>
+        <View style={profileStyles.container}>
         <ScrollView 
           showsVerticalScrollIndicator={false} 
           contentContainerStyle={profileStyles.scrollContainer}
@@ -339,6 +342,7 @@ const DoctorProfileScreen = () => {
         </ScrollView>
       </View>
     </GestureHandlerRootView>
+    </>
   );
 };
 

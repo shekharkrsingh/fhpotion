@@ -5,6 +5,7 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/newStore';
@@ -130,18 +131,20 @@ const DoctorDashboard = () => {
   }
 
   return (
-    <ScrollView 
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={[MedicalTheme.colors.primary[500]]}
-          tintColor={MedicalTheme.colors.primary[500]}
-        />
-      }
-    >
+    <>
+      <StatusBar style="dark" translucent={false} />
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[MedicalTheme.colors.primary[500]]}
+            tintColor={MedicalTheme.colors.primary[500]}
+          />
+        }
+      >
       <DashboardHeader profileData={profileData} />
       <StatsCards statistics={statistics} />
       <PerformanceMetrics statistics={statistics} />
@@ -152,6 +155,7 @@ const DoctorDashboard = () => {
       />
       <QuickActions />
     </ScrollView>
+    </>
   );
 };
 

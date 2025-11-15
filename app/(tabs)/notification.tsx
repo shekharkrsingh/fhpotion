@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { RootState, AppDispatch } from '@/newStore/index';
@@ -54,11 +55,13 @@ const NotificationScreen = () => {
   };
 
   return (
-    <View style={notificationStyles.container}>
-      <NotificationHeader 
-        onMarkAllAsRead={handleMarkAllAsRead}
-        isLoading={isLoading}
-      />
+    <>
+      <StatusBar style="dark" translucent={false} />
+      <View style={notificationStyles.container}>
+        <NotificationHeader 
+          onMarkAllAsRead={handleMarkAllAsRead}
+          isLoading={isLoading}
+        />
       
       <NotificationList
         notifications={notifications}
@@ -66,7 +69,8 @@ const NotificationScreen = () => {
         refreshing={refreshing}
         onNotificationPress={handleNotificationPress}
       />
-    </View>
+      </View>
+    </>
   );
 };
 

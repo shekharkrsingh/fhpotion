@@ -11,6 +11,8 @@ import {
   Animated,
   Easing
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { GestureHandlerRootView, RefreshControl } from 'react-native-gesture-handler';
 import { addAppointment } from '@/newService/config/api/appointmentApi'
@@ -33,6 +35,7 @@ interface PatientData {
 }
 
 const ModernAppointmentForm = () => {
+  const insets = useSafeAreaInsets();
   const [patientData, setPatientData] = useState<PatientData>({
     firstName: '',
     lastName: '',
@@ -211,32 +214,35 @@ const ModernAppointmentForm = () => {
   });
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: MedicalTheme.colors.background.secondary }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? "padding" : 'height'}
-      >
-        <ScrollView
-          contentContainerStyle={appointmentFormStyles.container}
-          refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={onRefresh}
-              colors={[MedicalTheme.colors.primary[500]]}
-              tintColor={MedicalTheme.colors.primary[500]}
-              progressBackgroundColor={MedicalTheme.colors.background.primary}
-            />
-          }
-          keyboardShouldPersistTaps="handled"
+    <>
+      <StatusBar style="light" translucent={false} />
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: MedicalTheme.colors.background.secondary }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? "padding" : 'height'}
         >
-          {/* Header */}
-          <Animated.View style={[
-            appointmentFormStyles.header,
-            { 
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }] 
+          <ScrollView
+            contentContainerStyle={appointmentFormStyles.container}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={onRefresh}
+                colors={[MedicalTheme.colors.primary[500]]}
+                tintColor={MedicalTheme.colors.primary[500]}
+                progressBackgroundColor={MedicalTheme.colors.background.primary}
+              />
             }
-          ]}>
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Header */}
+            <Animated.View style={[
+              appointmentFormStyles.header,
+              { 
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+                paddingTop: insets.top + MedicalTheme.spacing[6],
+              }
+            ]}>
             <MaterialCommunityIcons 
               name="calendar-plus" 
               size={32} 
@@ -407,6 +413,7 @@ const ModernAppointmentForm = () => {
         </ScrollView>
       </KeyboardAvoidingView>
     </GestureHandlerRootView>
+    </>
   );
 };
 

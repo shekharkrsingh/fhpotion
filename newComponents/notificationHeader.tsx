@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { Text, Pressable } from 'react-native';
 import { notificationStyles } from '@/assets/styles/notification.styles';
+import ScreenHeader from '@/newComponents/ScreenHeader';
 
 interface NotificationHeaderProps {
   onMarkAllAsRead: () => void;
@@ -12,23 +13,26 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({
   isLoading,
 }) => {
   return (
-    <View style={notificationStyles.header}>
-      <Text style={notificationStyles.headerTitle}>Notifications</Text>
-      <Pressable 
-        onPress={onMarkAllAsRead} 
-        disabled={isLoading}
-        style={({ pressed }) => [
-          pressed && { opacity: 0.7 }
-        ]}
-      >
-        <Text style={[
-          notificationStyles.markAllRead,
-          { opacity: isLoading ? 0.5 : 1 }
-        ]}>
-          Mark all as read
-        </Text>
-      </Pressable>
-    </View>
+    <ScreenHeader
+      title="Notifications"
+      showBack={false}
+      rightAction={
+        <Pressable 
+          onPress={onMarkAllAsRead} 
+          disabled={isLoading}
+          style={({ pressed }) => [
+            pressed && { opacity: 0.7 }
+          ]}
+        >
+          <Text style={[
+            notificationStyles.markAllRead,
+            { opacity: isLoading ? 0.5 : 1 }
+          ]}>
+            Mark all as read
+          </Text>
+        </Pressable>
+      }
+    />
   );
 };
 
