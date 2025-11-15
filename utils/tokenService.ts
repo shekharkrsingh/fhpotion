@@ -1,8 +1,23 @@
 // utils/tokenService.ts
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 
 const TOKEN_KEY = 'auth_token';
+
+// Check if SecureStore is available (not available on web)
+const isSecureStoreAvailable = async (): Promise<boolean> => {
+  try {
+    if (Platform.OS === 'web') {
+      return false;
+    }
+    return await SecureStore.isAvailableAsync();
+  } catch (error) {
+    console.warn('SecureStore availability check failed, falling back to AsyncStorage:', error);
+    return false;
+  }
+};
 
 /**
  * Decodes base64 string to UTF-8 string (cross-platform)
@@ -107,7 +122,15 @@ const isTokenExpired = (token: string): boolean => {
  */
 export const getToken = async (): Promise<string | null> => {
   try {
-    const token = await SecureStore.getItemAsync(TOKEN_KEY);
+    const useSecureStore = await isSecureStoreAvailable();
+    let token: string | null = null;
+
+    if (useSecureStore) {
+      token = await SecureStore.getItemAsync(TOKEN_KEY);
+    } else {
+      // Fallback to AsyncStorage for web or when SecureStore is unavailable
+      token = await AsyncStorage.getItem(TOKEN_KEY);
+    }
     
     if (!token) {
       return null;
@@ -122,7 +145,7 @@ export const getToken = async (): Promise<string | null> => {
 
     return token;
   } catch (error) {
-    console.error('Error getting token from secure storage:', error);
+    console.error('Error getting token from storage:', error);
     return null;
   }
 };
@@ -145,10 +168,18 @@ export const setToken = async (token: string): Promise<boolean> => {
       return false;
     }
 
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    const useSecureStore = await isSecureStoreAvailable();
+    
+    if (useSecureStore) {
+      await SecureStore.setItemAsync(TOKEN_KEY, token);
+    } else {
+      // Fallback to AsyncStorage for web or when SecureStore is unavailable
+      await AsyncStorage.setItem(TOKEN_KEY, token);
+    }
+    
     return true;
   } catch (error) {
-    console.error('Error storing token in secure storage:', error);
+    console.error('Error storing token in storage:', error);
     return false;
   }
 };
@@ -158,10 +189,18 @@ export const setToken = async (token: string): Promise<boolean> => {
  */
 export const removeToken = async (): Promise<boolean> => {
   try {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    const useSecureStore = await isSecureStoreAvailable();
+    
+    if (useSecureStore) {
+      await SecureStore.deleteItemAsync(TOKEN_KEY);
+    } else {
+      // Fallback to AsyncStorage for web or when SecureStore is unavailable
+      await AsyncStorage.removeItem(TOKEN_KEY);
+    }
+    
     return true;
   } catch (error) {
-    console.error('Error removing token from secure storage:', error);
+    console.error('Error removing token from storage:', error);
     return false;
   }
 };
