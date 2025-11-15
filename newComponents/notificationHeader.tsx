@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { notificationStyles } from '@/assets/styles/notification.styles';
 
 interface NotificationHeaderProps {
@@ -14,9 +14,12 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({
   return (
     <View style={notificationStyles.header}>
       <Text style={notificationStyles.headerTitle}>Notifications</Text>
-      <TouchableOpacity 
+      <Pressable 
         onPress={onMarkAllAsRead} 
         disabled={isLoading}
+        style={({ pressed }) => [
+          pressed && { opacity: 0.7 }
+        ]}
       >
         <Text style={[
           notificationStyles.markAllRead,
@@ -24,7 +27,7 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({
         ]}>
           Mark all as read
         </Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 };

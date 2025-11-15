@@ -21,7 +21,8 @@ class WebsocketService {
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private subscription: StompSubscription | null = null;
   private appStateListener: ((state: AppStateStatus) => void) | null = null;
-  private connectionPromise: Promise<void> | null = null; // Promise-based locking
+  private appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null;
+  private connectionPromise: Promise<void> | null = null;
 
   private get isConnected(): boolean {
     return !!this.stompClient?.connected;
@@ -80,26 +81,36 @@ class WebsocketService {
         },
         onStompError: (frame) => {
           console.error("WebSocket: STOMP error", frame);
-          if (frame.headers && frame.headers.message && 
-              (frame.headers.message.includes("401") || 
-               frame.headers.message.includes("UNAUTHORIZED") ||
-               frame.headers.message.includes("authentication"))) {
-            console.error("WebSocket: Authentication failed - redirecting to login");
+          try {
+            if (frame.headers && frame.headers.message && 
+                (frame.headers.message.includes("401") || 
+                 frame.headers.message.includes("UNAUTHORIZED") ||
+                 frame.headers.message.includes("authentication"))) {
+              console.error("WebSocket: Authentication failed - redirecting to login");
+              this.cleanup();
+              router.replace('/(auth)');
+              return;
+            }
+            this.handleDisconnect();
+          } catch (error) {
+            console.error("WebSocket: Error in STOMP error handler", error);
             this.cleanup();
-            router.replace('/(auth)');
-            return;
           }
-          this.handleDisconnect();
         },
         onWebSocketClose: (event) => {
           console.log("WebSocket: Connection closed", event);
-          if (event.code === 1008 || event.code === 1002) {
-            console.error("WebSocket: Connection closed due to authentication failure");
+          try {
+            if (event.code === 1008 || event.code === 1002) {
+              console.error("WebSocket: Connection closed due to authentication failure");
+              this.cleanup();
+              router.replace('/(auth)');
+              return;
+            }
+            this.handleDisconnect();
+          } catch (error) {
+            console.error("WebSocket: Error in close handler", error);
             this.cleanup();
-            router.replace('/(auth)');
-            return;
           }
-          this.handleDisconnect();
         },
         onDisconnect: () => {
           console.log("WebSocket: Disconnected");
@@ -125,12 +136,17 @@ class WebsocketService {
   }
 
   private subscribeToDoctorChannel(doctorId: string): void {
-    if (!this.stompClient) return;
+    if (!this.stompClient || !this.isConnected) {
+      console.warn("WebSocket: Cannot subscribe - no active connection");
+      return;
+    }
 
     // Unsubscribe existing subscription if any
     if (this.subscription) {
       try {
-        this.subscription.unsubscribe();
+        if (this.stompClient && this.isConnected) {
+          this.subscription.unsubscribe();
+        }
       } catch (error) {
         console.warn("WebSocket: Error unsubscribing from previous channel", error);
       }
@@ -138,13 +154,23 @@ class WebsocketService {
     }
 
     // Create new subscription and store reference
-    this.subscription = this.stompClient.subscribe(
-      webSocketEndpoints.appointmentUpdate(doctorId),
-      (message: IMessage) => {
-        const update = JSON.parse(message.body);
-        this.handleIncomingMessage(update);
+    try {
+      if (this.stompClient && this.isConnected) {
+        this.subscription = this.stompClient.subscribe(
+          webSocketEndpoints.appointmentUpdate(doctorId),
+          (message: IMessage) => {
+            try {
+              const update = JSON.parse(message.body);
+              this.handleIncomingMessage(update);
+            } catch (error) {
+              console.error("WebSocket: Error parsing message", error);
+            }
+          }
+        );
       }
-    );
+    } catch (error) {
+      console.error("WebSocket: Error subscribing to channel", error);
+    }
   }
 
   private handleIncomingMessage(message: WebSocketMessage): void {
@@ -212,7 +238,9 @@ class WebsocketService {
     // Unsubscribe from channel
     if (this.subscription) {
       try {
-        this.subscription.unsubscribe();
+        if (this.stompClient && this.isConnected) {
+          this.subscription.unsubscribe();
+        }
       } catch (error) {
         console.warn("WebSocket: Error unsubscribing during cleanup", error);
       }
@@ -222,7 +250,9 @@ class WebsocketService {
     // Deactivate and clear client
     if (this.stompClient) {
       try {
-        this.stompClient.deactivate();
+        if (this.stompClient.active) {
+          this.stompClient.deactivate();
+        }
       } catch (error) {
         console.warn("WebSocket: Error deactivating client", error);
       }
@@ -254,32 +284,31 @@ class WebsocketService {
    * and reconnect when app comes to foreground
    */
   public initializeAppStateListener(): void {
-    // Remove existing listener if any
-    if (this.appStateListener) {
-      AppState.removeEventListener('change', this.appStateListener);
+    if (this.appStateSubscription) {
+      this.appStateSubscription.remove();
+      this.appStateSubscription = null;
     }
 
     this.appStateListener = (nextAppState: AppStateStatus) => {
       if (nextAppState === 'background' || nextAppState === 'inactive') {
-        // App going to background - disconnect to save battery
         console.log("WebSocket: App going to background, disconnecting");
         this.disconnect();
       } else if (nextAppState === 'active') {
-        // App coming to foreground - reconnect
         console.log("WebSocket: App coming to foreground, reconnecting");
         this.ensureConnected();
       }
     };
 
-    AppState.addEventListener('change', this.appStateListener);
+    this.appStateSubscription = AppState.addEventListener('change', this.appStateListener);
   }
 
   /**
    * Remove AppState listener (call on app unmount or logout)
    */
   public removeAppStateListener(): void {
-    if (this.appStateListener) {
-      AppState.removeEventListener('change', this.appStateListener);
+    if (this.appStateSubscription) {
+      this.appStateSubscription.remove();
+      this.appStateSubscription = null;
       this.appStateListener = null;
     }
   }

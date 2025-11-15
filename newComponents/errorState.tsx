@@ -1,6 +1,6 @@
 // app/(tabs)/components/ErrorState.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { styles } from '@/assets/styles/errorState.styles';
@@ -18,14 +18,17 @@ const ErrorState: React.FC<ErrorStateProps> = ({ onRetry }) => {
       <Text style={styles.subtitle}>
         Please check your connection and try again
       </Text>
-      <TouchableOpacity 
-        style={styles.retryButton}
+      <Pressable 
+        style={({ pressed }) => [
+          styles.retryButton,
+          pressed && { opacity: 0.7 }
+        ]}
         onPress={onRetry}
       >
         <Text style={styles.retryText}>
           Try Again
         </Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 };

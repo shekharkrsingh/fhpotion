@@ -1,6 +1,6 @@
 // app/(tabs)/components/UpcomingAppointments.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -52,18 +52,24 @@ const UpcomingAppointments: React.FC<UpcomingAppointmentsProps> = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Upcoming Appointments</Text>
-        <TouchableOpacity onPress={() => router.navigate("/(tabs)/booking")}>
+        <Pressable 
+          style={({ pressed }) => pressed && { opacity: 0.7 }}
+          onPress={() => router.navigate("/(tabs)/booking")}
+        >
           <Text style={styles.viewAll}>View All</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
       
       {loading ? (
         <ActivityIndicator size="small" color={MedicalTheme.colors.primary[500]} />
       ) : upcomingAppointments.length > 0 ? (
         upcomingAppointments.map((appointment) => (
-          <TouchableOpacity
+          <Pressable
             key={appointment.appointmentId}
-            style={styles.appointmentCard}
+            style={({ pressed }) => [
+              styles.appointmentCard,
+              pressed && { opacity: 0.7 }
+            ]}
             onPress={() => router.navigate(`/(tabs)/booking/${appointment.appointmentId}`)}
           >
             <View style={styles.timeContainer}>
@@ -87,7 +93,7 @@ const UpcomingAppointments: React.FC<UpcomingAppointmentsProps> = ({
               size={24} 
               color={MedicalTheme.colors.text.tertiary}
             />
-          </TouchableOpacity>
+          </Pressable>
         ))
       ) : (
         <View style={styles.emptyState}>

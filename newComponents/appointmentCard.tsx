@@ -1,6 +1,6 @@
 // appointmentCard.tsx (Updated version)
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, Pressable, Text } from 'react-native';
 import { appointmentCardStyles } from '@/assets/styles/appointmentCard.styles';
 import AlertPopup from '@/newComponents/alertPopup';
 import AppointmentHeader from '@/newComponents/appointmentHeader';

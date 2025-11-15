@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image, Pressable } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { profileStyles } from '@/assets/styles/profile.styles';
@@ -47,9 +47,15 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         />
         
         {/* Back Button */}
-        <TouchableOpacity style={profileStyles.backButton} onPress={() => router.back()}>
+        <Pressable 
+          style={({ pressed }) => [
+            profileStyles.backButton,
+            pressed && { opacity: 0.7 }
+          ]} 
+          onPress={() => router.back()}
+        >
           <Ionicons name="chevron-back" size={24} color="#fff" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Profile Header with Enhanced Design */}

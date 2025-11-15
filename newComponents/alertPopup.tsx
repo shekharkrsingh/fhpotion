@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity } from 'react-native';
+import { Modal, View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/newConstants/theme';
 import styles from '@/newAssets/styles/alertPopup.styles';
@@ -123,39 +123,45 @@ const AlertPopup: React.FC<AlertPopupProps> = ({
             type === 'alert' ? styles.singleButtonContainer : styles.dualButtonsContainer
           ]}>
             {type === 'confirmation' ? (
-              // Dual buttons for confirmation - both on right
               <>
-                <TouchableOpacity
-                  style={styles.secondaryButton}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    pressed && { opacity: 0.7 }
+                  ]}
                   onPress={handleCancel}
-                  activeOpacity={0.7}
                 >
                   <Text style={styles.secondaryButtonText}>
                     {cancelText}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity
-                  style={[styles.primaryButton, { backgroundColor: variantConfig.primary }]}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    { backgroundColor: variantConfig.primary },
+                    pressed && { opacity: 0.7 }
+                  ]}
                   onPress={handleConfirm}
-                  activeOpacity={0.7}
                 >
                   <Text style={styles.primaryButtonText}>
                     {confirmText}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </>
             ) : (
-              // Single button for alert - on right
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: variantConfig.primary }]}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  { backgroundColor: variantConfig.primary },
+                  pressed && { opacity: 0.7 }
+                ]}
                 onPress={handleSingleAction}
-                activeOpacity={0.7}
               >
                 <Text style={styles.primaryButtonText}>
                   {confirmText}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
         </View>

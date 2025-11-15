@@ -1,6 +1,6 @@
 // app/(tabs)/components/DashboardHeader.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -36,8 +36,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ profileData }) => {
           Dr. {profileData.firstName} {profileData.lastName}
         </Text>
       </View>
-      <TouchableOpacity
-        style={styles.notificationButton}
+      <Pressable
+        style={({ pressed }) => [
+          styles.notificationButton,
+          pressed && { opacity: 0.7 }
+        ]}
         onPress={() => router.navigate('/(tabs)/notification')}
       >
         <Ionicons
@@ -46,7 +49,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ profileData }) => {
           color={MedicalTheme.colors.text.primary}
         />
         <View style={styles.notificationBadge} />
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 };

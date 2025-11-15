@@ -1,6 +1,6 @@
 // newComponents/ErrorBoundary.tsx
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { MedicalTheme } from '@/newConstants/theme';
 import { router } from 'expo-router';
@@ -160,17 +160,19 @@ class ErrorBoundary extends Component<Props, State> {
               )}
 
               <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    backgroundColor: MedicalTheme.colors.primary[500],
-                    paddingVertical: 14,
-                    paddingHorizontal: 20,
-                    borderRadius: 8,
-                    alignItems: 'center',
-                  }}
+                <Pressable
+                  style={({ pressed }) => [
+                    {
+                      flex: 1,
+                      backgroundColor: MedicalTheme.colors.primary[500],
+                      paddingVertical: 14,
+                      paddingHorizontal: 20,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                    },
+                    pressed && { opacity: 0.8 }
+                  ]}
                   onPress={this.handleReset}
-                  activeOpacity={0.8}
                 >
                   <Text
                     style={{
@@ -181,21 +183,23 @@ class ErrorBoundary extends Component<Props, State> {
                   >
                     Try Again
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    backgroundColor: MedicalTheme.colors.background.secondary,
-                    paddingVertical: 14,
-                    paddingHorizontal: 20,
-                    borderRadius: 8,
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: MedicalTheme.colors.primary[500],
-                  }}
+                <Pressable
+                  style={({ pressed }) => [
+                    {
+                      flex: 1,
+                      backgroundColor: MedicalTheme.colors.background.secondary,
+                      paddingVertical: 14,
+                      paddingHorizontal: 20,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: MedicalTheme.colors.primary[500],
+                    },
+                    pressed && { opacity: 0.8 }
+                  ]}
                   onPress={this.handleReload}
-                  activeOpacity={0.8}
                 >
                   <Text
                     style={{
@@ -206,7 +210,7 @@ class ErrorBoundary extends Component<Props, State> {
                   >
                     Restart App
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           </ScrollView>

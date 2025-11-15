@@ -1,24 +1,25 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
-import { TouchableOpacity, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppTheme } from '@/constants/theme'
 
-// Custom Tab Button Component (unchanged)
 const CustomTabButton = ({ children, onPress }: any) => (
-  <TouchableOpacity
-    style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    }}
+  <Pressable
+    style={({ pressed }) => [
+      {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      pressed && { opacity: 0.7 }
+    ]}
     onPress={onPress}
-    activeOpacity={0.7}
   >
     <View style={{ alignItems: 'center', justifyContent: 'center' }}>
       {children}
     </View>
-  </TouchableOpacity>
+  </Pressable>
 )
 
 export default function TabLayout() {

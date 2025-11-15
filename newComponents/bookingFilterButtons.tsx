@@ -1,6 +1,6 @@
 // bookingFilterButtons.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { bookingStyles } from '@/assets/styles/booking.styles';
 
 interface FilterOption {
@@ -62,11 +62,12 @@ const BookingFilterButtons: React.FC<BookingFilterButtonsProps> = ({
   return (
     <View style={bookingStyles.filterButtonsContainer}>
       {filters.map((filter) => (
-        <TouchableOpacity
+        <Pressable
           key={filter.key}
-          style={[
+          style={({ pressed }) => [
             bookingStyles.filterButton,
             availabilityFilter === filter.key && bookingStyles.activeButton,
+            pressed && { opacity: 0.7 }
           ]}
           onPress={() => setAvailabilityFilter(filter.key)}
         >
@@ -78,7 +79,7 @@ const BookingFilterButtons: React.FC<BookingFilterButtonsProps> = ({
           >
             {filter.label}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       ))}
     </View>
   );

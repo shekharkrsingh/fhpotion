@@ -1,6 +1,6 @@
 // app/(tabs)/components/QuickActions.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -42,9 +42,12 @@ const QuickActions: React.FC = () => {
       <Text style={styles.title}>Quick Actions</Text>
       <View style={styles.grid}>
         {actions.map((action, index) => (
-          <TouchableOpacity
+          <Pressable
             key={index}
-            style={styles.actionButton}
+            style={({ pressed }) => [
+              styles.actionButton,
+              pressed && { opacity: 0.7 }
+            ]}
             onPress={() => router.navigate(action.route as any)}
           >
             <View style={[styles.iconContainer, { backgroundColor: action.backgroundColor }]}>
@@ -55,7 +58,7 @@ const QuickActions: React.FC = () => {
               )}
             </View>
             <Text style={styles.actionLabel}>{action.label}</Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </View>
     </View>

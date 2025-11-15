@@ -4,7 +4,7 @@ import {
   Text, 
   KeyboardAvoidingView, 
   Platform, 
-  TouchableOpacity, 
+  Pressable, 
   ActivityIndicator, 
   Alert,
   ScrollView,
@@ -324,10 +324,12 @@ const ModernAppointmentForm = () => {
             </View>
 
             {/* Additional Fields Toggle */}
-            <TouchableOpacity 
-              style={appointmentFormStyles.expandButton}
+            <Pressable 
+              style={({ pressed }) => [
+                appointmentFormStyles.expandButton,
+                pressed && { opacity: 0.8 }
+              ]}
               onPress={toggleAdditionalFields}
-              activeOpacity={0.8}
             >
               <Text style={appointmentFormStyles.expandButtonText}>
                 {showAdditionalFields ? 'Hide Additional Details' : 'Show Additional Details'}
@@ -337,7 +339,7 @@ const ModernAppointmentForm = () => {
                 size={24}
                 color={MedicalTheme.colors.primary[500]}
               />
-            </TouchableOpacity>
+            </Pressable>
 
             {/* Additional Fields - Animated */}
             {showAdditionalFields && (
@@ -373,15 +375,15 @@ const ModernAppointmentForm = () => {
             )}
 
             {/* Submit Button */}
-            <TouchableOpacity
-              style={[
+            <Pressable
+              style={({ pressed }) => [
                 appointmentFormStyles.submitButton,
                 (loading || !patientData.firstName.trim() || !patientData.contact.trim()) && 
-                { backgroundColor: MedicalTheme.colors.primary[300] }
+                { backgroundColor: MedicalTheme.colors.primary[300] },
+                pressed && { opacity: 0.8 }
               ]}
               onPress={handleSubmit}
               disabled={loading || !patientData.firstName.trim() || !patientData.contact.trim()}
-              activeOpacity={0.9}
             >
               {loading ? (
                 <ActivityIndicator color={MedicalTheme.colors.text.inverse} size="small" />
@@ -400,7 +402,7 @@ const ModernAppointmentForm = () => {
                   </Text>
                 </>
               )}
-            </TouchableOpacity>
+            </Pressable>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>

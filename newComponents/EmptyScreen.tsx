@@ -3,7 +3,7 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   RefreshControl,
   Platform,
@@ -269,9 +269,12 @@ const EmptyScreen: React.FC<EmptyScreenProps> = ({
           {displayActions.length > 0 && (
             <View style={styles.actionButtons}>
               {displayActions.map((action, index) => (
-                <TouchableOpacity
+                <Pressable
                   key={index}
-                  style={getButtonStyle(action.variant)}
+                  style={({ pressed }) => [
+                    getButtonStyle(action.variant),
+                    pressed && { opacity: 0.7 }
+                  ]}
                   onPress={action.onPress}
                   disabled={action.disabled}
                 >
@@ -279,7 +282,7 @@ const EmptyScreen: React.FC<EmptyScreenProps> = ({
                   <Text style={getButtonTextStyle(action.variant)}>
                     {action.label}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </View>
           )}

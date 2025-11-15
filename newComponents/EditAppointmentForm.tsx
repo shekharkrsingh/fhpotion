@@ -4,7 +4,7 @@ import {
   View, 
   Text, 
   TextInput, 
-  TouchableOpacity, 
+  Pressable, 
   ScrollView,
   Modal,
   Platform 
@@ -425,11 +425,12 @@ const EditAppointmentForm: React.FC<EditAppointmentFormProps> = ({
                   </Text>
                   
                   <View style={editFormStyles.dateTimeContainer}>
-                    <TouchableOpacity
-                      style={[
+                    <Pressable
+                      style={({ pressed }) => [
                         editFormStyles.dateTimeButton,
                         errors.appointmentDateTime && editFormStyles.inputError,
-                        showDatePicker && editFormStyles.dateTimeButtonActive
+                        showDatePicker && editFormStyles.dateTimeButtonActive,
+                        pressed && { opacity: 0.7 }
                       ]}
                       onPress={handleDatePress}
                     >
@@ -444,13 +445,14 @@ const EditAppointmentForm: React.FC<EditAppointmentFormProps> = ({
                       ]}>
                         {formatDate(formData.appointmentDateTime)}
                       </Text>
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity
-                      style={[
+                    <Pressable
+                      style={({ pressed }) => [
                         editFormStyles.dateTimeButton,
                         errors.appointmentDateTime && editFormStyles.inputError,
-                        showTimePicker && editFormStyles.dateTimeButtonActive
+                        showTimePicker && editFormStyles.dateTimeButtonActive,
+                        pressed && { opacity: 0.7 }
                       ]}
                       onPress={handleTimePress}
                     >
@@ -465,7 +467,7 @@ const EditAppointmentForm: React.FC<EditAppointmentFormProps> = ({
                       ]}>
                         {formatTime(formData.appointmentDateTime)}
                       </Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
                   
                   {errors.appointmentDateTime && (
@@ -477,21 +479,27 @@ const EditAppointmentForm: React.FC<EditAppointmentFormProps> = ({
 
             {/* Action Buttons */}
             <View style={appointmentCardStyles.editModalButtons}>
-              <TouchableOpacity
-                style={appointmentCardStyles.editModalCancelButton}
+              <Pressable
+                style={({ pressed }) => [
+                  appointmentCardStyles.editModalCancelButton,
+                  pressed && { opacity: 0.7 }
+                ]}
                 onPress={handleClose}
               >
                 <Text style={appointmentCardStyles.editModalCancelText}>Cancel</Text>
-              </TouchableOpacity>
+              </Pressable>
               
-              <TouchableOpacity
-                style={appointmentCardStyles.editModalSaveButton}
+              <Pressable
+                style={({ pressed }) => [
+                  appointmentCardStyles.editModalSaveButton,
+                  pressed && { opacity: 0.7 }
+                ]}
                 onPress={handleSave}
               >
                 <Text style={appointmentCardStyles.editModalSaveText}>
                   {appointment.status === "CANCELLED" ? "Save & Restore" : "Save Changes"}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>
