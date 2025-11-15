@@ -1,5 +1,7 @@
 import { Client, IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 import { store } from "@/newStore";
 import { addAppointment } from "@/newStore/slices/appointmentSlice";
 import { addNotification } from "@/newStore/slices/notificationSlice";
@@ -27,35 +29,70 @@ class WebsocketService {
     this.isConnecting = true;
 
     try {
-      const profile = store.getState().profile;
-      const doctorId = profile?.doctorId;
-
-      if (!doctorId) {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        console.warn("WebSocket: Authentication token not found");
         this.isConnecting = false;
+        router.replace('/(auth)');
         return;
       }
 
-      const socket = new SockJS(webSocketEndpoints.handShake);
+      const wsUrl = `${webSocketEndpoints.handShake}?token=${encodeURIComponent(token)}`;
+      const socket = new SockJS(wsUrl);
 
       this.stompClient = new Client({
         webSocketFactory: () => socket,
         reconnectDelay: 0,
         onConnect: () => {
+          console.log("WebSocket: Successfully connected and authenticated");
           this.reconnectAttempts = 0;
           this.isConnecting = false;
-          this.subscribeToDoctorChannel(doctorId);
+          
+          const profile = store.getState().profile;
+          const doctorId = profile?.doctorId;
+          if (doctorId) {
+            this.subscribeToDoctorChannel(doctorId);
+          }
         },
-        onStompError: () => {
+        onStompError: (frame) => {
+          console.error("WebSocket: STOMP error", frame);
+          if (frame.headers && frame.headers.message && 
+              (frame.headers.message.includes("401") || 
+               frame.headers.message.includes("UNAUTHORIZED") ||
+               frame.headers.message.includes("authentication"))) {
+            console.error("WebSocket: Authentication failed - redirecting to login");
+            this.cleanup();
+            router.replace('/(auth)');
+            return;
+          }
           this.handleDisconnect();
         },
-        onWebSocketClose: () => {
+        onWebSocketClose: (event) => {
+          console.log("WebSocket: Connection closed", event);
+          if (event.code === 1008 || event.code === 1002) {
+            console.error("WebSocket: Connection closed due to authentication failure");
+            this.cleanup();
+            router.replace('/(auth)');
+            return;
+          }
           this.handleDisconnect();
+        },
+        onDisconnect: () => {
+          console.log("WebSocket: Disconnected");
         },
       });
 
       this.stompClient.activate();
-    } catch (error) {
+    } catch (error: any) {
+      console.error("WebSocket: Connection error", error);
       this.isConnecting = false;
+      
+      if (error?.status === 401 || error?.message?.includes("401") || 
+          error?.message?.includes("UNAUTHORIZED")) {
+        router.replace('/(auth)');
+        return;
+      }
+      
       this.handleDisconnect();
     }
   }
