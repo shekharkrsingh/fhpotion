@@ -21,11 +21,16 @@ const DoctorProfileScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
+  const hasAttemptedInitialLoad = React.useRef(false);
 
-  // Load profile data on component mount
+  // Load profile data on component mount - ONLY ONCE
   useEffect(() => {
-    loadProfileData();
-  }, []);
+    // Only attempt initial load once - prevents infinite loops on API failures
+    if (!hasAttemptedInitialLoad.current) {
+      hasAttemptedInitialLoad.current = true;
+      loadProfileData();
+    }
+  }, []); // Empty deps - only run once on mount
 
   const loadProfileData = async () => {
     try {

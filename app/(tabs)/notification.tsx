@@ -16,13 +16,18 @@ import { notificationStyles } from '@/assets/styles/notification.styles';
 const NotificationScreen = () => {
   const dispatch = useDispatch<AppDispatch>();
   
-  const { notifications, isLoading } = useSelector((state: RootState) => state.notification);
+  const { notifications, isLoading, error } = useSelector((state: RootState) => state.notification);
   const [refreshing, setRefreshing] = useState(false);
+  const hasAttemptedInitialLoad = React.useRef(false);
 
-  // Load notifications on component mount
+  // Load notifications on component mount - ONLY ONCE
   useEffect(() => {
-    loadNotifications();
-  }, []);
+    // Only attempt initial load once - prevents infinite loops on API failures
+    if (!hasAttemptedInitialLoad.current) {
+      hasAttemptedInitialLoad.current = true;
+      loadNotifications();
+    }
+  }, []); // Empty deps - only run once on mount
 
   const loadNotifications = async () => {
     await dispatch(fetchAllNotifications());

@@ -52,6 +52,7 @@ export default function BookingScreen() {
   } | null>(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const hasAttemptedInitialLoad = React.useRef(false);
 
   // Helper function to find appointment safely
   const findAppointment = (id: string) => {
@@ -446,9 +447,14 @@ export default function BookingScreen() {
     );
   };
 
+  // Load appointments on component mount - ONLY ONCE
   useEffect(() => {
-    fetchData();
-  }, [dispatch]);
+    // Only attempt initial load once - prevents infinite loops on API failures
+    if (!hasAttemptedInitialLoad.current) {
+      hasAttemptedInitialLoad.current = true;
+      fetchData();
+    }
+  }, [dispatch]); // Only depend on dispatch - prevents re-running on state changes
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

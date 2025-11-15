@@ -33,6 +33,7 @@ const DoctorDashboard = () => {
   );
 
   const [refreshing, setRefreshing] = React.useState(false);
+  const hasAttemptedInitialLoad = React.useRef(false);
 
   // Fixed refresh function
   const onRefresh = React.useCallback(async () => {
@@ -49,17 +50,16 @@ const DoctorDashboard = () => {
     }
   }, [dispatch]);
 
-  // Load initial data on component mount
+  // Load initial data on component mount - ONLY ONCE
   React.useEffect(() => {
-    // Load initial statistics if not already loaded
-
-      if(!statistics && !loading){
-        dispatch(fetchDoctorStatistics());
-        dispatch(getProfile());
-        dispatch(getAppointments());
-      }
-
-  }, [dispatch, profileData, upcomingAppointments, statistics, loading, upcomingAppointmentsLoading, profileData.isLoading]);
+    // Only attempt initial load once - prevents infinite loops on API failures
+    if (!hasAttemptedInitialLoad.current) {
+      hasAttemptedInitialLoad.current = true;
+      dispatch(fetchDoctorStatistics());
+      dispatch(getProfile());
+      dispatch(getAppointments());
+    }
+  }, [dispatch]); // Only depend on dispatch - prevents re-running on state changes
 
   // Check if we have meaningful data to display
   const hasData = statistics && (
