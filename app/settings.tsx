@@ -1233,7 +1233,8 @@ const SettingsScreen = () => {
         confirmText="OK"
         cancelText="Cancel"
       />
-    </View>
+      </View>
+    </>
   );
 };
 
