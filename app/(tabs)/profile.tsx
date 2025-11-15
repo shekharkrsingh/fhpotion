@@ -1,9 +1,10 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import { View, ScrollView, Text, RefreshControl } from 'react-native';
+import { View, ScrollView, Text, RefreshControl, Platform } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { router } from 'expo-router';
 
 import { profileStyles } from '@/assets/styles/profile.styles';
 import { MedicalTheme } from '@/newConstants/theme';
@@ -97,7 +98,14 @@ const DoctorProfileScreen = () => {
           },
           {
             label: 'Restart App',
-            onPress: () => window.location.reload(),
+            onPress: async () => {
+              if (Platform.OS === 'web') {
+                window.location.reload();
+              } else {
+                // For React Native, navigate to splash screen to reinitialize
+                router.replace('/splashScreen');
+              }
+            },
             variant: 'outline',
             icon: 'restart-alt',
           },

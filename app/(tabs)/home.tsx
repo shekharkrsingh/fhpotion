@@ -3,7 +3,9 @@ import React from 'react';
 import {
   ScrollView,
   RefreshControl,
+  Platform,
 } from 'react-native';
+import { router } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/newStore';
 
@@ -88,7 +90,15 @@ const DoctorDashboard = () => {
           },
           {
             label: 'Restart App',
-            onPress: () => window.location.reload(),
+            onPress: async () => {
+              if (Platform.OS === 'web') {
+                window.location.reload();
+              } else {
+                // For React Native, reload is handled by expo-updates or app restart
+                // Fallback: navigate to splash screen to reinitialize
+                router.replace('/splashScreen');
+              }
+            },
             variant: 'outline',
             icon: 'restart-alt',
           },

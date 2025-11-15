@@ -454,6 +454,8 @@ export default function BookingScreen() {
       hasAttemptedInitialLoad.current = true;
       fetchData();
     }
+    // Note: WebSocket cleanup is handled at app level in _layout.tsx
+    // We don't disconnect here to keep connection alive across screens
   }, [dispatch]); // Only depend on dispatch - prevents re-running on state changes
 
   return (

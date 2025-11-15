@@ -1,7 +1,8 @@
-import { Client, IMessage } from "@stomp/stompjs";
+import { Client, IMessage, StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import { AppState, AppStateStatus } from "react-native";
 import { store } from "@/newStore";
 import { addAppointment } from "@/newStore/slices/appointmentSlice";
 import { addNotification } from "@/newStore/slices/notificationSlice";
@@ -18,6 +19,8 @@ class WebsocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private subscription: StompSubscription | null = null;
+  private appStateListener: ((state: AppStateStatus) => void) | null = null;
 
   private get isConnected(): boolean {
     return !!this.stompClient?.connected;
@@ -100,7 +103,18 @@ class WebsocketService {
   private subscribeToDoctorChannel(doctorId: string): void {
     if (!this.stompClient) return;
 
-    this.stompClient.subscribe(
+    // Unsubscribe existing subscription if any
+    if (this.subscription) {
+      try {
+        this.subscription.unsubscribe();
+      } catch (error) {
+        console.warn("WebSocket: Error unsubscribing from previous channel", error);
+      }
+      this.subscription = null;
+    }
+
+    // Create new subscription and store reference
+    this.subscription = this.stompClient.subscribe(
       webSocketEndpoints.appointmentUpdate(doctorId),
       (message: IMessage) => {
         const update = JSON.parse(message.body);
@@ -165,10 +179,26 @@ class WebsocketService {
   }
 
   private cleanup(): void {
+    // Unsubscribe from channel
+    if (this.subscription) {
+      try {
+        this.subscription.unsubscribe();
+      } catch (error) {
+        console.warn("WebSocket: Error unsubscribing during cleanup", error);
+      }
+      this.subscription = null;
+    }
+
+    // Deactivate and clear client
     if (this.stompClient) {
-      this.stompClient.deactivate();
+      try {
+        this.stompClient.deactivate();
+      } catch (error) {
+        console.warn("WebSocket: Error deactivating client", error);
+      }
       this.stompClient = null;
     }
+    
     this.isConnecting = false;
   }
 
@@ -186,6 +216,41 @@ class WebsocketService {
   public async ensureConnected(): Promise<void> {
     if (!this.isConnected && !this.isConnecting) {
       await this.connect();
+    }
+  }
+
+  /**
+   * Initialize AppState listener to disconnect WebSocket when app goes to background
+   * and reconnect when app comes to foreground
+   */
+  public initializeAppStateListener(): void {
+    // Remove existing listener if any
+    if (this.appStateListener) {
+      AppState.removeEventListener('change', this.appStateListener);
+    }
+
+    this.appStateListener = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        // App going to background - disconnect to save battery
+        console.log("WebSocket: App going to background, disconnecting");
+        this.disconnect();
+      } else if (nextAppState === 'active') {
+        // App coming to foreground - reconnect
+        console.log("WebSocket: App coming to foreground, reconnecting");
+        this.ensureConnected();
+      }
+    };
+
+    AppState.addEventListener('change', this.appStateListener);
+  }
+
+  /**
+   * Remove AppState listener (call on app unmount or logout)
+   */
+  public removeAppStateListener(): void {
+    if (this.appStateListener) {
+      AppState.removeEventListener('change', this.appStateListener);
+      this.appStateListener = null;
     }
   }
 }

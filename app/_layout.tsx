@@ -6,6 +6,7 @@ import {SafeAreaProvider} from "react-native-safe-area-context";
 import {Provider} from "react-redux";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { websocketAppointment } from "@/newService/config/websocket/websocketService";
 
 // Prevent the default Expo splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -17,6 +18,15 @@ export default function RootLayout() {
         SplashScreen.hideAsync().catch(() => {
             // Ignore errors if splash screen is already hidden
         });
+
+        // Initialize WebSocket AppState listener for background/foreground handling
+        websocketAppointment.initializeAppStateListener();
+
+        // Cleanup: Remove AppState listener and disconnect WebSocket on app unmount
+        return () => {
+            websocketAppointment.removeAppStateListener();
+            websocketAppointment.disconnect();
+        };
     }, []);
 
     return (

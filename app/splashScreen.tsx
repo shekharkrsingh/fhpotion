@@ -15,15 +15,15 @@ export default function SplashScreen() {
     const [initialized, setInitialized] = useState(false);
     const dispatch = useDispatch<AppDispatch>();
 
-    // Animations
-    const logoScale = new Animated.Value(0.8);
-    const logoOpacity = new Animated.Value(0);
-    const bgColor = new Animated.Value(0);
-    const loadingWidth = new Animated.Value(0);
+    // Animations - using useRef to prevent recreation on every render
+    const logoScale = React.useRef(new Animated.Value(0.8)).current;
+    const logoOpacity = React.useRef(new Animated.Value(0)).current;
+    const bgColor = React.useRef(new Animated.Value(0)).current;
+    const loadingWidth = React.useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         // Start animations
-        Animated.parallel([
+        const animations = Animated.parallel([
             Animated.timing(logoOpacity, {
                 toValue: 1,
                 duration: 800,
@@ -46,7 +46,9 @@ export default function SplashScreen() {
                 easing: Easing.linear,
                 useNativeDriver: false,
             }),
-        ]).start();
+        ]);
+        
+        animations.start();
 
         // Initialize app
         const initializeApp = async () => {
@@ -83,6 +85,11 @@ export default function SplashScreen() {
         };
 
         initializeApp();
+
+        // Cleanup function to stop animations on unmount
+        return () => {
+            animations.stop();
+        };
     }, [dispatch]);
 
     const animatedBg = bgColor.interpolate({

@@ -56,7 +56,7 @@ const ModernAppointmentForm = () => {
 
   // Initial animations
   useEffect(() => {
-    Animated.parallel([
+    const animations = Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 500,
@@ -68,8 +68,15 @@ const ModernAppointmentForm = () => {
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       })
-    ]).start();
-  }, []);
+    ]);
+    
+    animations.start();
+
+    // Cleanup function to stop animations on unmount
+    return () => {
+      animations.stop();
+    };
+  }, [fadeAnim, slideAnim]);
 
   // Toggle additional fields with animation
   const toggleAdditionalFields = () => {

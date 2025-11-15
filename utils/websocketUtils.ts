@@ -7,22 +7,24 @@ import { websocketAppointment } from "@/newService/config/websocket/websocketSer
  */
 export const waitForWebSocketConnection = async (timeout = 5000): Promise<boolean> => {
     return new Promise(async (resolve) => {
+        let interval: NodeJS.Timeout | null = null;
         try {
             await websocketAppointment.connect();
 
             const startTime = Date.now();
-            const interval = setInterval(() => {
+            interval = setInterval(() => {
                 const isConnected = (websocketAppointment as any).stompClient?.connected;
 
                 if (isConnected) {
-                    clearInterval(interval);
+                    if (interval) clearInterval(interval);
                     resolve(true);
                 } else if (Date.now() - startTime > timeout) {
-                    clearInterval(interval);
+                    if (interval) clearInterval(interval);
                     resolve(false);
                 }
             }, 200);
         } catch {
+            if (interval) clearInterval(interval);
             resolve(false);
         }
     });
