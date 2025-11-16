@@ -15,8 +15,12 @@ This project uses a layered API architecture with centralized configuration, end
   - Automatically handles trailing slashes
 
 ```typescript
-const BASE_URL = "http://localhost:8080/";
-const WEBSOCKET_BASE = "http://localhost:8080/";
+// Previous local defaults:
+// const BASE_URL = "http://localhost:8080/";
+// const WEBSOCKET_BASE = "http://localhost:8080/";
+// Remote hosted defaults:
+const BASE_URL = "https://docterdevserver-1-0.onrender.com/";
+const WEBSOCKET_BASE = "https://docterdevserver-1-0.onrender.com/";
 ```
 
 #### `apiEndpoints/` Directory

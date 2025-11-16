@@ -7,7 +7,10 @@ const getApiBaseUrl = (): string => {
   if (envUrl) {
     return envUrl.endsWith("/") ? envUrl : `${envUrl}/`;
   }
-  return "http://localhost:8080/";
+  // Previous (local) URL:
+  // return "http://localhost:8080/";
+  // Remote hosted URL (set your cloud API base here, or prefer env via EXPO_PUBLIC_API_BASE_URL):
+  return "https://your-cloud-api.example.com/";
 };
 
 const getWebSocketBaseUrl = (): string => {
@@ -17,7 +20,10 @@ const getWebSocketBaseUrl = (): string => {
   if (envUrl) {
     return envUrl.endsWith("/") ? envUrl : `${envUrl}/`;
   }
-  return "http://localhost:8080/";
+  // Previous (local) URL:
+  // return "http://localhost:8080/";
+  // Remote hosted URL for WebSocket/SockJS handshake (match your server base):
+  return "https://your-cloud-api.example.com/";
 };
 
 export const API_BASE_URL: string = getApiBaseUrl();

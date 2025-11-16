@@ -50,8 +50,11 @@ module.exports = {
       eas: {
         projectId: "8bbcfd95-fe45-43f8-8b4f-db04c6c6653a"
       },
-      apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:8080",
-      wsBaseUrl: process.env.EXPO_PUBLIC_WS_BASE_URL || "http://localhost:8080"
+      // previous local defaults:
+      // apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:8080",
+      // wsBaseUrl: process.env.EXPO_PUBLIC_WS_BASE_URL || "http://localhost:8080"
+      apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || "https://docterdevserver-1-0.onrender.com",
+      wsBaseUrl: process.env.EXPO_PUBLIC_WS_BASE_URL || "https://docterdevserver-1-0.onrender.com"
     }
   }
 };

@@ -48,8 +48,11 @@
       "eas": {
         "projectId": "8bbcfd95-fe45-43f8-8b4f-db04c6c6653a"
       },
-      "apiBaseUrl": "http://localhost:8080",
-      "wsBaseUrl": "http://localhost:8080"
+      // previous local URLs:
+      // "apiBaseUrl": "http://localhost:8080",
+      // "wsBaseUrl": "http://localhost:8080"
+      "apiBaseUrl": "https://docterdevserver-1-0.onrender.com",
+      "wsBaseUrl": "https://docterdevserver-1-0.onrender.com"
     }
   }
 }
