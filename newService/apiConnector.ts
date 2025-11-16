@@ -6,8 +6,11 @@ import axios, {
 } from "axios";
 import { router } from "expo-router";
 import { getValidToken } from "@/utils/tokenService";
+import { API_BASE_URL } from "@/newService/config/apiConfig";
 
-export const axiosInstance: AxiosInstance = axios.create({});
+export const axiosInstance: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+});
 
 export interface ApiResponse<T = any> {
   data: T;
