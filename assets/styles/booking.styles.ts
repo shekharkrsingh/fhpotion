@@ -44,7 +44,8 @@ export const bookingStyles = StyleSheet.create({
 
 export const bookingHeaderStyles = StyleSheet.create({
   boookingHeader: {
-    padding: MedicalTheme.spacing[4],
+    paddingHorizontal: MedicalTheme.spacing[4],
+    paddingVertical: MedicalTheme.spacing[2],
     backgroundColor: MedicalTheme.colors.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: MedicalTheme.colors.border.light,
