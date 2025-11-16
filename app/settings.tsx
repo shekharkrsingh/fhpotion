@@ -19,7 +19,7 @@ import { MedicalTheme } from '@/newConstants/theme';
 import { styles } from '@/assets/styles/settings.styles';
 import AlertPopup from '@/newComponents/alertPopup';
 import OTPVerificationPopup from '@/newComponents/OTPVerificationPopup';
-import ScreenHeader from '@/newComponents/ScreenHeader';
+// Reverted: remove ScreenHeader usage
 
 const SettingsScreen = () => {
   const [activeModal, setActiveModal] = useState<string | null>(null);
@@ -1151,12 +1151,16 @@ const SettingsScreen = () => {
 
   return (
     <>
-      <StatusBar style="dark" translucent={false} />
+      {/* Reverted: remove explicit StatusBar override */}
       <View style={styles.container}>
-        <ScreenHeader
-          title="Settings"
-          showBack={true}
-        />
+        {/* Reverted header: simple inline header */}
+        <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Settings</Text>
+          <View style={{ width: 24 }} />
+        </View>
 
       <ScrollView 
         style={styles.scrollView}

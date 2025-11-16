@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, Pressable, Animated, Modal } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { bookingHeaderStyles } from '@/assets/styles/booking.styles';
 import { MedicalTheme } from '@/newConstants/theme';
@@ -13,7 +12,6 @@ interface BookingHeaderProps {
 type MarkAction = 'treated' | 'emergency' | 'cancel' | 'edit';
 
 const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onMarkAction }) => {
-  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showMarkDropdown, setShowMarkDropdown] = useState(false);
@@ -86,14 +84,8 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onMarkAction })
   };
 
   return (
-    <View style={[
-      bookingHeaderStyles.boookingHeader,
-      { 
-        paddingTop: insets.top + MedicalTheme.spacing[3],
-        minHeight: 56 + insets.top,
-      }
-    ]}>
-      <View style={[bookingHeaderStyles.headerRow, { minHeight: 56 }]}>
+    <View style={bookingHeaderStyles.boookingHeader}>
+      <View style={bookingHeaderStyles.headerRow}>
         <Text style={bookingHeaderStyles.title}>Booking List</Text>
         
         <View style={bookingHeaderStyles.headerButtons}>
@@ -140,18 +132,14 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onMarkAction })
         transparent={true}
         animationType="fade"
         onRequestClose={() => setShowMarkDropdown(false)}
-        accessible={false}
       >
         <Pressable 
           style={bookingHeaderStyles.dropdownOverlay}
           onPress={() => setShowMarkDropdown(false)}
-          accessible={false}
-          importantForAccessibility="no-hide-descendants"
         >
           <Pressable 
             style={bookingHeaderStyles.dropdownContainer}
             onPress={(e) => e.stopPropagation()}
-            accessible={false}
           >
             <Pressable
               style={({ pressed }) => [
@@ -257,8 +245,6 @@ const BookingHeader: React.FC<BookingHeaderProps> = ({ onSearch, onMarkAction })
               marginTop: MedicalTheme.spacing[2],
             }
           ]}
-          accessible={true}
-          importantForAccessibility="yes"
         >
           <TextInput
             style={bookingHeaderStyles.searchInput}

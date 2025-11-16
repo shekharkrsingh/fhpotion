@@ -463,7 +463,7 @@ export default function BookingScreen() {
 
   return (
     <>
-      <StatusBar style="dark" translucent={false} />
+      {/* Reverted: remove explicit StatusBar override */}
       <GestureHandlerRootView style={{ flex: 1 }}>
         <View style={bookingStyles.container}>
         <BookingHeader 

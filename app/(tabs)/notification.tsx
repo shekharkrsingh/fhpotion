@@ -56,7 +56,7 @@ const NotificationScreen = () => {
 
   return (
     <>
-      <StatusBar style="dark" translucent={false} />
+      {/* Reverted: remove explicit StatusBar override */}
       <View style={notificationStyles.container}>
         <NotificationHeader 
           onMarkAllAsRead={handleMarkAllAsRead}

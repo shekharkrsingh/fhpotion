@@ -145,7 +145,7 @@ const DoctorProfileScreen = () => {
 
   return (
     <>
-      <StatusBar style="light" translucent={false} />
+      {/* Reverted: remove explicit StatusBar override */}
       <GestureHandlerRootView style={profileStyles.container}>
         <View style={profileStyles.container}>
         <ScrollView 

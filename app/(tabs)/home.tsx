@@ -132,7 +132,7 @@ const DoctorDashboard = () => {
 
   return (
     <>
-      <StatusBar style="dark" translucent={false} />
+      {/* Reverted: remove explicit StatusBar override */}
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}

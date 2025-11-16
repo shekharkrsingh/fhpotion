@@ -44,7 +44,7 @@ export default function RootLayout() {
                             <Stack.Screen name="(tabs)"/>
                         </Stack>
                     </SafeScreen>
-                    <StatusBar style="dark" translucent={false} />
+                    {/* Reverted: remove explicit StatusBar override */}
                 </SafeAreaProvider>
             </Provider>
         </ErrorBoundary>

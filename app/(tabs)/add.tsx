@@ -215,7 +215,7 @@ const ModernAppointmentForm = () => {
 
   return (
     <>
-      <StatusBar style="light" translucent={false} />
+      {/* Reverted: remove explicit StatusBar override */}
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: MedicalTheme.colors.background.secondary }}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
