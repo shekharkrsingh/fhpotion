@@ -9,12 +9,14 @@ import {
   Alert,
   ScrollView,
   Animated,
-  Easing
+  Easing,
+  Modal
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { GestureHandlerRootView, RefreshControl } from 'react-native-gesture-handler';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { addAppointment } from '@/newService/config/api/appointmentApi'
 
 import { appointmentFormStyles } from '@/assets/styles/appointmentForm.styles';
@@ -32,6 +34,7 @@ interface PatientData {
   description?: string;
   paymentStatus: boolean;
   availableAtClinic: boolean;
+  appointmentDateTime: Date;
 }
 
 const ModernAppointmentForm = () => {
@@ -43,13 +46,17 @@ const ModernAppointmentForm = () => {
     paymentStatus: true,
     availableAtClinic: true,
     email:'',
-    description:''
+    description:'',
+    appointmentDateTime: new Date()
   });
   
   const dispatch = useDispatch<AppDispatch>();
   const [loading, setLoading] = useState(false);
   const [showAdditionalFields, setShowAdditionalFields] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
   
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -132,22 +139,90 @@ const ModernAppointmentForm = () => {
       paymentStatus: true,
       availableAtClinic: true,
       email: '',
-      description: ''
+      description: '',
+      appointmentDateTime: new Date()
     });
     await new Promise(resolve => setTimeout(resolve, 1200));
     setLoading(false);
     setShowAdditionalFields(false);
-    // Reset animations when refreshing
+    setShowDatePicker(false);
+    setShowTimePicker(false);
     additionalFieldsHeight.setValue(0);
     additionalFieldsOpacity.setValue(0);
     setRefreshing(false);
   }, []);
 
-  const handleChange = (name: keyof PatientData, value: string | boolean) => {
+  const handleChange = (name: keyof PatientData, value: string | boolean | Date) => {
     setPatientData(prev => ({
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleDatePress = () => {
+    setPickerMode('date');
+    setShowDatePicker(true);
+  };
+
+  const handleTimePress = () => {
+    setPickerMode('time');
+    setShowTimePicker(true);
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+      setShowTimePicker(false);
+    }
+
+    if (selectedDate && event.type !== 'dismissed') {
+      if (pickerMode === 'date') {
+        const currentTime = patientData.appointmentDateTime;
+        const newDateTime = new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate(),
+          currentTime.getHours(),
+          currentTime.getMinutes()
+        );
+        handleChange('appointmentDateTime', newDateTime);
+        if (Platform.OS === 'ios') {
+          setShowDatePicker(false);
+        }
+      } else if (pickerMode === 'time') {
+        const currentDate = patientData.appointmentDateTime;
+        const newDateTime = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth(),
+          currentDate.getDate(),
+          selectedDate.getHours(),
+          selectedDate.getMinutes()
+        );
+        handleChange('appointmentDateTime', newDateTime);
+        if (Platform.OS === 'ios') {
+          setShowTimePicker(false);
+        }
+      }
+    } else if (event.type === 'dismissed') {
+      setShowDatePicker(false);
+      setShowTimePicker(false);
+    }
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
   };
 
   const handleSubmit = async () => {
@@ -172,11 +247,12 @@ const ModernAppointmentForm = () => {
     try {
       const response = await dispatch(addAppointment({
         patientName: `${patientData.firstName.trim()} ${patientData.lastName.trim()}`.trim(), 
-        contact: cleanedContact, // Use cleaned contact (exactly 10 digits, no formatting)
+        contact: cleanedContact,
         paymentStatus: patientData.paymentStatus, 
         availableAtClinic: patientData.availableAtClinic, 
         email: patientData.email?.trim() || '', 
-        description: patientData.description?.trim() || ''
+        description: patientData.description?.trim() || '',
+        appointmentDateTime: patientData.appointmentDateTime.toISOString()
       }));
 
       // Handle the response based on your thunk structure
@@ -189,10 +265,12 @@ const ModernAppointmentForm = () => {
           paymentStatus: true,
           availableAtClinic: true,
           email: '',
-          description: ''
+          description: '',
+          appointmentDateTime: new Date()
         });
         setShowAdditionalFields(false);
-        // Reset animations on successful submission
+        setShowDatePicker(false);
+        setShowTimePicker(false);
         additionalFieldsHeight.setValue(0);
         additionalFieldsOpacity.setValue(0);
       } else {
@@ -298,7 +376,54 @@ const ModernAppointmentForm = () => {
               />
             </View>
 
-            {/* Appointment Settings Section */}
+            <View style={appointmentFormStyles.section}>
+              <Text style={appointmentFormStyles.sectionTitle}>Appointment Date & Time</Text>
+              
+              <View style={appointmentFormStyles.dateTimeContainer}>
+                <Pressable
+                  style={({ pressed }) => [
+                    appointmentFormStyles.dateTimeButton,
+                    showDatePicker && appointmentFormStyles.dateTimeButtonActive,
+                    pressed && { opacity: 0.7 }
+                  ]}
+                  onPress={handleDatePress}
+                >
+                  <MaterialIcons 
+                    name="calendar-today" 
+                    size={18} 
+                    color={showDatePicker ? MedicalTheme.colors.primary[600] : MedicalTheme.colors.primary[500]} 
+                  />
+                  <Text style={[
+                    appointmentFormStyles.dateTimeText,
+                    showDatePicker && appointmentFormStyles.dateTimeTextActive
+                  ]}>
+                    {formatDate(patientData.appointmentDateTime)}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    appointmentFormStyles.dateTimeButton,
+                    showTimePicker && appointmentFormStyles.dateTimeButtonActive,
+                    pressed && { opacity: 0.7 }
+                  ]}
+                  onPress={handleTimePress}
+                >
+                  <MaterialIcons 
+                    name="access-time" 
+                    size={18} 
+                    color={showTimePicker ? MedicalTheme.colors.primary[600] : MedicalTheme.colors.primary[500]} 
+                  />
+                  <Text style={[
+                    appointmentFormStyles.dateTimeText,
+                    showTimePicker && appointmentFormStyles.dateTimeTextActive
+                  ]}>
+                    {formatTime(patientData.appointmentDateTime)}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
             <View style={appointmentFormStyles.section}>
               <Text style={appointmentFormStyles.sectionTitle}>Appointment Settings</Text>
               
@@ -414,6 +539,79 @@ const ModernAppointmentForm = () => {
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {Platform.OS === 'android' && (
+        <>
+          {showDatePicker && pickerMode === 'date' && (
+            <DateTimePicker
+              value={patientData.appointmentDateTime}
+              mode="date"
+              display="default"
+              onChange={onDateChange}
+              minimumDate={new Date()}
+            />
+          )}
+          {showTimePicker && pickerMode === 'time' && (
+            <DateTimePicker
+              value={patientData.appointmentDateTime}
+              mode="time"
+              display="default"
+              onChange={onDateChange}
+              is24Hour={false}
+            />
+          )}
+        </>
+      )}
+
+      {Platform.OS === 'ios' && (showDatePicker || showTimePicker) && (
+        <Modal
+          visible={showDatePicker || showTimePicker}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => {
+            setShowDatePicker(false);
+            setShowTimePicker(false);
+          }}
+        >
+          <View style={appointmentFormStyles.pickerModal}>
+            <View style={appointmentFormStyles.pickerContainer}>
+              <View style={appointmentFormStyles.pickerHeader}>
+                <Text style={appointmentFormStyles.pickerTitle}>
+                  {pickerMode === 'date' ? 'Select Date' : 'Select Time'}
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    setShowDatePicker(false);
+                    setShowTimePicker(false);
+                  }}
+                >
+                  <Text style={appointmentFormStyles.pickerButtonText}>Done</Text>
+                </Pressable>
+              </View>
+              {pickerMode === 'date' && (
+                <DateTimePicker
+                  value={patientData.appointmentDateTime}
+                  mode="date"
+                  display="spinner"
+                  onChange={onDateChange}
+                  minimumDate={new Date()}
+                  textColor={MedicalTheme.colors.text.primary}
+                />
+              )}
+              {pickerMode === 'time' && (
+                <DateTimePicker
+                  value={patientData.appointmentDateTime}
+                  mode="time"
+                  display="spinner"
+                  onChange={onDateChange}
+                  is24Hour={false}
+                  textColor={MedicalTheme.colors.text.primary}
+                />
+              )}
+            </View>
+          </View>
+        </Modal>
+      )}
     </GestureHandlerRootView>
     </>
   );
