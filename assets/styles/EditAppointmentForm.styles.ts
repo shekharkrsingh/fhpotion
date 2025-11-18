@@ -89,6 +89,8 @@ export const editFormStyles = StyleSheet.create({
   
   // Picker Modal Styles
   pickerModal: {
+    flex: 1,
+    backgroundColor: MedicalTheme.colors.overlay.dark,
     justifyContent: 'flex-end',
     margin: 0,
   },
@@ -139,6 +141,7 @@ export const editFormStyles = StyleSheet.create({
   pickerButtonText: {
     fontSize: MedicalTheme.typography.fontSize.sm,
     fontWeight: MedicalTheme.typography.fontWeight.medium,
+    color: MedicalTheme.colors.primary[600],
   },
   
   pickerCancelText: {

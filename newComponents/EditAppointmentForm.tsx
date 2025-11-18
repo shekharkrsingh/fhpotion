@@ -10,10 +10,7 @@ import {
   Platform 
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { 
-  DatePickerModal, 
-  TimePickerModal 
-} from 'react-native-paper-dates';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { MedicalTheme } from '@/newConstants/theme';
 import { appointmentCardStyles } from '@/assets/styles/appointmentCard.styles';
 import { editFormStyles } from '@/assets/styles/EditAppointmentForm.styles';
@@ -69,6 +66,7 @@ const EditAppointmentForm: React.FC<EditAppointmentFormProps> = ({
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
   // Reset form when appointment changes
@@ -146,66 +144,80 @@ const EditAppointmentForm: React.FC<EditAppointmentFormProps> = ({
   };
 
   const handleDatePress = () => {
+    setPickerMode('date');
     setShowDatePicker(true);
   };
 
   const handleTimePress = () => {
+    setPickerMode('time');
     setShowTimePicker(true);
   };
 
-  const onDateConfirm = (params: { date: Date }) => {
-    setShowDatePicker(false);
-    const { date } = params;
-    
-    // Preserve the current time when changing date
-    const currentTime = formData.appointmentDateTime;
-    const newDateTime = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
-      currentTime.getHours(),
-      currentTime.getMinutes()
-    );
-
-    setFormData(prev => ({
-      ...prev,
-      appointmentDateTime: newDateTime
-    }));
-
-    // Clear date error if any
-    if (errors.appointmentDateTime) {
-      setErrors(prev => ({
-        ...prev,
-        appointmentDateTime: undefined
-      }));
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+      setShowTimePicker(false);
     }
-  };
 
-  const onTimeConfirm = (params: { hours: number; minutes: number }) => {
-    setShowTimePicker(false);
-    const { hours, minutes } = params;
-    
-    // Preserve the current date when changing time
-    const currentDate = formData.appointmentDateTime;
-    const newDateTime = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      currentDate.getDate(),
-      hours,
-      minutes
-    );
+    if (selectedDate && event.type !== 'dismissed') {
+      if (pickerMode === 'date') {
+        // Preserve the current time when changing date
+        const currentTime = formData.appointmentDateTime;
+        const newDateTime = new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate(),
+          currentTime.getHours(),
+          currentTime.getMinutes()
+        );
 
-    setFormData(prev => ({
-      ...prev,
-      appointmentDateTime: newDateTime
-    }));
+        setFormData(prev => ({
+          ...prev,
+          appointmentDateTime: newDateTime
+        }));
 
-    // Clear date error if any
-    if (errors.appointmentDateTime) {
-      setErrors(prev => ({
-        ...prev,
-        appointmentDateTime: undefined
-      }));
+        // Clear date error if any
+        if (errors.appointmentDateTime) {
+          setErrors(prev => ({
+            ...prev,
+            appointmentDateTime: undefined
+          }));
+        }
+
+        if (Platform.OS === 'ios') {
+          setShowDatePicker(false);
+        }
+      } else if (pickerMode === 'time') {
+        // Preserve the current date when changing time
+        const currentDate = formData.appointmentDateTime;
+        const newDateTime = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth(),
+          currentDate.getDate(),
+          selectedDate.getHours(),
+          selectedDate.getMinutes()
+        );
+
+        setFormData(prev => ({
+          ...prev,
+          appointmentDateTime: newDateTime
+        }));
+
+        // Clear date error if any
+        if (errors.appointmentDateTime) {
+          setErrors(prev => ({
+            ...prev,
+            appointmentDateTime: undefined
+          }));
+        }
+
+        if (Platform.OS === 'ios') {
+          setShowTimePicker(false);
+        }
+      }
+    } else if (event.type === 'dismissed') {
+      setShowDatePicker(false);
+      setShowTimePicker(false);
     }
   };
 
@@ -506,34 +518,80 @@ const EditAppointmentForm: React.FC<EditAppointmentFormProps> = ({
         </View>
       </Modal>
 
-      {/* Date Picker Modal */}
-      <DatePickerModal
-        locale="en"
-        mode="single"
-        visible={showDatePicker}
-        onDismiss={() => setShowDatePicker(false)}
-        date={formData.appointmentDateTime}
-        onConfirm={onDateConfirm}
-        validRange={{
-          startDate: new Date(), // Can't select past dates
-        }}
-        animationType="slide"
-        label="Select appointment date"
-      />
+      {/* Android Date/Time Pickers - Native Modal */}
+      {Platform.OS === 'android' && (
+        <>
+          {showDatePicker && pickerMode === 'date' && (
+            <DateTimePicker
+              value={formData.appointmentDateTime}
+              mode="date"
+              display="default"
+              onChange={onDateChange}
+              minimumDate={new Date()}
+            />
+          )}
+          {showTimePicker && pickerMode === 'time' && (
+            <DateTimePicker
+              value={formData.appointmentDateTime}
+              mode="time"
+              display="default"
+              onChange={onDateChange}
+              is24Hour={false}
+            />
+          )}
+        </>
+      )}
 
-      {/* Time Picker Modal */}
-      <TimePickerModal
-        locale="en"
-        visible={showTimePicker}
-        onDismiss={() => setShowTimePicker(false)}
-        onConfirm={onTimeConfirm}
-        hours={formData.appointmentDateTime.getHours()}
-        minutes={formData.appointmentDateTime.getMinutes()}
-        label="Select appointment time"
-        cancelLabel="Cancel"
-        confirmLabel="OK"
-        animationType="slide"
-      />
+      {/* iOS Modal Wrapper for Date/Time Pickers */}
+      {Platform.OS === 'ios' && (showDatePicker || showTimePicker) && (
+        <Modal
+          visible={showDatePicker || showTimePicker}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => {
+            setShowDatePicker(false);
+            setShowTimePicker(false);
+          }}
+        >
+          <View style={editFormStyles.pickerModal}>
+            <View style={editFormStyles.pickerContainer}>
+              <View style={editFormStyles.pickerHeader}>
+                <Text style={editFormStyles.pickerTitle}>
+                  {pickerMode === 'date' ? 'Select Date' : 'Select Time'}
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    setShowDatePicker(false);
+                    setShowTimePicker(false);
+                  }}
+                >
+                  <Text style={editFormStyles.pickerButtonText}>Done</Text>
+                </Pressable>
+              </View>
+              {pickerMode === 'date' && (
+                <DateTimePicker
+                  value={formData.appointmentDateTime}
+                  mode="date"
+                  display="spinner"
+                  onChange={onDateChange}
+                  minimumDate={new Date()}
+                  textColor={MedicalTheme.colors.text.primary}
+                />
+              )}
+              {pickerMode === 'time' && (
+                <DateTimePicker
+                  value={formData.appointmentDateTime}
+                  mode="time"
+                  display="spinner"
+                  onChange={onDateChange}
+                  is24Hour={false}
+                  textColor={MedicalTheme.colors.text.primary}
+                />
+              )}
+            </View>
+          </View>
+        </Modal>
+      )}
     </>
   );
 };
