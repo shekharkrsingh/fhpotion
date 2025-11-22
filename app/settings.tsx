@@ -468,21 +468,11 @@ const SettingsScreen = () => {
   };
 
   const handleNavigateToTerms = () => {
-    // Placeholder for terms navigation
-    showAlert({
-      title: 'Terms & Conditions',
-      message: 'Terms and conditions screen will be implemented soon.',
-      variant: 'default'
-    });
+    router.push('/terms');
   };
 
   const handleNavigateToPrivacy = () => {
-    // Placeholder for privacy navigation
-    showAlert({
-      title: 'Privacy Policy',
-      message: 'Privacy policy screen will be implemented soon.',
-      variant: 'default'
-    });
+    router.push('/privacy');
   };
 
   // UI Components
