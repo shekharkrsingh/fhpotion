@@ -22,8 +22,8 @@ import { loginDoctor } from '@/newService/config/api/authApi';
 import logger from '@/utils/logger';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('e@example.com');
+  const [password, setPassword] = useState('Example@123');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
