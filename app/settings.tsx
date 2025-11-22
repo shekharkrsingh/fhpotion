@@ -973,7 +973,7 @@ const SettingsScreen = () => {
           ) : (
             <>
               <Ionicons name="send" size={20} color="#fff" />
-              <Text style={styles.buttonText}>Submit Support Request</Text>
+              <Text style={styles.buttonText}>Submit Request</Text>
             </>
           )}
         </TouchableOpacity>
