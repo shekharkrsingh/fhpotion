@@ -1,7 +1,7 @@
 import SafeScreen from "@/newComponents/SafeScreen";
 import { store } from "@/newStore/index";
 import {Stack} from "expo-router";
-import {StatusBar} from "react-native";
+import {StatusBar, Platform} from "react-native";
 import {SafeAreaProvider} from "react-native-safe-area-context";
 import {Provider} from "react-redux";
 import * as SplashScreen from "expo-splash-screen";
@@ -19,6 +19,12 @@ export default function RootLayout() {
         SplashScreen.hideAsync().catch(() => {
             // Ignore errors if splash screen is already hidden
         });
+
+        // Set StatusBar programmatically for both platforms
+        if (Platform.OS === 'android') {
+            StatusBar.setBackgroundColor('#000000', true);
+        }
+        StatusBar.setBarStyle('light-content', true);
 
         // Initialize WebSocket service with dispatch and state getter
         // This decouples the service from direct store access
@@ -45,6 +51,7 @@ export default function RootLayout() {
                         barStyle="light-content"
                         backgroundColor="#000000"
                         translucent={false}
+                        hidden={false}
                     />
                     <SafeScreen>
                         <Stack

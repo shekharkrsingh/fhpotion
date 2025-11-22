@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   Pressable,
-  StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -388,7 +387,6 @@ We are committed to addressing your privacy concerns promptly and thoroughly. We
 
   return (
     <ErrorBoundary>
-      <StatusBar barStyle="dark-content" />
       <View style={styles.container}>
         <View style={styles.header}>
           <Pressable

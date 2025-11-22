@@ -1,6 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { View, ScrollView, Text, RefreshControl, Platform } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';

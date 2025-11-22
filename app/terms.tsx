@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   Pressable,
-  StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -222,7 +221,6 @@ This agreement may only be modified in writing by authorized Heal Now representa
 
   return (
     <ErrorBoundary>
-      <StatusBar barStyle="dark-content" />
       <View style={styles.container}>
         <View style={styles.header}>
           <Pressable

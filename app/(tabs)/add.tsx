@@ -11,7 +11,6 @@ import {
   Easing,
   Modal
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { GestureHandlerRootView, RefreshControl } from 'react-native-gesture-handler';

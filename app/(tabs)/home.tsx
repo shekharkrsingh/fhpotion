@@ -5,7 +5,6 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/newStore';

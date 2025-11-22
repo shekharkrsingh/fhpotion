@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Modal
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/newStore/rootReducer';
