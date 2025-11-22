@@ -20,7 +20,7 @@ module.exports = {
       },
       package: "com.hportion.fhpotion",
       statusBar: {
-        backgroundColor: "#000000",
+        backgroundColor: "#14B8A6",
         barStyle: "light-content"
       }
     },
