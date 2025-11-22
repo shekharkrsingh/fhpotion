@@ -8,6 +8,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { websocketAppointment } from "@/newService/config/websocket/websocketService";
 import ErrorBoundary from "@/newComponents/ErrorBoundary";
+import { MedicalTheme } from "@/newConstants/theme";
 
 // Prevent the default Expo splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -41,6 +42,11 @@ export default function RootLayout() {
         <ErrorBoundary>
             <Provider store={store}>
                 <SafeAreaProvider>
+                    <StatusBar 
+                        barStyle="light-content"
+                        backgroundColor={MedicalTheme.colors.primary[500]}
+                        translucent={false}
+                    />
                     <SafeScreen>
                         <Stack
                             screenOptions={{
@@ -51,7 +57,6 @@ export default function RootLayout() {
                             <Stack.Screen name="(tabs)"/>
                         </Stack>
                     </SafeScreen>
-                    {/* Reverted: remove explicit StatusBar override */}
                 </SafeAreaProvider>
             </Provider>
         </ErrorBoundary>

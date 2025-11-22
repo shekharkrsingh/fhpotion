@@ -7,7 +7,9 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
-  Dimensions
+  Dimensions,
+  Platform,
+  Pressable
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
@@ -15,6 +17,7 @@ import { RootState } from '@/newStore/index';
 import { useDispatch } from 'react-redux';
 import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { MedicalTheme } from '@/newConstants/theme';
 import { styles } from '@/assets/styles/editProfile.styles';
@@ -28,6 +31,11 @@ const ProfileSettingsScreen = () => {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
+  
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [startTimeDate, setStartTimeDate] = useState(new Date());
+  const [endTimeDate, setEndTimeDate] = useState(new Date());
   
   // Unified form data state
   const [formData, setFormData] = useState({
@@ -123,6 +131,55 @@ const ProfileSettingsScreen = () => {
     updateFormData({ selectedDays: newSelectedDays });
   };
 
+  const formatTime = (date: Date): string => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const parseTime = (timeString: string): Date => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours || 9, minutes || 0, 0, 0);
+    return date;
+  };
+
+  const handleStartTimeChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowStartTimePicker(false);
+    }
+    if (selectedDate) {
+      setStartTimeDate(selectedDate);
+      const timeString = formatTime(selectedDate);
+      updateFormData({ 
+        newTimeSlot: { ...formData.newTimeSlot, startTime: timeString } 
+      });
+    }
+    if (Platform.OS === 'ios') {
+      if (event.type === 'dismissed') {
+        setShowStartTimePicker(false);
+      }
+    }
+  };
+
+  const handleEndTimeChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowEndTimePicker(false);
+    }
+    if (selectedDate) {
+      setEndTimeDate(selectedDate);
+      const timeString = formatTime(selectedDate);
+      updateFormData({ 
+        newTimeSlot: { ...formData.newTimeSlot, endTime: timeString } 
+      });
+    }
+    if (Platform.OS === 'ios') {
+      if (event.type === 'dismissed') {
+        setShowEndTimePicker(false);
+      }
+    }
+  };
+
   const addTimeSlot = () => {
     if (!formData.newTimeSlot.startTime || !formData.newTimeSlot.endTime) {
       Toast.show({
@@ -137,6 +194,8 @@ const ProfileSettingsScreen = () => {
       timeSlots: newTimeSlots,
       newTimeSlot: { startTime: '', endTime: '' }
     });
+    setStartTimeDate(new Date());
+    setEndTimeDate(new Date());
     Toast.show({
       type: 'success',
       text1: 'Success',
@@ -896,24 +955,48 @@ const ProfileSettingsScreen = () => {
               <View style={styles.timeInputRow}>
                 <View style={styles.timeInputGroup}>
                   <Text style={styles.timeInputLabel}>Start Time</Text>
-                  <TextInput
-                    style={styles.timeInput}
-                    value={formData.newTimeSlot.startTime}
-                    onChangeText={(text) => updateFormData({ newTimeSlot: {...formData.newTimeSlot, startTime: text} })}
-                    placeholder="09:00"
-                    placeholderTextColor={MedicalTheme.colors.text.tertiary}
-                  />
+                  <Pressable
+                    onPress={() => {
+                      if (formData.newTimeSlot.startTime) {
+                        setStartTimeDate(parseTime(formData.newTimeSlot.startTime));
+                      }
+                      setShowStartTimePicker(true);
+                    }}
+                  >
+                    <View style={[styles.timeInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+                      <Text style={{ 
+                        color: formData.newTimeSlot.startTime 
+                          ? MedicalTheme.colors.text.primary 
+                          : MedicalTheme.colors.text.tertiary 
+                      }}>
+                        {formData.newTimeSlot.startTime || '09:00'}
+                      </Text>
+                      <Ionicons name="time-outline" size={20} color={MedicalTheme.colors.primary[500]} />
+                    </View>
+                  </Pressable>
                 </View>
                 <Text style={styles.timeSeparator}>to</Text>
                 <View style={styles.timeInputGroup}>
                   <Text style={styles.timeInputLabel}>End Time</Text>
-                  <TextInput
-                    style={styles.timeInput}
-                    value={formData.newTimeSlot.endTime}
-                    onChangeText={(text) => updateFormData({ newTimeSlot: {...formData.newTimeSlot, endTime: text} })}
-                    placeholder="17:00"
-                    placeholderTextColor={MedicalTheme.colors.text.tertiary}
-                  />
+                  <Pressable
+                    onPress={() => {
+                      if (formData.newTimeSlot.endTime) {
+                        setEndTimeDate(parseTime(formData.newTimeSlot.endTime));
+                      }
+                      setShowEndTimePicker(true);
+                    }}
+                  >
+                    <View style={[styles.timeInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+                      <Text style={{ 
+                        color: formData.newTimeSlot.endTime 
+                          ? MedicalTheme.colors.text.primary 
+                          : MedicalTheme.colors.text.tertiary 
+                      }}>
+                        {formData.newTimeSlot.endTime || '17:00'}
+                      </Text>
+                      <Ionicons name="time-outline" size={20} color={MedicalTheme.colors.primary[500]} />
+                    </View>
+                  </Pressable>
                 </View>
                 <TouchableOpacity 
                   style={styles.addTimeButton}
@@ -923,6 +1006,85 @@ const ProfileSettingsScreen = () => {
                 </TouchableOpacity>
               </View>
             </View>
+
+            {Platform.OS === 'android' && (
+              <>
+                {showStartTimePicker && (
+                  <DateTimePicker
+                    value={startTimeDate}
+                    mode="time"
+                    display="default"
+                    onChange={handleStartTimeChange}
+                    is24Hour={true}
+                  />
+                )}
+                {showEndTimePicker && (
+                  <DateTimePicker
+                    value={endTimeDate}
+                    mode="time"
+                    display="default"
+                    onChange={handleEndTimeChange}
+                    is24Hour={true}
+                  />
+                )}
+              </>
+            )}
+
+            {Platform.OS === 'ios' && (
+              <>
+                <Modal
+                  visible={showStartTimePicker}
+                  transparent={true}
+                  animationType="slide"
+                  onRequestClose={() => setShowStartTimePicker(false)}
+                >
+                  <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <View style={{ backgroundColor: MedicalTheme.colors.background.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                        <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Select Start Time</Text>
+                        <Pressable onPress={() => setShowStartTimePicker(false)}>
+                          <Text style={{ fontSize: 16, color: MedicalTheme.colors.primary[500], fontWeight: '600' }}>Done</Text>
+                        </Pressable>
+                      </View>
+                      <DateTimePicker
+                        value={startTimeDate}
+                        mode="time"
+                        display="spinner"
+                        onChange={handleStartTimeChange}
+                        textColor={MedicalTheme.colors.text.primary}
+                        is24Hour={true}
+                      />
+                    </View>
+                  </View>
+                </Modal>
+
+                <Modal
+                  visible={showEndTimePicker}
+                  transparent={true}
+                  animationType="slide"
+                  onRequestClose={() => setShowEndTimePicker(false)}
+                >
+                  <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <View style={{ backgroundColor: MedicalTheme.colors.background.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                        <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Select End Time</Text>
+                        <Pressable onPress={() => setShowEndTimePicker(false)}>
+                          <Text style={{ fontSize: 16, color: MedicalTheme.colors.primary[500], fontWeight: '600' }}>Done</Text>
+                        </Pressable>
+                      </View>
+                      <DateTimePicker
+                        value={endTimeDate}
+                        mode="time"
+                        display="spinner"
+                        onChange={handleEndTimeChange}
+                        textColor={MedicalTheme.colors.text.primary}
+                        is24Hour={true}
+                      />
+                    </View>
+                  </View>
+                </Modal>
+              </>
+            )}
 
             {/* Current Time Slots */}
             <View style={styles.currentTimeSlots}>
