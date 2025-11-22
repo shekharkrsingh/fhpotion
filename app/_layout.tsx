@@ -1,7 +1,8 @@
 import SafeScreen from "@/newComponents/SafeScreen";
 import { store } from "@/newStore/index";
 import {Stack} from "expo-router";
-import {StatusBar} from "expo-status-bar";
+import {StatusBar as ExpoStatusBar} from "expo-status-bar";
+import {StatusBar, Platform} from "react-native";
 import {SafeAreaProvider} from "react-native-safe-area-context";
 import {Provider} from "react-redux";
 import * as SplashScreen from "expo-splash-screen";
@@ -42,11 +43,14 @@ export default function RootLayout() {
         <ErrorBoundary>
             <Provider store={store}>
                 <SafeAreaProvider>
-                    <StatusBar 
-                        barStyle="light-content"
-                        backgroundColor={MedicalTheme.colors.primary[500]}
-                        translucent={false}
-                    />
+                    {Platform.OS === 'android' && (
+                        <StatusBar 
+                            barStyle="light-content"
+                            backgroundColor={MedicalTheme.colors.primary[500]}
+                            translucent={false}
+                        />
+                    )}
+                    <ExpoStatusBar style="light" />
                     <SafeScreen>
                         <Stack
                             screenOptions={{

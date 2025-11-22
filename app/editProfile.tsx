@@ -132,12 +132,32 @@ const ProfileSettingsScreen = () => {
   };
 
   const formatTime = (date: Date): string => {
-    const hours = date.getHours().toString().padStart(2, '0');
+    let hours = date.getHours();
     const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
   };
 
   const parseTime = (timeString: string): Date => {
+    const timeMatch = timeString.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1], 10);
+      const minutes = parseInt(timeMatch[2], 10);
+      const ampm = timeMatch[3].toUpperCase();
+      
+      if (ampm === 'PM' && hours !== 12) {
+        hours += 12;
+      } else if (ampm === 'AM' && hours === 12) {
+        hours = 0;
+      }
+      
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      return date;
+    }
+    
     const [hours, minutes] = timeString.split(':').map(Number);
     const date = new Date();
     date.setHours(hours || 9, minutes || 0, 0, 0);
@@ -149,6 +169,20 @@ const ProfileSettingsScreen = () => {
       setShowStartTimePicker(false);
     }
     if (selectedDate) {
+      const endTime = formData.newTimeSlot.endTime 
+        ? parseTime(formData.newTimeSlot.endTime).getTime()
+        : null;
+      const startTime = selectedDate.getTime();
+      
+      if (endTime && startTime >= endTime) {
+        Toast.show({
+          type: 'error',
+          text1: 'Invalid Time',
+          text2: 'Start time must be less than end time'
+        });
+        return;
+      }
+      
       setStartTimeDate(selectedDate);
       const timeString = formatTime(selectedDate);
       updateFormData({ 
@@ -167,6 +201,20 @@ const ProfileSettingsScreen = () => {
       setShowEndTimePicker(false);
     }
     if (selectedDate) {
+      const startTime = formData.newTimeSlot.startTime 
+        ? parseTime(formData.newTimeSlot.startTime).getTime()
+        : null;
+      const endTime = selectedDate.getTime();
+      
+      if (startTime && endTime <= startTime) {
+        Toast.show({
+          type: 'error',
+          text1: 'Invalid Time',
+          text2: 'End time must be greater than start time'
+        });
+        return;
+      }
+      
       setEndTimeDate(selectedDate);
       const timeString = formatTime(selectedDate);
       updateFormData({ 
@@ -189,6 +237,19 @@ const ProfileSettingsScreen = () => {
       });
       return;
     }
+    
+    const startTime = parseTime(formData.newTimeSlot.startTime).getTime();
+    const endTime = parseTime(formData.newTimeSlot.endTime).getTime();
+    
+    if (endTime <= startTime) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Time',
+        text2: 'End time must be greater than start time'
+      });
+      return;
+    }
+    
     const newTimeSlots = [...formData.timeSlots, formData.newTimeSlot];
     updateFormData({ 
       timeSlots: newTimeSlots,
@@ -969,7 +1030,7 @@ const ProfileSettingsScreen = () => {
                           ? MedicalTheme.colors.text.primary 
                           : MedicalTheme.colors.text.tertiary 
                       }}>
-                        {formData.newTimeSlot.startTime || '09:00'}
+                        {formData.newTimeSlot.startTime || '09:00 AM'}
                       </Text>
                       <Ionicons name="time-outline" size={20} color={MedicalTheme.colors.primary[500]} />
                     </View>
@@ -992,7 +1053,7 @@ const ProfileSettingsScreen = () => {
                           ? MedicalTheme.colors.text.primary 
                           : MedicalTheme.colors.text.tertiary 
                       }}>
-                        {formData.newTimeSlot.endTime || '17:00'}
+                        {formData.newTimeSlot.endTime || '05:00 PM'}
                       </Text>
                       <Ionicons name="time-outline" size={20} color={MedicalTheme.colors.primary[500]} />
                     </View>
@@ -1015,7 +1076,7 @@ const ProfileSettingsScreen = () => {
                     mode="time"
                     display="default"
                     onChange={handleStartTimeChange}
-                    is24Hour={true}
+                    is24Hour={false}
                   />
                 )}
                 {showEndTimePicker && (
@@ -1024,7 +1085,7 @@ const ProfileSettingsScreen = () => {
                     mode="time"
                     display="default"
                     onChange={handleEndTimeChange}
-                    is24Hour={true}
+                    is24Hour={false}
                   />
                 )}
               </>
@@ -1052,7 +1113,7 @@ const ProfileSettingsScreen = () => {
                         display="spinner"
                         onChange={handleStartTimeChange}
                         textColor={MedicalTheme.colors.text.primary}
-                        is24Hour={true}
+                        is24Hour={false}
                       />
                     </View>
                   </View>
@@ -1078,7 +1139,7 @@ const ProfileSettingsScreen = () => {
                         display="spinner"
                         onChange={handleEndTimeChange}
                         textColor={MedicalTheme.colors.text.primary}
-                        is24Hour={true}
+                        is24Hour={false}
                       />
                     </View>
                   </View>
