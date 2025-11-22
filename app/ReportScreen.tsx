@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Share,
   Platform,
-  Pressable,
 } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -17,8 +16,8 @@ import * as Sharing from 'expo-sharing';
 import { getDoctorReports } from '@/newService/config/api/reportsAPI';
 import { MedicalTheme } from '@/newConstants/theme';
 import AlertPopup from '@/newComponents/alertPopup';
+import ScreenHeader from '@/newComponents/ScreenHeader';
 import { reportScreenStyles as styles } from '@/assets/styles/ReportScreen.styles';
-// Reverted: remove ScreenHeader usage
 
 const ReportScreen: React.FC = () => {
   const router = useRouter();
@@ -343,27 +342,23 @@ const ReportScreen: React.FC = () => {
 
   return (
     <>
-      {/* Reverted header: simple inline header */}
-      <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'flex-start' }}>
-        <Pressable onPress={handleBackPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ marginRight: 8, marginTop: 2 }}>
-          <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
-        </Pressable>
-        <View style={{ flex: 1, marginRight: 8 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary, marginBottom: 2 }} numberOfLines={1} ellipsizeMode="tail">Medical Reports</Text>
-          <Text style={{ fontSize: 12, color: MedicalTheme.colors.text.secondary, lineHeight: 16 }} numberOfLines={2} ellipsizeMode="tail">Generate and download patient reports</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Medical Reports"
+        subtitle="Generate and download patient reports"
+        showBack={true}
+        onBackPress={handleBackPress}
+      />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         <Text style={styles.title}>Generate Doctor Report</Text>
         <Text style={styles.subtitle}>Select date range to generate PDF report</Text>
 
         {/* Quick Actions */}
-        <View style={[styles.section, styles.quickActionsSection]}>
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Reports</Text>
           <View style={styles.quickActionsContainer}>
             <TouchableOpacity
-              style={[styles.quickActionButton, loading && styles.disabledButton]}
+              style={[styles.quickActionButton, styles.quickActionButtonLeft, loading && styles.disabledButton]}
               onPress={handleTodayReport}
               disabled={loading}
             >
@@ -372,7 +367,7 @@ const ReportScreen: React.FC = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.quickActionButton, loading && styles.disabledButton]}
+              style={[styles.quickActionButton, styles.quickActionButtonRight, loading && styles.disabledButton]}
               onPress={handleYesterdayReport}
               disabled={loading}
             >
@@ -381,7 +376,7 @@ const ReportScreen: React.FC = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.quickActionButton, loading && styles.disabledButton]}
+              style={[styles.quickActionButton, styles.quickActionButtonLeft, loading && styles.disabledButton]}
               onPress={handleThisMonth}
               disabled={loading}
             >
@@ -390,7 +385,7 @@ const ReportScreen: React.FC = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.quickActionButton, loading && styles.disabledButton]}
+              style={[styles.quickActionButton, styles.quickActionButtonRight, loading && styles.disabledButton]}
               onPress={handleThisYear}
               disabled={loading}
             >
@@ -401,7 +396,7 @@ const ReportScreen: React.FC = () => {
         </View>
 
         {/* Custom Date Range */}
-        <View style={[styles.section, styles.customDateSection]}>
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Custom Date Range</Text>
 
           <View style={styles.inputContainer}>

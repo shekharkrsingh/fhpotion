@@ -84,7 +84,7 @@ export const reportScreenStyles = StyleSheet.create({
     textAlign: 'center',
   },
   section: {
-    marginBottom: MedicalTheme.spacing[8],
+    marginBottom: MedicalTheme.spacing[6],
   },
   sectionTitle: {
     fontSize: MedicalTheme.typography.fontSize.lg,
@@ -92,24 +92,15 @@ export const reportScreenStyles = StyleSheet.create({
     color: MedicalTheme.colors.text.primary,
     marginBottom: MedicalTheme.spacing[3],
   },
-  customDateSection: {
-    marginTop: MedicalTheme.spacing[8],
-    paddingTop: MedicalTheme.spacing[3],
-  },
-  quickActionsSection: {
-    marginBottom: MedicalTheme.spacing[10],
-  },
 
   // Quick Actions Styles
   quickActionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: MedicalTheme.spacing[2],
-    marginBottom: MedicalTheme.spacing[6],
+    marginBottom: 0,
   },
   quickActionButton: {
-    flex: 1,
-    minWidth: '48%',
+    width: '48%',
     backgroundColor: MedicalTheme.colors.background.secondary,
     borderWidth: 1,
     borderColor: MedicalTheme.colors.border.light,
@@ -118,6 +109,8 @@ export const reportScreenStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: MedicalTheme.spacing[1],
+    minHeight: 80,
+    marginBottom: MedicalTheme.spacing[2],
     shadowColor: MedicalTheme.colors.neutral[900],
     shadowOffset: {
       width: 0,
@@ -126,6 +119,12 @@ export const reportScreenStyles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+  },
+  quickActionButtonLeft: {
+    marginRight: '4%',
+  },
+  quickActionButtonRight: {
+    marginRight: 0,
   },
   quickActionText: {
     fontSize: MedicalTheme.typography.fontSize.sm,
