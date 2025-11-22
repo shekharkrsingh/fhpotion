@@ -344,13 +344,13 @@ const ReportScreen: React.FC = () => {
   return (
     <>
       {/* Reverted header: simple inline header */}
-      <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
-        <Pressable onPress={handleBackPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ marginRight: 8 }}>
+      <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'flex-start' }}>
+        <Pressable onPress={handleBackPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ marginRight: 8, marginTop: 2 }}>
           <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
         </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Medical Reports</Text>
-          <Text style={{ fontSize: 12, color: MedicalTheme.colors.text.secondary }}>Generate and download patient reports</Text>
+        <View style={{ flex: 1, marginRight: 8 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary, marginBottom: 2 }} numberOfLines={1} ellipsizeMode="tail">Medical Reports</Text>
+          <Text style={{ fontSize: 12, color: MedicalTheme.colors.text.secondary, lineHeight: 16 }} numberOfLines={2} ellipsizeMode="tail">Generate and download patient reports</Text>
         </View>
       </View>
 
@@ -461,7 +461,7 @@ const ReportScreen: React.FC = () => {
         {pdfData && (
           <View style={styles.actionsSection}>
             <Text style={styles.sectionTitle}>Report Ready</Text>
-            <Text style={styles.actionsDescription}>
+            <Text style={styles.actionsDescription} numberOfLines={3} ellipsizeMode="tail">
               Your report "{fileName}" is ready. Choose an action below:
             </Text>
             <View style={styles.actionButtonsContainer}>
@@ -489,19 +489,19 @@ const ReportScreen: React.FC = () => {
           <Text style={styles.infoTitle}>How to use:</Text>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
-            <Text style={styles.infoText}>Enter dates in YYYY-MM-DD format (auto-formatted)</Text>
+            <Text style={styles.infoText} numberOfLines={2}>Enter dates in YYYY-MM-DD format (auto-formatted)</Text>
           </View>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
-            <Text style={styles.infoText}>Month must be between 01-12, days are validated</Text>
+            <Text style={styles.infoText} numberOfLines={2}>Month must be between 01-12, days are validated</Text>
           </View>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
-            <Text style={styles.infoText}>Use quick actions for common time periods</Text>
+            <Text style={styles.infoText} numberOfLines={2}>Use quick actions for common time periods</Text>
           </View>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
-            <Text style={styles.infoText}>Report will be generated and ready for download</Text>
+            <Text style={styles.infoText} numberOfLines={2}>Report will be generated and ready for download</Text>
           </View>
         </View>
       </ScrollView>

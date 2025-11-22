@@ -124,6 +124,7 @@ export const reportScreenStyles = StyleSheet.create({
     fontWeight: MedicalTheme.typography.fontWeight.medium,
     color: MedicalTheme.colors.text.primary,
     textAlign: 'center',
+    flexWrap: 'wrap',
   },
 
   // Input Styles
@@ -184,6 +185,8 @@ export const reportScreenStyles = StyleSheet.create({
     fontSize: MedicalTheme.typography.fontSize.sm,
     color: MedicalTheme.colors.error[700],
     flex: 1,
+    flexWrap: 'wrap',
+    lineHeight: MedicalTheme.typography.fontSize.sm * MedicalTheme.typography.lineHeight.normal,
   },
 
   // Button Styles
@@ -235,7 +238,8 @@ export const reportScreenStyles = StyleSheet.create({
     fontSize: MedicalTheme.typography.fontSize.sm,
     color: MedicalTheme.colors.text.secondary,
     marginBottom: MedicalTheme.spacing[3],
-    // lineHeight: MedicalTheme.typography.lineHeight.normal,
+    lineHeight: MedicalTheme.typography.fontSize.sm * MedicalTheme.typography.lineHeight.normal,
+    flexWrap: 'wrap',
   },
   actionButtonsContainer: {
     flexDirection: 'row',
@@ -313,5 +317,7 @@ export const reportScreenStyles = StyleSheet.create({
     fontSize: MedicalTheme.typography.fontSize.sm,
     color: MedicalTheme.colors.primary[700],
     flex: 1,
+    lineHeight: MedicalTheme.typography.fontSize.sm * MedicalTheme.typography.lineHeight.normal,
+    flexWrap: 'wrap',
   },
 });
