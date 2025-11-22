@@ -6,7 +6,6 @@ import {
   Platform, 
   Pressable, 
   ActivityIndicator, 
-  Alert,
   ScrollView,
   Animated,
   Easing,
@@ -17,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { GestureHandlerRootView, RefreshControl } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import Toast from 'react-native-toast-message';
 import { addAppointment } from '@/newService/config/api/appointmentApi'
 
 import { appointmentFormStyles } from '@/assets/styles/appointmentForm.styles';
@@ -59,6 +59,16 @@ const ModernAppointmentForm = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    Toast.show({
+      type: type,
+      text1: type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Info',
+      text2: message,
+      position: 'bottom',
+      visibilityTime: 3000,
+    });
+  }, []);
   
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -229,19 +239,15 @@ const ModernAppointmentForm = () => {
 
   const handleSubmit = async () => {
     if (!patientData.firstName.trim() || !patientData.contact.trim()) {
-      Alert.alert("Required Fields", "Please fill in First Name and Contact Number");
+      showToast("Please fill in First Name and Contact Number", 'error');
       return;
     }
     
-    // Validate contact number format - must be exactly 10 digits (matches backend validation)
-    const cleanedContact = patientData.contact.replace(/\D/g, ''); // Remove all non-digits
-    const contactRegex = /^\d{10}$/; // Exactly 10 digits (matches backend pattern: ^\d{10}$)
+    const cleanedContact = patientData.contact.replace(/\D/g, '');
+    const contactRegex = /^\d{10}$/;
     
     if (cleanedContact.length !== 10 || !contactRegex.test(cleanedContact)) {
-      Alert.alert(
-        "Invalid Contact Number",
-        "Please enter exactly 10 digits for the contact number"
-      );
+      showToast("Please enter exactly 10 digits for the contact number", 'error');
       return;
     }
     
@@ -257,9 +263,8 @@ const ModernAppointmentForm = () => {
         appointmentDateTime: patientData.appointmentDateTime.toISOString()
       }));
 
-      // Handle the response based on your thunk structure
       if (response.type.endsWith('/fulfilled')) {
-        Alert.alert("Success", "Appointment created successfully!");
+        showToast("Appointment created successfully!", 'success');
         setPatientData({
           firstName: '',
           lastName: '',
@@ -277,11 +282,12 @@ const ModernAppointmentForm = () => {
         additionalFieldsOpacity.setValue(0);
       } else {
         const errorMessage = response?.error?.message || "Failed to add new appointment";
-        Alert.alert("Error", errorMessage);
+        showToast(errorMessage, 'error');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Appointment submission error:', error);
-      Alert.alert("Error", error?.message || "An unexpected error occurred");
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -614,6 +620,8 @@ const ModernAppointmentForm = () => {
           </View>
         </Modal>
       )}
+
+      <Toast />
     </GestureHandlerRootView>
     </ErrorBoundary>
   );
