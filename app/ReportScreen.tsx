@@ -2,16 +2,17 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   Share,
   Platform,
   Pressable,
+  Modal,
 } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getDoctorReports } from '@/newService/config/api/reportsAPI';
@@ -23,143 +24,109 @@ import logger from '@/utils/logger';
 
 const ReportScreen: React.FC = () => {
   const router = useRouter();
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
+  const [showFromDatePicker, setShowFromDatePicker] = useState(false);
+  const [showToDatePicker, setShowToDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [showAlert, setShowAlert] = useState(false);
 
-  // Date validation helpers
-  const isValidMonth = (month: number): boolean => month >= 1 && month <= 12;
-  
-  const isValidDay = (day: number, month: number, year: number): boolean => {
-    if (day < 1 || day > 31) return false;
-    
-    // Check for months with 30 days
-    if ([4, 6, 9, 11].includes(month) && day > 30) return false;
-    
-    // Check for February
-    if (month === 2) {
-      const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-      return isLeapYear ? day <= 29 : day <= 28;
+  const formatDateToString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatDateDisplay = (date: Date | null): string => {
+    if (!date) return '';
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const handleFromDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowFromDatePicker(false);
     }
-    
-    return true;
-  };
 
-  const formatDateInput = (text: string): string => {
-    // Remove all non-digit characters
-    const cleaned = text.replace(/\D/g, '');
-    
-    // Limit to 8 characters (YYYYMMDD)
-    const limited = cleaned.slice(0, 8);
-    
-    // Format based on length
-    if (limited.length <= 4) {
-      return limited;
-    } else if (limited.length <= 6) {
-      return `${limited.slice(0, 4)}-${limited.slice(4)}`;
-    } else {
-      return `${limited.slice(0, 4)}-${limited.slice(4, 6)}-${limited.slice(6, 8)}`;
-    }
-  };
-
-  const validateDateInput = (text: string): boolean => {
-    if (text.length === 0) return true;
-    
-    // Check format YYYY-MM-DD
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(text)) return false;
-    
-    const [yearStr, monthStr, dayStr] = text.split('-');
-    const year = parseInt(yearStr, 10);
-    const month = parseInt(monthStr, 10);
-    const day = parseInt(dayStr, 10);
-    
-    // Validate year (reasonable range)
-    if (year < 1900 || year > 2100) return false;
-    
-    // Validate month
-    if (!isValidMonth(month)) return false;
-    
-    // Validate day
-    if (!isValidDay(day, month, year)) return false;
-    
-    return true;
-  };
-
-  const handleFromDateChange = (text: string) => {
-    const formatted = formatDateInput(text);
-    setFromDate(formatted);
-    
-    // Clear error when user starts typing
-    if (error && error.includes('date')) {
-      setError(null);
+    if (event.type === 'set' && selectedDate) {
+      setFromDate(selectedDate);
+      if (error && error.includes('date')) {
+        setError(null);
+      }
+      if (toDate && selectedDate > toDate) {
+        setToDate(null);
+      }
+    } else if (event.type === 'dismissed') {
+      setShowFromDatePicker(false);
     }
   };
 
-  const handleToDateChange = (text: string) => {
-    const formatted = formatDateInput(text);
-    setToDate(formatted);
-    
-    // Clear error when user starts typing
-    if (error && error.includes('date')) {
-      setError(null);
+  const handleToDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowToDatePicker(false);
+    }
+
+    if (event.type === 'set' && selectedDate) {
+      setToDate(selectedDate);
+      if (error && error.includes('date')) {
+        setError(null);
+      }
+    } else if (event.type === 'dismissed') {
+      setShowToDatePicker(false);
     }
   };
 
-  // Date calculation helpers
-  const getTodayDate = () => new Date().toISOString().split('T')[0];
+  const getTodayDate = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  };
+
   const getYesterdayDate = () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString().split('T')[0];
+    yesterday.setHours(0, 0, 0, 0);
+    return yesterday;
   };
+
   const getFirstDayOfMonth = () => {
     const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+    return new Date(today.getFullYear(), today.getMonth(), 1);
   };
+
   const getFirstDayOfYear = () => {
     const today = new Date();
-    return new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+    return new Date(today.getFullYear(), 0, 1);
   };
 
   const validateDates = (): boolean => {
-    // Check if fromDate is in correct format and valid
     if (!fromDate) {
       setError('Please select a from date');
       return false;
     }
     
-    if (!validateDateInput(fromDate)) {
-      setError('Please enter a valid from date in YYYY-MM-DD format');
-      return false;
-    }
-    
-    // Check if toDate is provided and valid
-    if (toDate && !validateDateInput(toDate)) {
-      setError('Please enter a valid to date in YYYY-MM-DD format');
-      return false;
-    }
-    
-    // Check date range
-    if (toDate && fromDate > toDate) {
-      setError('From date cannot be after to date');
-      return false;
-    }
-    
-    // Check if fromDate is not in future
     const today = getTodayDate();
     if (fromDate > today) {
       setError('From date cannot be in the future');
       return false;
     }
     
-    if (toDate && toDate > today) {
-      setError('To date cannot be in the future');
-      return false;
+    if (toDate) {
+      if (toDate > today) {
+        setError('To date cannot be in the future');
+        return false;
+      }
+      if (fromDate > toDate) {
+        setError('From date cannot be after to date');
+        return false;
+      }
     }
     
     setError(null);
@@ -176,20 +143,23 @@ const ReportScreen: React.FC = () => {
     return btoa(binary);
   };
 
-  const generateReport = async (customFromDate?: string, customToDate?: string) => {
+  const generateReport = async (customFromDate?: Date, customToDate?: Date) => {
     const useFromDate = customFromDate || fromDate;
     const useToDate = customToDate || toDate;
 
-    if (!validateDates() && !customFromDate) return;
+    if (!customFromDate && !validateDates()) return;
+
+    const fromDateStr = useFromDate ? formatDateToString(useFromDate) : '';
+    const toDateStr = useToDate ? formatDateToString(useToDate) : undefined;
 
     try {
       setLoading(true);
       setError(null);
-      setPdfData(null); // Reset previous data
+      setPdfData(null);
 
-      logger.log(`Generating report for: ${useFromDate} to ${useToDate}`);
+      logger.log(`Generating report for: ${fromDateStr} to ${toDateStr || 'today'}`);
 
-      const result = await getDoctorReports(useFromDate, useToDate || undefined);
+      const result = await getDoctorReports(fromDateStr, toDateStr);
       
       logger.log(`Report generated successfully: ${result.fileName}, Size: ${result.pdfData.length} bytes`);
       
@@ -324,11 +294,24 @@ const ReportScreen: React.FC = () => {
     }
   };
 
-  // Quick action handlers
-  const handleTodayReport = () => generateReport(getTodayDate(), getTodayDate());
-  const handleYesterdayReport = () => generateReport(getYesterdayDate(), getYesterdayDate());
-  const handleThisMonth = () => generateReport(getFirstDayOfMonth(), getTodayDate());
-  const handleThisYear = () => generateReport(getFirstDayOfYear(), getTodayDate());
+  const handleTodayReport = () => {
+    const today = getTodayDate();
+    generateReport(today, today);
+  };
+
+  const handleYesterdayReport = () => {
+    const yesterday = getYesterdayDate();
+    generateReport(yesterday, yesterday);
+  };
+
+  const handleThisMonth = () => {
+    generateReport(getFirstDayOfMonth(), getTodayDate());
+  };
+
+  const handleThisYear = () => {
+    generateReport(getFirstDayOfYear(), getTodayDate());
+  };
+
   const handleCustomReport = () => generateReport();
 
   const handleAlertClose = () => {
@@ -345,23 +328,7 @@ const ReportScreen: React.FC = () => {
   };
 
   const handleContactUs = () => {
-    // Placeholder for contact us action
     logger.log('Contact us button pressed');
-  };
-
-  // Get current placeholder based on input state
-  const getFromDatePlaceholder = () => {
-    if (fromDate.length === 0) return 'YYYY-MM-DD';
-    if (fromDate.length <= 4) return 'YYYY-MM-DD';
-    if (fromDate.length <= 7) return `${fromDate.slice(0, 4)}-MM-DD`;
-    return 'YYYY-MM-DD';
-  };
-
-  const getToDatePlaceholder = () => {
-    if (toDate.length === 0) return 'YYYY-MM-DD';
-    if (toDate.length <= 4) return 'YYYY-MM-DD';
-    if (toDate.length <= 7) return `${toDate.slice(0, 4)}-MM-DD`;
-    return 'YYYY-MM-DD';
   };
 
   return (
@@ -429,32 +396,46 @@ const ReportScreen: React.FC = () => {
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>From Date <Text style={styles.required}>*</Text></Text>
-            <TextInput
-              style={[styles.input, error && !fromDate && styles.inputError]}
-              value={fromDate}
-              onChangeText={handleFromDateChange}
-              placeholder={getFromDatePlaceholder()}
-              placeholderTextColor={MedicalTheme.colors.text.tertiary}
-              editable={!loading}
-              keyboardType="numeric"
-              maxLength={10} // YYYY-MM-DD
-            />
-            <Text style={styles.hint}>Format: YYYY-MM-DD (e.g., 2024-12-25)</Text>
+            <Pressable
+              onPress={() => !loading && setShowFromDatePicker(true)}
+              style={({ pressed }) => [
+                styles.input,
+                error && !fromDate && styles.inputError,
+                pressed && { opacity: 0.7 },
+                { justifyContent: 'center' }
+              ]}
+              disabled={loading}
+            >
+              <Text style={[
+                { color: fromDate ? MedicalTheme.colors.text.primary : MedicalTheme.colors.text.tertiary },
+                { fontSize: 16 }
+              ]}>
+                {fromDate ? formatDateDisplay(fromDate) : 'Select from date'}
+              </Text>
+            </Pressable>
+            <Text style={styles.hint}>Tap to select a date</Text>
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>To Date (Optional)</Text>
-            <TextInput
-              style={[styles.input, error && toDate && !validateDateInput(toDate) && styles.inputError]}
-              value={toDate}
-              onChangeText={handleToDateChange}
-              placeholder={getToDatePlaceholder()}
-              placeholderTextColor={MedicalTheme.colors.text.tertiary}
-              editable={!loading}
-              keyboardType="numeric"
-              maxLength={10} // YYYY-MM-DD
-            />
-            <Text style={styles.hint}>Leave empty for today's date. Format: YYYY-MM-DD</Text>
+            <Pressable
+              onPress={() => !loading && setShowToDatePicker(true)}
+              style={({ pressed }) => [
+                styles.input,
+                error && toDate && styles.inputError,
+                pressed && { opacity: 0.7 },
+                { justifyContent: 'center' }
+              ]}
+              disabled={loading}
+            >
+              <Text style={[
+                { color: toDate ? MedicalTheme.colors.text.primary : MedicalTheme.colors.text.tertiary },
+                { fontSize: 16 }
+              ]}>
+                {toDate ? formatDateDisplay(toDate) : 'Select to date (optional)'}
+              </Text>
+            </Pressable>
+            <Text style={styles.hint}>Leave empty for today's date</Text>
           </View>
 
           {error && (
@@ -512,11 +493,11 @@ const ReportScreen: React.FC = () => {
           <Text style={styles.infoTitle}>How to use:</Text>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
-            <Text style={styles.infoText} numberOfLines={2}>Enter dates in YYYY-MM-DD format (auto-formatted)</Text>
+            <Text style={styles.infoText} numberOfLines={2}>Tap on date fields to open date picker</Text>
           </View>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
-            <Text style={styles.infoText} numberOfLines={2}>Month must be between 01-12, days are validated</Text>
+            <Text style={styles.infoText} numberOfLines={2}>Dates are automatically validated</Text>
           </View>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
@@ -539,6 +520,87 @@ const ReportScreen: React.FC = () => {
         variant="success"
         confirmText="Got It"
       />
+
+      {Platform.OS === 'android' && (
+        <>
+          {showFromDatePicker && (
+            <DateTimePicker
+              value={fromDate || getTodayDate()}
+              mode="date"
+              display="default"
+              onChange={handleFromDateChange}
+              maximumDate={getTodayDate()}
+            />
+          )}
+          {showToDatePicker && (
+            <DateTimePicker
+              value={toDate || getTodayDate()}
+              mode="date"
+              display="default"
+              onChange={handleToDateChange}
+              minimumDate={fromDate || undefined}
+              maximumDate={getTodayDate()}
+            />
+          )}
+        </>
+      )}
+
+      {Platform.OS === 'ios' && (
+        <>
+          <Modal
+            visible={showFromDatePicker}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setShowFromDatePicker(false)}
+          >
+            <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+              <View style={{ backgroundColor: MedicalTheme.colors.background.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Select From Date</Text>
+                  <Pressable onPress={() => setShowFromDatePicker(false)}>
+                    <Text style={{ fontSize: 16, color: MedicalTheme.colors.primary[500], fontWeight: '600' }}>Done</Text>
+                  </Pressable>
+                </View>
+                <DateTimePicker
+                  value={fromDate || getTodayDate()}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleFromDateChange}
+                  maximumDate={getTodayDate()}
+                  textColor={MedicalTheme.colors.text.primary}
+                />
+              </View>
+            </View>
+          </Modal>
+
+          <Modal
+            visible={showToDatePicker}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setShowToDatePicker(false)}
+          >
+            <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+              <View style={{ backgroundColor: MedicalTheme.colors.background.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Select To Date</Text>
+                  <Pressable onPress={() => setShowToDatePicker(false)}>
+                    <Text style={{ fontSize: 16, color: MedicalTheme.colors.primary[500], fontWeight: '600' }}>Done</Text>
+                  </Pressable>
+                </View>
+                <DateTimePicker
+                  value={toDate || getTodayDate()}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleToDateChange}
+                  minimumDate={fromDate || undefined}
+                  maximumDate={getTodayDate()}
+                  textColor={MedicalTheme.colors.text.primary}
+                />
+              </View>
+            </View>
+          </Modal>
+        </>
+      )}
     </ErrorBoundary>
   );
 };
