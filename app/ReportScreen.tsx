@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Share,
   Platform,
+  Pressable,
 } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -16,7 +17,6 @@ import * as Sharing from 'expo-sharing';
 import { getDoctorReports } from '@/newService/config/api/reportsAPI';
 import { MedicalTheme } from '@/newConstants/theme';
 import AlertPopup from '@/newComponents/alertPopup';
-import ScreenHeader from '@/newComponents/ScreenHeader';
 import { reportScreenStyles as styles } from '@/assets/styles/ReportScreen.styles';
 
 const ReportScreen: React.FC = () => {
@@ -342,12 +342,16 @@ const ReportScreen: React.FC = () => {
 
   return (
     <>
-      <ScreenHeader
-        title="Medical Reports"
-        subtitle="Generate and download patient reports"
-        showBack={true}
-        onBackPress={handleBackPress}
-      />
+      {/* Header */}
+      <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
+        <Pressable onPress={handleBackPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ marginRight: 8 }}>
+          <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Medical Reports</Text>
+          <Text style={{ fontSize: 12, color: MedicalTheme.colors.text.secondary }}>Generate and download patient reports</Text>
+        </View>
+      </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         <Text style={styles.title}>Generate Doctor Report</Text>
