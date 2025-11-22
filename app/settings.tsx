@@ -15,6 +15,7 @@ import { RootState } from '@/newStore/rootReducer';
 import { router } from 'expo-router';
 
 import { changeDoctorPassword, changeDoctorEmail, sendOtp, signOutDoctor } from '@/newService/config/api/authApi';
+import { createSupportTicket } from '@/newService/config/api/supportApi';
 import { MedicalTheme } from '@/newConstants/theme';
 import { styles } from '@/assets/styles/settings.styles';
 import AlertPopup from '@/newComponents/alertPopup';
@@ -184,12 +185,22 @@ const SettingsScreen = () => {
 
     if (!formData.supportSubject.trim()) {
       newErrors.supportSubject = 'Subject is required';
+    } else if (formData.supportSubject.trim().length < 3) {
+      newErrors.supportSubject = 'Subject must be at least 3 characters';
+    } else if (formData.supportSubject.trim().length > 200) {
+      newErrors.supportSubject = 'Subject must not exceed 200 characters';
     }
 
     if (!formData.supportMessage.trim()) {
       newErrors.supportMessage = 'Message is required';
-    } else if (formData.supportMessage.length < 10) {
+    } else if (formData.supportMessage.trim().length < 10) {
       newErrors.supportMessage = 'Please provide more details (minimum 10 characters)';
+    } else if (formData.supportMessage.trim().length > 5000) {
+      newErrors.supportMessage = 'Message must not exceed 5000 characters';
+    }
+
+    if (!formData.supportCategory) {
+      newErrors.support = 'Category is required';
     }
 
     setErrors(newErrors);
@@ -372,25 +383,17 @@ const SettingsScreen = () => {
 
     setIsLoading(true);
     try {
-      const ticketId = `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-      const doctorId = profileData.doctorId || 'N/A';
-      const doctorEmail = formData.currentEmail;
-
-      const supportData = {
-        ticketId,
-        doctorId,
-        doctorEmail,
-        subject: formData.supportSubject,
-        message: formData.supportMessage,
+      const supportRequest = {
+        subject: formData.supportSubject.trim(),
+        message: formData.supportMessage.trim(),
         category: formData.supportCategory,
-        timestamp: new Date().toISOString()
       };
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const ticket = await createSupportTicket(supportRequest);
       
       showAlert({
         title: 'Support Ticket Created',
-        message: `Your support request has been submitted successfully!\n\nTicket ID: ${ticketId}\nWe'll get back to you within 24 hours.`,
+        message: `Your support request has been submitted successfully!\n\nTicket ID: ${ticket.ticketId}\nWe'll get back to you within 24 hours.`,
         variant: 'success',
         onConfirm: () => {
           updateFormData({ supportSubject: '', supportMessage: '', supportCategory: 'general' });
@@ -398,10 +401,14 @@ const SettingsScreen = () => {
           closeModal();
         }
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      logger.error('Error submitting support ticket:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to submit support request. Please try again.';
       showAlert({
         title: 'Error',
-        message: 'Failed to submit support request. Please try again.',
+        message: errorMessage,
         variant: 'error'
       });
     } finally {
@@ -1174,11 +1181,11 @@ const SettingsScreen = () => {
           {renderSection("privacy", "Control your profile visibility and privacy")}
         </View> */}
 
-        {/* Support 
+        {/* Support */}
         <View style={styles.categoryContainer}>
           <Text style={styles.categoryTitle}>Support</Text>
           {renderSection("support", "Get help from our support team")}
-        </View>*/}
+        </View>
 
         {/* Account Actions */}
         <View style={styles.categoryContainer}>
