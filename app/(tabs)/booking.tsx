@@ -76,7 +76,7 @@ export default function BookingScreen() {
     try {
       await dispatch(getAppointments());
       if (!websocketAppointment.connected) {
-      await websocketAppointment.connect();
+        await websocketAppointment.connect();
       }
     } catch (error) {
       logger.error('Failed to fetch appointments:', error);
@@ -91,7 +91,7 @@ export default function BookingScreen() {
         : change;
         
       await dispatch(updateAppointment({ appointmentId: id, updateData })).unwrap();
-        return true;
+      return true;
     } catch (error) {
       logger.error('Failed to update appointment:', error);
       throw error;
@@ -354,7 +354,7 @@ export default function BookingScreen() {
       async () => {
         try {
           await dispatch(updateEmergencyStatus({ appointmentId: id, isEmergency: newEmergencyStatus })).unwrap();
-            showToast(`Appointment ${newEmergencyStatus ? 'marked as emergency' : 'emergency status removed'}`, 'success');
+          showToast(`Appointment ${newEmergencyStatus ? 'marked as emergency' : 'emergency status removed'}`, 'success');
         } catch (error) {
           logger.error('Failed to update emergency status:', error);
           showToast(`Failed to ${newEmergencyStatus ? 'mark as emergency' : 'remove emergency status'}.`, 'error');
@@ -383,7 +383,7 @@ export default function BookingScreen() {
       async () => {
         try {
           await dispatch(cancelAppointment(id)).unwrap();
-            showToast('Appointment cancelled successfully.', 'success');
+          showToast('Appointment cancelled successfully.', 'success');
         } catch (error) {
           logger.error('Failed to cancel appointment:', error);
           showToast('Failed to cancel appointment.', 'error');

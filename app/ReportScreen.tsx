@@ -75,9 +75,9 @@ const ReportScreen: React.FC = () => {
 
     if (event.type === 'set' && selectedDate) {
       setToDate(selectedDate);
-    if (error && error.includes('date')) {
-      setError(null);
-    }
+      if (error && error.includes('date')) {
+        setError(null);
+      }
     } else if (event.type === 'dismissed') {
       setShowToDatePicker(false);
     }
@@ -120,8 +120,8 @@ const ReportScreen: React.FC = () => {
     
     if (toDate) {
       if (toDate > today) {
-      setError('To date cannot be in the future');
-      return false;
+        setError('To date cannot be in the future');
+        return false;
       }
       if (fromDate > toDate) {
         setError('From date cannot be after to date');
@@ -188,22 +188,22 @@ const ReportScreen: React.FC = () => {
         // Web download - direct blob approach
         if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof Blob !== 'undefined') {
           const blob = new Blob([pdfData as any], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.style.display = 'none';
-        
-        // Append to body and click
-        document.body.appendChild(link);
-        link.click();
-        
-        // Clean up
-        setTimeout(() => {
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-        }, 100);
-        
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          link.style.display = 'none';
+          
+          // Append to body and click
+          document.body.appendChild(link);
+          link.click();
+          
+          // Clean up
+          setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          }, 100);
+          
           logger.log('PDF download initiated on web');
         } else {
           throw new Error('Web APIs not available');
@@ -256,8 +256,8 @@ const ReportScreen: React.FC = () => {
         // Web share API
         if (typeof navigator !== 'undefined' && navigator.share && typeof Blob !== 'undefined' && typeof File !== 'undefined') {
           const blob = new Blob([pdfData as any], { type: 'application/pdf' });
-        const file = new File([blob], fileName, { type: 'application/pdf' });
-        
+          const file = new File([blob], fileName, { type: 'application/pdf' });
+          
           await navigator.share({
             files: [file],
             title: 'Doctor Report',

@@ -13,19 +13,17 @@ export default function SafeScreen({
   backgroundColor = 'secondary' 
 }: SafeScreenProps) {
   const inserts = useSafeAreaInsets();
-  const bgColor = MedicalTheme.colors.background[backgroundColor];
-  const statusBarBg = MedicalTheme.colors.background.primary;
   
   return (
     <View style={styles.container}>
       <View style={{ 
         height: inserts.top, 
-        backgroundColor: statusBarBg
+        backgroundColor: '#000000' 
       }} />
       <View style={[
         styles.content, 
         { 
-          backgroundColor: bgColor
+          backgroundColor: MedicalTheme.colors.background[backgroundColor]
         }
       ]}>
         {children}
