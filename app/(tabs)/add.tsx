@@ -25,6 +25,8 @@ import FormInput from '@/newComponents/formInput';
 import SettingToggle from '@/newComponents/settingToggle';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/newStore';
+import logger from '@/utils/logger';
+import ErrorBoundary from '@/newComponents/ErrorBoundary';
 
 interface PatientData {
   firstName: string;
@@ -278,7 +280,7 @@ const ModernAppointmentForm = () => {
         Alert.alert("Error", errorMessage);
       }
     } catch (error: any) {
-      console.error('Appointment submission error:', error);
+      logger.error('Appointment submission error:', error);
       Alert.alert("Error", error?.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
@@ -292,7 +294,7 @@ const ModernAppointmentForm = () => {
   });
 
   return (
-    <>
+    <ErrorBoundary>
       {/* Reverted: remove explicit StatusBar override */}
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: MedicalTheme.colors.background.secondary }}>
         <KeyboardAvoidingView
@@ -613,7 +615,7 @@ const ModernAppointmentForm = () => {
         </Modal>
       )}
     </GestureHandlerRootView>
-    </>
+    </ErrorBoundary>
   );
 };
 

@@ -17,7 +17,9 @@ import * as Sharing from 'expo-sharing';
 import { getDoctorReports } from '@/newService/config/api/reportsAPI';
 import { MedicalTheme } from '@/newConstants/theme';
 import AlertPopup from '@/newComponents/alertPopup';
+import ErrorBoundary from '@/newComponents/ErrorBoundary';
 import { reportScreenStyles as styles } from '@/assets/styles/ReportScreen.styles';
+import logger from '@/utils/logger';
 
 const ReportScreen: React.FC = () => {
   const router = useRouter();
@@ -185,11 +187,11 @@ const ReportScreen: React.FC = () => {
       setError(null);
       setPdfData(null); // Reset previous data
 
-      console.log(`Generating report for: ${useFromDate} to ${useToDate}`);
+      logger.log(`Generating report for: ${useFromDate} to ${useToDate}`);
 
       const result = await getDoctorReports(useFromDate, useToDate || undefined);
       
-      console.log(`Report generated successfully: ${result.fileName}, Size: ${result.pdfData.length} bytes`);
+      logger.log(`Report generated successfully: ${result.fileName}, Size: ${result.pdfData.length} bytes`);
       
       setPdfData(result.pdfData);
       setFileName(result.fileName);
@@ -200,7 +202,7 @@ const ReportScreen: React.FC = () => {
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to generate report';
       setError(errorMessage);
-      console.error('Generate report error:', err);
+      logger.error('Generate report error:', err);
     } finally {
       setLoading(false);
     }
@@ -210,42 +212,57 @@ const ReportScreen: React.FC = () => {
     if (!pdfData) return;
 
     try {
-      console.log(`Downloading PDF: ${fileName}, Size: ${pdfData.length} bytes`);
+      logger.log(`Downloading PDF: ${fileName}, Size: ${pdfData.length} bytes`);
       
       if (Platform.OS === 'web') {
         // Web download - direct blob approach
-        const blob = new Blob([pdfData], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.style.display = 'none';
-        
-        // Append to body and click
-        document.body.appendChild(link);
-        link.click();
-        
-        // Clean up
-        setTimeout(() => {
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-        }, 100);
-        
-        console.log('PDF download initiated on web');
+        if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof Blob !== 'undefined') {
+          const blob = new Blob([pdfData as any], { type: 'application/pdf' });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          link.style.display = 'none';
+          
+          // Append to body and click
+          document.body.appendChild(link);
+          link.click();
+          
+          // Clean up
+          setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          }, 100);
+          
+          logger.log('PDF download initiated on web');
+        } else {
+          throw new Error('Web APIs not available');
+        }
       } else {
         // React Native - Save and share with proper base64 encoding
         const base64Data = uint8ArrayToBase64(pdfData);
-        const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
+        // Use cacheDirectory for temporary files (will be cleaned by system)
+        const directory = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+        if (!directory) {
+          throw new Error('File system directory not available');
+        }
+        const fileUri = `${directory}${fileName}`;
         
-        console.log(`Writing PDF to cache: ${fileUri}`);
+        logger.log(`Writing PDF to cache: ${fileUri}`);
         
+        // Use FileSystem.EncodingType.Base64 if available, otherwise use string
+        const encoding = (FileSystem as any).EncodingType?.Base64 || 'base64';
         await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-          encoding: FileSystem.EncodingType.Base64,
+          encoding: encoding as any,
         });
 
         // Verify file was written
         const fileInfo = await FileSystem.getInfoAsync(fileUri);
-        console.log(`File written: ${fileInfo.exists}, Size: ${fileInfo.size} bytes`);
+        if (fileInfo.exists) {
+          logger.log(`File written successfully: ${fileUri}`);
+        } else {
+          throw new Error('File was not written successfully');
+        }
 
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri, {
@@ -256,7 +273,7 @@ const ReportScreen: React.FC = () => {
         }
       }
     } catch (err: any) {
-      console.error('Download error:', err);
+      logger.error('Download error:', err);
       setError(`Failed to download PDF: ${err.message}`);
     }
   };
@@ -267,36 +284,43 @@ const ReportScreen: React.FC = () => {
     try {
       if (Platform.OS === 'web') {
         // Web share API
-        const blob = new Blob([pdfData], { type: 'application/pdf' });
-        const file = new File([blob], fileName, { type: 'application/pdf' });
-        
-        if (navigator.share) {
+        if (typeof navigator !== 'undefined' && navigator.share && typeof Blob !== 'undefined' && typeof File !== 'undefined') {
+          const blob = new Blob([pdfData as any], { type: 'application/pdf' });
+          const file = new File([blob], fileName, { type: 'application/pdf' });
+          
           await navigator.share({
             files: [file],
             title: 'Doctor Report',
           });
         } else {
           // Fallback to download if share not supported
-          console.log('Web Share API not supported, falling back to download');
+          logger.log('Web Share API not supported, falling back to download');
           downloadPdf();
         }
       } else {
         // React Native share
         const base64Data = uint8ArrayToBase64(pdfData);
-        const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
+        const directory = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+        if (!directory) {
+          throw new Error('File system directory not available');
+        }
+        const fileUri = `${directory}${fileName}`;
         
+        const encoding = (FileSystem as any).EncodingType?.Base64 || 'base64';
         await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-          encoding: FileSystem.EncodingType.Base64,
+          encoding: encoding as any,
         });
 
         await Share.share({
           url: fileUri,
           title: 'Doctor Report',
-          type: 'application/pdf',
         });
       }
     } catch (err: any) {
-      console.log('Share cancelled or failed:', err);
+      // Share cancellation is not an error, just log it
+      if (err.message && !err.message.includes('cancelled')) {
+        logger.error('Share error:', err);
+      }
     }
   };
 
@@ -322,7 +346,7 @@ const ReportScreen: React.FC = () => {
 
   const handleContactUs = () => {
     // Placeholder for contact us action
-    console.log('Contact us button pressed');
+    logger.log('Contact us button pressed');
   };
 
   // Get current placeholder based on input state
@@ -341,7 +365,7 @@ const ReportScreen: React.FC = () => {
   };
 
   return (
-    <>
+    <ErrorBoundary>
       {/* Header */}
       <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
         <Pressable onPress={handleBackPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ marginRight: 8 }}>
@@ -515,7 +539,7 @@ const ReportScreen: React.FC = () => {
         variant="success"
         confirmText="Got It"
       />
-    </>
+    </ErrorBoundary>
   );
 };
 

@@ -8,6 +8,7 @@ import Toast from 'react-native-toast-message';
 
 import OTPVerificationPopup from '@/newComponents/OTPVerificationPopup';
 import { sendOtp, forgotPassword } from '@/newService/config/api/authApi';
+import logger from '@/utils/logger';
 
 export default function ForgetPasswordOTP() {
     const { email, newPassword } = useSelector((state: RootState) => state.forgetPassword);
@@ -40,7 +41,7 @@ export default function ForgetPasswordOTP() {
                 return false;
             }
         } catch (error) {
-            console.error("Password reset error:", error);
+            logger.error("Password reset error:", error);
             Toast.show({
                 type: 'error',
                 text1: 'Password Reset Failed',
@@ -78,7 +79,7 @@ export default function ForgetPasswordOTP() {
                 throw new Error('Failed to resend OTP');
             }
         } catch (error) {
-            console.error("Resend OTP error:", error);
+            logger.error("Resend OTP error:", error);
             Toast.show({
                 type: 'error',
                 text1: 'Resend Failed',

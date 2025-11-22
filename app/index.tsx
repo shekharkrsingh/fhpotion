@@ -97,9 +97,9 @@ export default function index() {
                     const socketConnected = await waitForWebSocketConnection();
 
                     if (socketConnected) {
-                        console.log("✅ WebSocket connected before navigation");
+                        // WebSocket connected successfully
                     } else {
-                        console.log("⚠️ WebSocket connection timeout — proceeding anyway");
+                        // WebSocket connection timeout - proceeding anyway
                     }
 
                     // Step 4️⃣: Navigate to dashboard

@@ -8,6 +8,7 @@ import {
 } from "@/newStore/slices/signupSlice";
 import { store } from "@/newStore";
 import { setToken, removeToken } from "@/utils/tokenService";
+import logger from "@/utils/logger";
 
 interface ApiResponse<T> {
   data: T;
@@ -93,14 +94,14 @@ export const sendOtp = async (email: string): Promise<boolean> => {
     });
 
     if (response.status !== 200) {
-      console.error("Failed to send OTP:", response.data?.message);
+      logger.error("Failed to send OTP:", response.data?.message);
       return false;
     }
 
-    console.log("OTP sent successfully:", response.data?.message);
+    logger.log("OTP sent successfully:", response.data?.message);
     return true;
   } catch (error: any) {
-    console.error(
+    logger.error(
       "Error sending OTP:",
       error?.response?.data?.message || error.message || "Something went wrong"
     );
@@ -127,20 +128,20 @@ export const loginDoctor = async (
     });
 
     if (!response.data?.data?.token) {
-      console.error("Login failed:", response.data?.message);
+      logger.error("Login failed:", response.data?.message);
       return false;
     }
 
     const tokenStored = await setToken(response.data.data.token);
     if (!tokenStored) {
-      console.error("Failed to store token securely");
+      logger.error("Failed to store token securely");
       return false;
     }
 
-    console.log("Login successful, token stored securely");
+    logger.log("Login successful, token stored securely");
     return true;
   } catch (error: any) {
-    console.error(
+    logger.error(
       "Error logging in:",
       error?.response?.data?.message || error.message || "Something went wrong"
     );
@@ -169,14 +170,14 @@ export const forgotPassword = async (
     });
 
     if (response.status !== 200) {
-      console.error("Failed to reset password:", response.data?.message);
+      logger.error("Failed to reset password:", response.data?.message);
       return false;
     }
 
-    console.log("Password reset successful");
+    logger.log("Password reset successful");
     return true;
   } catch (error: any) {
-    console.error(
+    logger.error(
       "Error resetting password:",
       error?.response?.data?.message || error.message || "Something went wrong"
     );
@@ -203,14 +204,14 @@ export const changeDoctorPassword = async (
     });
 
     if (response.status !== 200) {
-      console.error("Failed to change password:", response.data?.message);
+      logger.error("Failed to change password:", response.data?.message);
       return false;
     }
 
-    console.log("Password changed successfully");
+    logger.log("Password changed successfully");
     return true;
   } catch (error: any) {
-    console.error(
+    logger.error(
       "Error changing password:",
       error?.response?.data?.message || error.message || "Something went wrong"
     );
@@ -239,19 +240,19 @@ export const changeDoctorEmail = async (
     });
 
     if (response.status !== 200) {
-      console.error("Failed to change email:", response.data?.message);
+      logger.error("Failed to change email:", response.data?.message);
       return false;
     }
 
     const tokenStored = await setToken(response.data.data);
     if (!tokenStored) {
-      console.error("Failed to store new token securely after email change");
+      logger.error("Failed to store new token securely after email change");
       return false;
     }
 
     return true;
   } catch (error: any) {
-    console.error(
+    logger.error(
       "Error changing email:",
       error?.response?.data?.message || error.message || "Something went wrong"
     );
@@ -266,9 +267,9 @@ export const changeDoctorEmail = async (
 export const logoutDoctor = async (): Promise<void> => {
   try {
     await removeToken();
-    console.log("Logged out successfully, token removed from secure storage");
+    logger.log("Logged out successfully, token removed from secure storage");
   } catch (error: any) {
-    console.error(
+    logger.error(
       "Error logging out:",
       error?.response?.data?.message || error.message || "Something went wrong"
     );
@@ -282,10 +283,10 @@ export const logoutDoctor = async (): Promise<void> => {
 export const signOutDoctor = async (): Promise<boolean> => {
   try {
     await removeToken();
-    console.log("Signed out successfully - token removed from secure storage");
+    logger.log("Signed out successfully - token removed from secure storage");
     return true;
   } catch (error: any) {
-    console.error(
+    logger.error(
       "Error signing out:",
       error?.message || "Something went wrong"
     );

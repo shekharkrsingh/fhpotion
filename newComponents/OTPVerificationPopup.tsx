@@ -15,6 +15,7 @@ import Toast from 'react-native-toast-message';
 
 import { styles } from '@/assets/styles/OTPVerificationPopup.styles';
 import { MedicalTheme } from '@/newConstants/theme';
+import logger from '@/utils/logger';
 
 interface OTPModalProps {
   visible: boolean;
@@ -180,7 +181,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
         resetInputs();
       }
     } catch (error) {
-      console.error('OTP verification error:', error);
+      logger.error('OTP verification error:', error);
       Toast.show({
         type: 'error',
         text1: 'Verification Error',
@@ -212,7 +213,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
         text2: 'New verification code sent',
       });
     } catch (error) {
-      console.error('Resend OTP error:', error);
+      logger.error('Resend OTP error:', error);
       Toast.show({
         type: 'error',
         text1: 'Resend Failed',

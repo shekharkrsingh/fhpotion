@@ -23,6 +23,8 @@ import EmptyScreen from '@/newComponents/EmptyScreen';
 import { fetchDoctorStatistics } from '@/newService/config/api/statisticsApi';
 import { getProfile } from '@/newService/config/api/profileApi';
 import { getAppointments } from '@/newService/config/api/appointmentApi';
+import logger from '@/utils/logger';
+import ErrorBoundary from '@/newComponents/ErrorBoundary';
 
 const DoctorDashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -47,7 +49,7 @@ const DoctorDashboard = () => {
       await dispatch(getProfile());
       await dispatch(getAppointments());
     } catch (error) {
-      console.error('Error refreshing dashboard:', error);
+      logger.error('Error refreshing dashboard:', error);
     } finally {
       setRefreshing(false);
     }
@@ -131,7 +133,7 @@ const DoctorDashboard = () => {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       {/* Reverted: remove explicit StatusBar override */}
       <ScrollView 
         showsVerticalScrollIndicator={false}
@@ -155,7 +157,7 @@ const DoctorDashboard = () => {
       />
       <QuickActions />
     </ScrollView>
-    </>
+    </ErrorBoundary>
   );
 };
 

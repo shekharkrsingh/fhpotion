@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import logger from './logger';
 
 const TOKEN_KEY = 'auth_token';
 
@@ -14,7 +15,7 @@ const isSecureStoreAvailable = async (): Promise<boolean> => {
     }
     return await SecureStore.isAvailableAsync();
   } catch (error) {
-    console.warn('SecureStore availability check failed, falling back to AsyncStorage:', error);
+    logger.warn('SecureStore availability check failed, falling back to AsyncStorage:', error);
     return false;
   }
 };
@@ -58,7 +59,7 @@ const decodeBase64 = (base64: string): string => {
     
     return result;
   } catch (error) {
-    console.error('Error decoding base64:', error);
+    logger.error('Error decoding base64:', error);
     throw error;
   }
 };
@@ -84,7 +85,7 @@ const decodeJWTPayload = (token: string): any => {
     const decodedPayload = decodeBase64(paddedBase64);
     return JSON.parse(decodedPayload);
   } catch (error) {
-    console.error('Error decoding JWT payload:', error);
+    logger.error('Error decoding JWT payload:', error);
     return null;
   }
 };
@@ -111,7 +112,7 @@ const isTokenExpired = (token: string): boolean => {
     
     return currentTime >= (expirationTime - bufferTime);
   } catch (error) {
-    console.error('Error checking token expiration:', error);
+    logger.error('Error checking token expiration:', error);
     return true; // Treat errors as expired for safety
   }
 };
@@ -138,14 +139,14 @@ export const getToken = async (): Promise<string | null> => {
 
     // Check if token is expired
     if (isTokenExpired(token)) {
-      console.warn('Token expired, removing from storage');
+      logger.warn('Token expired, removing from storage');
       await removeToken();
       return null;
     }
 
     return token;
   } catch (error) {
-    console.error('Error getting token from storage:', error);
+    logger.error('Error getting token from storage:', error);
     return null;
   }
 };
@@ -158,13 +159,13 @@ export const setToken = async (token: string): Promise<boolean> => {
   try {
     // Validate token format before storing
     if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
-      console.error('Invalid token format');
+      logger.error('Invalid token format');
       return false;
     }
 
     // Check if token is already expired before storing
     if (isTokenExpired(token)) {
-      console.warn('Attempting to store expired token, rejecting');
+      logger.warn('Attempting to store expired token, rejecting');
       return false;
     }
 
@@ -179,7 +180,7 @@ export const setToken = async (token: string): Promise<boolean> => {
     
     return true;
   } catch (error) {
-    console.error('Error storing token in storage:', error);
+    logger.error('Error storing token in storage:', error);
     return false;
   }
 };
@@ -200,7 +201,7 @@ export const removeToken = async (): Promise<boolean> => {
     
     return true;
   } catch (error) {
-    console.error('Error removing token from storage:', error);
+    logger.error('Error removing token from storage:', error);
     return false;
   }
 };

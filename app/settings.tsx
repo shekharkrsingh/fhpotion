@@ -19,6 +19,8 @@ import { MedicalTheme } from '@/newConstants/theme';
 import { styles } from '@/assets/styles/settings.styles';
 import AlertPopup from '@/newComponents/alertPopup';
 import OTPVerificationPopup from '@/newComponents/OTPVerificationPopup';
+import logger from '@/utils/logger';
+import ErrorBoundary from '@/newComponents/ErrorBoundary';
 // Reverted: remove ScreenHeader usage
 
 const SettingsScreen = () => {
@@ -410,12 +412,12 @@ const SettingsScreen = () => {
   const handleSignout = async () => {
     setIsLoading(true);
     try {
-      console.log("Direct signout started");
+      logger.log("Direct signout started");
       await signOutDoctor();
       closeModal();
       router.replace('/(auth)');
     } catch (error) {
-      console.error("Signout error:", error);
+      logger.error("Signout error:", error);
       showAlert({
         title: 'Error',
         message: 'Failed to sign out.',
@@ -1239,7 +1241,7 @@ const SettingsScreen = () => {
         cancelText="Cancel"
       />
       </View>
-    </>
+    </ErrorBoundary>
   );
 };
 

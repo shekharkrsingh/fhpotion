@@ -26,7 +26,9 @@ const ProfileActionButtons: React.FC = () => {
       label: 'Book',
       icon: <Ionicons name="calendar" size={16} color="#fff" />,
       colors: ['#4facfe', '#00f2fe'],
-      onPress: () => console.log('Book appointment'),
+      onPress: () => {
+        // TODO: Implement book appointment functionality
+      },
     },
   ];
 

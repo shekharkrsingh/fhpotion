@@ -19,7 +19,9 @@ import BookingHeader from '@/newComponents/bookingHeader';
 import BookingFilterButtons from '@/newComponents/bookingFilterButtons';
 import BookingList from '@/newComponents/bookingList';
 import AlertPopup from '@/newComponents/alertPopup';
+import ErrorBoundary from '@/newComponents/ErrorBoundary';
 import { bookingStyles } from '@/assets/styles/booking.styles';
+import logger from '@/utils/logger';
 import { 
   canMarkAvailable, 
   canMarkUnavailable, 
@@ -78,7 +80,7 @@ export default function BookingScreen() {
       await dispatch(getAppointments());
       await websocketAppointment.connect();
     } catch (error) {
-      console.error('Failed to fetch appointments:', error);
+      logger.error('Failed to fetch appointments:', error);
       showToast('Failed to fetch appointments. Please try again.', 'error');
     }
   }, [dispatch, showToast]); // Include all dependencies
@@ -90,14 +92,11 @@ export default function BookingScreen() {
         ? { ...change, status: "ACCEPTED" as const }
         : change;
         
-      const result = await dispatch(updateAppointment({ appointmentId: id, updateData }));
-      if (result.type.endsWith('/fulfilled')) {
-        return true;
-      } else {
-        throw new Error('Update failed');
-      }
+      // Use .unwrap() for cleaner error handling
+      await dispatch(updateAppointment({ appointmentId: id, updateData })).unwrap();
+      return true;
     } catch (error) {
-      console.error('Failed to update appointment:', error);
+      logger.error('Failed to update appointment:', error);
       throw error;
     }
   };
@@ -140,7 +139,7 @@ export default function BookingScreen() {
       try {
         await confirmationData.action();
       } catch (error) {
-        console.error('Error in confirmation action:', error);
+        logger.error('Error in confirmation action:', error);
       } finally {
         setIsProcessing(false);
       }
@@ -317,7 +316,7 @@ export default function BookingScreen() {
   };
 
   const toggleTreatedStatus = async (id: string) => {
-    console.log(id)
+    logger.log('Toggling treated status for appointment:', id);
     const appointment = findAppointment(id);
     if (!appointment) {
       showToast("Appointment not found.", 'error');
@@ -374,14 +373,10 @@ export default function BookingScreen() {
       `Are you sure you want to ${newEmergencyStatus ? 'mark as emergency' : 'remove emergency status'}?`,
       async () => {
         try {
-          const result = await dispatch(updateEmergencyStatus({ appointmentId: id, isEmergency: newEmergencyStatus }));
-          if (result.type.endsWith('/fulfilled')) {
-            showToast(`Appointment ${newEmergencyStatus ? 'marked as emergency' : 'emergency status removed'}`, 'success');
-          } else {
-            showToast(`Failed to ${newEmergencyStatus ? 'mark as emergency' : 'remove emergency status'}.`, 'error');
-          }
+          await dispatch(updateEmergencyStatus({ appointmentId: id, isEmergency: newEmergencyStatus })).unwrap();
+          showToast(`Appointment ${newEmergencyStatus ? 'marked as emergency' : 'emergency status removed'}`, 'success');
         } catch (error) {
-          console.error('Failed to update emergency status:', error);
+          logger.error('Failed to update emergency status:', error);
           showToast(`Failed to ${newEmergencyStatus ? 'mark as emergency' : 'remove emergency status'}.`, 'error');
         }
       },
@@ -407,14 +402,10 @@ export default function BookingScreen() {
       'Are you sure you want to cancel this appointment?',
       async () => {
         try {
-          const result = await dispatch(cancelAppointment(id));
-          if (result.type.endsWith('/fulfilled')) {
-            showToast('Appointment cancelled successfully.', 'success');
-          } else {
-            showToast('Failed to cancel appointment.', 'error');
-          }
+          await dispatch(cancelAppointment(id)).unwrap();
+          showToast('Appointment cancelled successfully.', 'success');
         } catch (error) {
-          console.error('Failed to cancel appointment:', error);
+          logger.error('Failed to cancel appointment:', error);
           showToast('Failed to cancel appointment.', 'error');
         }
       },
@@ -462,7 +453,7 @@ export default function BookingScreen() {
   }, []); // Empty deps - only run once on mount (dispatch is stable from Redux)
 
   return (
-    <>
+    <ErrorBoundary>
       {/* Reverted: remove explicit StatusBar override */}
       <GestureHandlerRootView style={{ flex: 1 }}>
         <View style={bookingStyles.container}>
@@ -509,6 +500,6 @@ export default function BookingScreen() {
         <Toast />
       </View>
     </GestureHandlerRootView>
-    </>
+    </ErrorBoundary>
   );
 }

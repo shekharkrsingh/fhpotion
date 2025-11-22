@@ -20,6 +20,13 @@ export default function RootLayout() {
             // Ignore errors if splash screen is already hidden
         });
 
+        // Initialize WebSocket service with dispatch and state getter
+        // This decouples the service from direct store access
+        websocketAppointment.initialize(
+            store.dispatch,
+            () => store.getState().profile
+        );
+
         // Initialize WebSocket AppState listener for background/foreground handling
         websocketAppointment.initializeAppStateListener();
 

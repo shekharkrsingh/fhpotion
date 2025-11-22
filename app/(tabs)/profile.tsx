@@ -17,6 +17,8 @@ import ListSection from '@/newComponents/listSection';
 import EmptyScreen from '@/newComponents/EmptyScreen';
 import { AppDispatch, RootState } from '@/newStore';
 import { getProfile } from '@/newService/config/api/profileApi';
+import logger from '@/utils/logger';
+import ErrorBoundary from '@/newComponents/ErrorBoundary';
 
 const DoctorProfileScreen = () => {
   const profileData = useSelector((state: RootState) => state.profile);
@@ -40,7 +42,7 @@ const DoctorProfileScreen = () => {
        await dispatch(getProfile());
     } catch (err) {
       setError('Failed to load profile data');
-      console.error('Failed to load profile:', err);
+      logger.error('Failed to load profile:', err);
     }
   };
 
@@ -51,7 +53,7 @@ const DoctorProfileScreen = () => {
       await dispatch(getProfile()); // Fixed: Use dispatch instead of direct function call
     } catch (err) {
       setError('Failed to refresh profile data');
-      console.error('Failed to refresh profile:', err);
+      logger.error('Failed to refresh profile:', err);
     } finally {
       setRefreshing(false);
     }
@@ -134,7 +136,9 @@ const DoctorProfileScreen = () => {
           },
           {
             label: 'Setup Profile',
-            onPress: () => console.log('Navigate to profile setup'),
+            onPress: () => {
+              // TODO: Navigate to profile setup
+            },
             variant: 'secondary',
             icon: 'person-add',
           },
@@ -144,7 +148,7 @@ const DoctorProfileScreen = () => {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       {/* Reverted: remove explicit StatusBar override */}
       <GestureHandlerRootView style={profileStyles.container}>
         <View style={profileStyles.container}>
@@ -197,7 +201,7 @@ const DoctorProfileScreen = () => {
                   actions={[
                     {
                       label: 'Add Summary',
-                      onPress: () => console.log('Navigate to edit profile'),
+                      onPress: () => router.push('/editProfile'),
                       variant: 'outline',
                       icon: 'edit',
                     },
@@ -230,7 +234,7 @@ const DoctorProfileScreen = () => {
                   actions={[
                     {
                       label: 'Add Biography',
-                      onPress: () => console.log('Navigate to edit profile'),
+                      onPress: () => router.push('/editProfile'),
                       variant: 'outline',
                       icon: 'edit',
                     },
@@ -287,7 +291,7 @@ const DoctorProfileScreen = () => {
                   actions={[
                     {
                       label: 'Add Contact Info',
-                      onPress: () => console.log('Navigate to edit profile'),
+                      onPress: () => router.push('/editProfile'),
                       variant: 'outline',
                       icon: 'edit',
                     },
@@ -330,7 +334,7 @@ const DoctorProfileScreen = () => {
                   actions={[
                     {
                       label: 'Add Qualifications',
-                      onPress: () => console.log('Navigate to edit profile'),
+                      onPress: () => router.push('/editProfile'),
                       variant: 'outline',
                       icon: 'edit',
                     },
@@ -342,7 +346,7 @@ const DoctorProfileScreen = () => {
         </ScrollView>
       </View>
     </GestureHandlerRootView>
-    </>
+    </ErrorBoundary>
   );
 };
 

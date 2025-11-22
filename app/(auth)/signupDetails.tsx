@@ -25,6 +25,7 @@ import { signupDoctor } from '@/newService/config/api/authApi';
 import { useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/newStore';
 import { useDispatch } from 'react-redux';
+import logger from '@/utils/logger';
 
 export default function SignupDetails() {
   const dispatch=useDispatch<AppDispatch>();
@@ -128,7 +129,7 @@ export default function SignupDetails() {
       }
 
     } catch (error) {
-      console.error('Signup error:', error);
+      logger.error('Signup error:', error);
       Toast.show({
         type: 'error',
         text1: 'Signup Failed',
@@ -142,10 +143,10 @@ export default function SignupDetails() {
   const handleVerifyOtp = async (otp: string): Promise<boolean> => {
     try {
       // Replace with your actual OTP verification API
-      console.log(signupData.firstName, signupData, email, password, otp)
+      logger.log('Verifying OTP for signup');
       return await signupDoctor(signupData.firstName, signupData.lastName, email, password, otp);
     } catch (error) {
-      console.error('Verify OTP error:', error);
+      logger.error('Verify OTP error:', error);
       return false;
     }
   };
@@ -167,7 +168,7 @@ export default function SignupDetails() {
         });
       }
     } catch (error) {
-      console.error('Resend OTP error:', error);
+      logger.error('Resend OTP error:', error);
       Toast.show({
         type: 'error',
         text1: 'Failed to send OTP',

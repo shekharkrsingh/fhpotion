@@ -1,5 +1,6 @@
 import { apiConnector } from "@/newService/apiConnector";
 import { reportEndpoints } from "@/newService/config/apiEndpoints";
+import logger from "@/utils/logger";
 
 /**
  * Get doctor reports as PDF
@@ -32,7 +33,7 @@ export const getDoctorReports = async (
 
     throw new Error("Failed to generate report - invalid data received");
   } catch (error: any) {
-    console.error('API Error:', error);
+    logger.error('API Error:', error);
     throw new Error(getErrorMessage(error));
   }
 };
@@ -72,7 +73,7 @@ const validatePdfHeader = (pdfData: Uint8Array): void => {
   if (pdfData.length >= 4) {
     const header = String.fromCharCode(...pdfData.slice(0, 4));
     if (header !== '%PDF') {
-      console.warn('Warning: Response data may not be a valid PDF file');
+      logger.warn('Warning: Response data may not be a valid PDF file');
     }
   }
 };
