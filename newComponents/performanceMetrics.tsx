@@ -25,12 +25,12 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ statistics }) =
 
   const metrics = [
     {
-      label: "Today's Appointments",
+      label: "Last Active Day",
       value: statistics?.lastActiveDayAppointments || 0,
       color: MedicalTheme.colors.text.primary,
     },
     {
-      label: "Treated Today",
+      label: "Treated (Last Active)",
       value: statistics?.lastActiveDayTreatedAppointments || 0,
       color: MedicalTheme.colors.text.primary,
     },
@@ -43,7 +43,7 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ statistics }) =
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Today's Performance</Text>
+      <Text style={styles.title}>Last Active Day Performance</Text>
       <View style={styles.grid}>
         {metrics.map((metric, index) => (
           <View key={index} style={styles.metricItem}>
