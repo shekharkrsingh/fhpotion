@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Image, Animated, Easing } from "react-native";
 import { router } from "expo-router";
 import { useDispatch } from "react-redux";
-import * as SplashScreen from "expo-splash-screen";
+import * as ExpoSplashScreen from "expo-splash-screen";
 import { getProfile } from "@/newService/config/api/profileApi";
 import { MedicalTheme } from "@/newConstants/theme";
 import { fetchDoctorStatistics } from "@/newService/config/api/statisticsApi";
@@ -48,7 +48,7 @@ export default function SplashScreen() {
         
         const hideExpoSplash = async () => {
             try {
-                await SplashScreen.hideAsync();
+                await ExpoSplashScreen.hideAsync();
             } catch (error) {
             }
         };
