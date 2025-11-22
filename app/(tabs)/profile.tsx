@@ -15,6 +15,7 @@ import ProfileSection from '@/newComponents/profileSection';
 import InfoRow from '@/newComponents/infoRow';
 import ListSection from '@/newComponents/listSection';
 import EmptyScreen from '@/newComponents/EmptyScreen';
+import LoadingState from '@/newComponents/loadingState';
 import { AppDispatch, RootState } from '@/newStore';
 import { getProfile } from '@/newService/config/api/profileApi';
 import logger from '@/utils/logger';
@@ -69,20 +70,14 @@ const DoctorProfileScreen = () => {
     return slots.map(slot => `${slot.startTime} - ${slot.endTime}`).join(', ');
   };
 
-  // Show loading state
   if (profileData.isLoading && !refreshing) {
     return (
-      <EmptyScreen
-        type="no-data"
-        title="Loading Profile..."
-        subtitle="Please wait while we load your profile information."
-        showRefresh={false}
-        showSupport={false}
-      />
+      <ErrorBoundary>
+        <LoadingState message="Loading profile..." />
+      </ErrorBoundary>
     );
   }
 
-  // Show error state
   if (error || !profileData.success) {
     return (
       <EmptyScreen

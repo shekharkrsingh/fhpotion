@@ -19,6 +19,8 @@ import BookingFilterButtons from '@/newComponents/bookingFilterButtons';
 import BookingList from '@/newComponents/bookingList';
 import AlertPopup from '@/newComponents/alertPopup';
 import ErrorBoundary from '@/newComponents/ErrorBoundary';
+import LoadingState from '@/newComponents/loadingState';
+import ErrorState from '@/newComponents/errorState';
 import { bookingStyles } from '@/assets/styles/booking.styles';
 import logger from '@/utils/logger';
 import { 
@@ -425,6 +427,35 @@ export default function BookingScreen() {
       fetchData();
     }
   }, []);
+
+  if (isLoading && !refreshing) {
+    return (
+      <ErrorBoundary>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <View style={bookingStyles.container}>
+            <LoadingState message="Loading appointments..." />
+          </View>
+        </GestureHandlerRootView>
+      </ErrorBoundary>
+    );
+  }
+
+  if (error && !refreshing) {
+    return (
+      <ErrorBoundary>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <View style={bookingStyles.container}>
+            <ErrorState 
+              title="Failed to Load Appointments"
+              message={error || "We couldn't load your appointments. Please check your connection and try again."}
+              onRetry={fetchData}
+              retryLabel="Retry"
+            />
+          </View>
+        </GestureHandlerRootView>
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary>

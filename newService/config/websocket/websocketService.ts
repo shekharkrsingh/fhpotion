@@ -72,7 +72,7 @@ class WebsocketService {
 
   private async attemptConnection(): Promise<void> {
     try {
-      const token = await getValidToken();
+      const token = await getValidToken(true);
       if (!token) {
         logger.warn("WebSocket: Authentication token not found or expired");
         this.isConnecting = false;
@@ -107,9 +107,16 @@ class WebsocketService {
                 (frame.headers.message.includes("401") || 
                  frame.headers.message.includes("UNAUTHORIZED") ||
                  frame.headers.message.includes("authentication"))) {
-              logger.error("WebSocket: Authentication failed - redirecting to login");
+              logger.error("WebSocket: Authentication failed");
               this.cleanup();
-              router.replace('/(auth)');
+              const { hasValidToken } = require("@/utils/tokenService");
+              hasValidToken().then((hasToken: boolean) => {
+                if (!hasToken) {
+                  setTimeout(() => {
+                    router.replace('/(auth)');
+                  }, 0);
+                }
+              });
               return;
             }
             this.handleDisconnect();
@@ -124,7 +131,14 @@ class WebsocketService {
             if (event.code === 1008 || event.code === 1002) {
               logger.error("WebSocket: Connection closed due to authentication failure");
               this.cleanup();
-              router.replace('/(auth)');
+              const { hasValidToken } = require("@/utils/tokenService");
+              hasValidToken().then((hasToken: boolean) => {
+                if (!hasToken) {
+                  setTimeout(() => {
+                    router.replace('/(auth)');
+                  }, 0);
+                }
+              });
               return;
             }
             this.handleDisconnect();
@@ -148,7 +162,14 @@ class WebsocketService {
       
       if (errorStatus === 401 || errorMessage.includes("401") || 
           errorMessage.includes("UNAUTHORIZED")) {
-        router.replace('/(auth)');
+        const { hasValidToken } = require("@/utils/tokenService");
+        hasValidToken().then((hasToken: boolean) => {
+          if (!hasToken) {
+            setTimeout(() => {
+              router.replace('/(auth)');
+            }, 0);
+          }
+        });
         return;
       }
       
@@ -197,13 +218,15 @@ class WebsocketService {
         return;
       }
 
-      switch (message.type) {
+      const wsMessage = message as WebSocketMessage;
+
+      switch (wsMessage.type) {
         case 'APPOINTMENT':
-          this.handleAppointmentUpdate(message.payload);
+          this.handleAppointmentUpdate(wsMessage.payload);
           break;
         
         case 'NOTIFICATION':
-          this.handleNotificationUpdate(message.payload);
+          this.handleNotificationUpdate(wsMessage.payload);
           break;
         
         default:

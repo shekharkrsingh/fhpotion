@@ -1,4 +1,3 @@
-// utils/tokenService.ts
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,7 +6,6 @@ import logger from './logger';
 
 const TOKEN_KEY = 'auth_token';
 
-// Check if SecureStore is available (not available on web)
 const isSecureStoreAvailable = async (): Promise<boolean> => {
   try {
     if (Platform.OS === 'web') {
@@ -20,24 +18,16 @@ const isSecureStoreAvailable = async (): Promise<boolean> => {
   }
 };
 
-/**
- * Decodes base64 string to UTF-8 string (cross-platform)
- * Works on web (atob) and React Native
- */
 const decodeBase64 = (base64: string): string => {
   try {
-    // For web platform
     if (typeof atob !== 'undefined') {
       return atob(base64);
     }
     
-    // For React Native - use Buffer if available
     if (typeof Buffer !== 'undefined') {
       return Buffer.from(base64, 'base64').toString('utf-8');
     }
     
-    // Fallback: manual base64 decoding
-    // This is a simple implementation for React Native
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     let result = '';
     let i = 0;
@@ -64,10 +54,6 @@ const decodeBase64 = (base64: string): string => {
   }
 };
 
-/**
- * Decodes JWT token and extracts payload without verification
- * JWT format: header.payload.signature (base64 encoded)
- */
 const decodeJWTPayload = (token: string): any => {
   try {
     const parts = token.split('.');
@@ -75,13 +61,10 @@ const decodeJWTPayload = (token: string): any => {
       return null;
     }
 
-    // Decode payload (second part)
     const payload = parts[1];
-    // Add padding if needed for base64 decoding
     const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
     const paddedBase64 = base64 + '='.repeat((4 - base64.length % 4) % 4);
     
-    // Decode base64 (cross-platform)
     const decodedPayload = decodeBase64(paddedBase64);
     return JSON.parse(decodedPayload);
   } catch (error) {
@@ -90,37 +73,25 @@ const decodeJWTPayload = (token: string): any => {
   }
 };
 
-/**
- * Checks if JWT token is expired
- * @param token JWT token string
- * @returns true if token is expired or invalid, false if valid and not expired
- */
 const isTokenExpired = (token: string): boolean => {
   try {
     const payload = decodeJWTPayload(token);
     if (!payload || !payload.exp) {
-      // If no exp claim, consider it expired for safety
       return true;
     }
 
-    // exp is in seconds since epoch, Date.now() is in milliseconds
     const expirationTime = payload.exp * 1000;
     const currentTime = Date.now();
     
-    // Add 5 minute buffer (300000 ms) to account for clock skew and token expiration during request
-    const bufferTime = 300000; // 5 minutes
+    const bufferTime = 60000;
     
     return currentTime >= (expirationTime - bufferTime);
   } catch (error) {
     logger.error('Error checking token expiration:', error);
-    return true; // Treat errors as expired for safety
+    return true;
   }
 };
 
-/**
- * Gets token from secure storage
- * @returns Token string or null if not found/expired
- */
 export const getToken = async (): Promise<string | null> => {
   try {
     const useSecureStore = await isSecureStoreAvailable();
@@ -129,7 +100,6 @@ export const getToken = async (): Promise<string | null> => {
     if (useSecureStore) {
       token = await SecureStore.getItemAsync(TOKEN_KEY);
     } else {
-      // Fallback to AsyncStorage for web or when SecureStore is unavailable
       token = await AsyncStorage.getItem(TOKEN_KEY);
     }
     
@@ -137,7 +107,6 @@ export const getToken = async (): Promise<string | null> => {
       return null;
     }
 
-    // Check if token is expired
     if (isTokenExpired(token)) {
       logger.warn('Token expired, removing from storage');
       await removeToken();
@@ -151,19 +120,13 @@ export const getToken = async (): Promise<string | null> => {
   }
 };
 
-/**
- * Stores token in secure storage
- * @param token JWT token string
- */
 export const setToken = async (token: string): Promise<boolean> => {
   try {
-    // Validate token format before storing
     if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
       logger.error('Invalid token format');
       return false;
     }
 
-    // Check if token is already expired before storing
     if (isTokenExpired(token)) {
       logger.warn('Attempting to store expired token, rejecting');
       return false;
@@ -174,7 +137,6 @@ export const setToken = async (token: string): Promise<boolean> => {
     if (useSecureStore) {
       await SecureStore.setItemAsync(TOKEN_KEY, token);
     } else {
-      // Fallback to AsyncStorage for web or when SecureStore is unavailable
       await AsyncStorage.setItem(TOKEN_KEY, token);
     }
     
@@ -185,9 +147,6 @@ export const setToken = async (token: string): Promise<boolean> => {
   }
 };
 
-/**
- * Removes token from secure storage
- */
 export const removeToken = async (): Promise<boolean> => {
   try {
     const useSecureStore = await isSecureStoreAvailable();
@@ -195,7 +154,6 @@ export const removeToken = async (): Promise<boolean> => {
     if (useSecureStore) {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
     } else {
-      // Fallback to AsyncStorage for web or when SecureStore is unavailable
       await AsyncStorage.removeItem(TOKEN_KEY);
     }
     
@@ -206,27 +164,19 @@ export const removeToken = async (): Promise<boolean> => {
   }
 };
 
-/**
- * Gets token and handles expiration/removal
- * Redirects to auth if token is missing or expired
- * @returns Token string or null if not found/expired
- */
-export const getValidToken = async (): Promise<string | null> => {
+export const getValidToken = async (skipRedirect = false): Promise<string | null> => {
   const token = await getToken();
   
-  if (!token) {
-    // Token not found or expired, redirect to auth
-    router.replace('/(auth)');
+  if (!token && !skipRedirect) {
+    setTimeout(() => {
+      router.replace('/(auth)');
+    }, 0);
     return null;
   }
 
   return token;
 };
 
-/**
- * Checks if user has a valid token (not expired)
- * @returns true if valid token exists, false otherwise
- */
 export const hasValidToken = async (): Promise<boolean> => {
   const token = await getToken();
   return token !== null;

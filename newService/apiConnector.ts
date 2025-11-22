@@ -32,10 +32,8 @@ axiosInstance.interceptors.request.use(async (config) => {
   const tokenRequired = (config as any).tokenRequired ?? true;
 
   if (tokenRequired) {
-    // getValidToken automatically checks expiration and redirects if invalid
-    const token = await getValidToken();
+    const token = await getValidToken(true);
     if (!token) {
-      // getValidToken already handled redirect, just reject the request
       return Promise.reject({
         response: {
           status: 401,
@@ -53,13 +51,14 @@ axiosInstance.interceptors.request.use(async (config) => {
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // Handle 401 Unauthorized responses (token expired or invalid on backend)
     if (error?.response?.status === 401) {
-      // Token is invalid on backend (expired, revoked, etc.)
-      // Remove token from storage and redirect to auth
-      const { removeToken } = await import("@/utils/tokenService");
-      await removeToken();
-      router.replace('/(auth)');
+      const { hasValidToken, removeToken } = await import("@/utils/tokenService");
+      const hasToken = await hasValidToken();
+      
+      if (!hasToken) {
+        await removeToken();
+        router.replace('/(auth)');
+      }
     }
     return Promise.reject(error);
   }

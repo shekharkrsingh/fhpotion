@@ -44,14 +44,12 @@ export default function index() {
     const [initialized, setInitialized] = useState(false);
     const dispatch = useDispatch<AppDispatch>();
 
-    // Animations - using useRef to prevent recreation on every render
     const logoScale = React.useRef(new Animated.Value(0.8)).current;
     const logoOpacity = React.useRef(new Animated.Value(0)).current;
     const bgColor = React.useRef(new Animated.Value(0)).current;
     const loadingWidth = React.useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        // Start animations
         const animations = Animated.parallel([
             Animated.timing(logoOpacity, {
                 toValue: 1,
@@ -79,43 +77,42 @@ export default function index() {
         
         animations.start();
 
-        // Initialize app
         const initializeApp = async () => {
             try {
-                // Step 1️⃣: Fetch statistics (blocking)
                 const statisticsResult = await dispatch(fetchDoctorStatistics());
 
                 if (statisticsResult.type.endsWith('/fulfilled')) {
-                    // Step 2️⃣: Lazy load other data
                     await Promise.allSettled([
                         dispatch(getProfile()),
                         dispatch(getAppointments()),
                         dispatch(fetchAllNotifications()),
                     ]);
 
-                    // Step 3️⃣: Ensure WebSocket is connected before navigation
                     const socketConnected = await waitForWebSocketConnection();
 
-                    if (socketConnected) {
-                        // WebSocket connected successfully
-                    } else {
-                        // WebSocket connection timeout - proceeding anyway
-                    }
-
-                    // Step 4️⃣: Navigate to dashboard
                     router.replace("/(tabs)/home");
                 } else {
-                    // Statistics failed, go to auth
-                    router.replace("/(auth)");
+                    const { hasValidToken } = await import("@/utils/tokenService");
+                    const hasToken = await hasValidToken();
+                    if (!hasToken) {
+                        router.replace("/(auth)");
+                    } else {
+                        router.replace("/(tabs)/home");
+                    }
                 }
             } catch (error) {
-                router.replace("/(auth)");
+                const { hasValidToken } = await import("@/utils/tokenService");
+                const hasToken = await hasValidToken();
+                if (!hasToken) {
+                    router.replace("/(auth)");
+                } else {
+                    router.replace("/(tabs)/home");
+                }
             }
         };
 
         initializeApp();
 
-        // Cleanup function to stop animations on unmount
         return () => {
             animations.stop();
         };
