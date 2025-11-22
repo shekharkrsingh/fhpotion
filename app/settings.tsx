@@ -1151,15 +1151,17 @@ const SettingsScreen = () => {
 
   return (
     <ErrorBoundary>
-      {/* Reverted: remove explicit StatusBar override */}
       <View style={styles.container}>
-        {/* Reverted header: simple inline header */}
-        <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
+        <View style={styles.header}>
+          <TouchableOpacity 
+            onPress={() => router.back()} 
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.text.primary} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Settings</Text>
-          <View style={{ width: 24 }} />
+          <Text style={styles.headerTitle}>Settings</Text>
+          <View style={styles.headerPlaceholder} />
         </View>
 
       <ScrollView 

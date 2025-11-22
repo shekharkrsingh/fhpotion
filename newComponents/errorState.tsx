@@ -23,15 +23,15 @@ const ErrorState: React.FC<ErrorStateProps> = ({
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{message}</Text>
       {onRetry && (
-        <Pressable 
-          style={({ pressed }) => [
-            styles.retryButton,
-            pressed && { opacity: 0.7 }
-          ]}
-          onPress={onRetry}
-        >
+      <Pressable 
+        style={({ pressed }) => [
+          styles.retryButton,
+          pressed && { opacity: 0.7 }
+        ]}
+        onPress={onRetry}
+      >
           <Text style={styles.retryText}>{retryLabel}</Text>
-        </Pressable>
+      </Pressable>
       )}
     </View>
   );

@@ -1,13 +1,14 @@
 import SafeScreen from "@/newComponents/SafeScreen";
 import { store } from "@/newStore/index";
 import {Stack} from "expo-router";
-import {StatusBar, Platform} from "react-native";
+import {StatusBar, Platform, View} from "react-native";
 import {SafeAreaProvider} from "react-native-safe-area-context";
 import {Provider} from "react-redux";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { websocketAppointment } from "@/newService/config/websocket/websocketService";
 import ErrorBoundary from "@/newComponents/ErrorBoundary";
+import { MedicalTheme } from "@/newConstants/theme";
 
 // Prevent the default Expo splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -21,11 +22,12 @@ export default function RootLayout() {
         });
 
         // Set StatusBar programmatically for both platforms
+        // Using dark-content for light backgrounds (professional medical app)
         if (Platform.OS === 'android') {
-            StatusBar.setBackgroundColor('#000000', true);
+            StatusBar.setBackgroundColor(MedicalTheme.colors.background.primary, true);
             StatusBar.setTranslucent(false);
         }
-        StatusBar.setBarStyle('light-content', true);
+        StatusBar.setBarStyle('dark-content', true);
 
         // Initialize WebSocket service with dispatch and state getter
         // This decouples the service from direct store access
@@ -49,23 +51,21 @@ export default function RootLayout() {
             <Provider store={store}>
                 <SafeAreaProvider>
                     <StatusBar 
-                        barStyle="light-content"
-                        backgroundColor="#000000"
+                        barStyle="dark-content"
+                        backgroundColor={MedicalTheme.colors.background.primary}
                         translucent={false}
                         hidden={false}
                     />
-                    <View style={{ flex: 1, backgroundColor: '#000000' }}>
-                        <SafeScreen>
-                            <Stack
-                                screenOptions={{
-                                    headerShown: false
-                                }}>
-                                <Stack.Screen name="index"/>
-                                <Stack.Screen name="(auth)"/>
-                                <Stack.Screen name="(tabs)"/>
-                            </Stack>
-                        </SafeScreen>
-                    </View>
+                    <SafeScreen>
+                        <Stack
+                            screenOptions={{
+                                headerShown: false
+                            }}>
+                            <Stack.Screen name="index"/>
+                            <Stack.Screen name="(auth)"/>
+                            <Stack.Screen name="(tabs)"/>
+                        </Stack>
+                    </SafeScreen>
                 </SafeAreaProvider>
             </Provider>
         </ErrorBoundary>

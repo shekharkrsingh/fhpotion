@@ -5,7 +5,7 @@ import { MedicalTheme } from '@/newConstants/theme';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: MedicalTheme.colors.background.primary,
+    backgroundColor: MedicalTheme.colors.background.secondary,
   },
   scrollContent: {
     paddingHorizontal: MedicalTheme.spacing[4],

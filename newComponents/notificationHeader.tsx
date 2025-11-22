@@ -1,7 +1,6 @@
 import React from 'react';
-import { Text, Pressable, View, StyleSheet } from 'react-native';
+import { Text, Pressable, View, StyleSheet, Platform } from 'react-native';
 import { MedicalTheme } from '@/newConstants/theme';
-// Reverted: remove ScreenHeader usage
 
 interface NotificationHeaderProps {
   onMarkAllAsRead: () => void;
@@ -13,10 +12,17 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({
   isLoading,
 }) => {
   return (
-    <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Notifications</Text>
-      <Pressable onPress={onMarkAllAsRead} disabled={isLoading}>
-        <Text style={{ color: MedicalTheme.colors.primary[600], opacity: isLoading ? 0.5 : 1 }}>
+    <View style={styles.container}>
+      <Text style={styles.title}>Notifications</Text>
+      <Pressable 
+        onPress={onMarkAllAsRead} 
+        disabled={isLoading}
+        style={({ pressed }) => [
+          styles.markAllButton,
+          pressed && { opacity: 0.7 }
+        ]}
+      >
+        <Text style={[styles.markAllText, { opacity: isLoading ? 0.5 : 1 }]}>
           Mark all as read
         </Text>
       </Pressable>
@@ -24,6 +30,41 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: MedicalTheme.spacing[4],
+    paddingVertical: MedicalTheme.spacing[4],
+    backgroundColor: MedicalTheme.colors.background.primary,
+    borderBottomWidth: 1,
+    borderBottomColor: MedicalTheme.colors.border.light,
+    ...Platform.select({
+      ios: {
+        shadowColor: MedicalTheme.colors.neutral[900],
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  title: {
+    fontSize: MedicalTheme.typography.fontSize['2xl'],
+    fontWeight: MedicalTheme.typography.fontWeight.bold,
+    color: MedicalTheme.colors.text.primary,
+  },
+  markAllButton: {
+    padding: MedicalTheme.spacing[1],
+  },
+  markAllText: {
+    fontSize: MedicalTheme.typography.fontSize.sm,
+    fontWeight: MedicalTheme.typography.fontWeight.medium,
+    color: MedicalTheme.colors.primary[600],
+  },
+});
 
 export default NotificationHeader;
