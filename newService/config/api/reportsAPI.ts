@@ -2,13 +2,6 @@ import { apiConnector } from "@/newService/apiConnector";
 import { reportEndpoints } from "@/newService/config/apiEndpoints";
 import logger from "@/utils/logger";
 
-/**
- * Get doctor reports as PDF
- * @param fromDate - Start date in yyyy-MM-dd format
- * @param toDate - End date in yyyy-MM-dd format (optional, defaults to today)
- * @returns Promise<{ pdfData: Uint8Array; fileName: string }> - PDF data and filename
- * @throws Error if report generation fails or validation fails
- */
 export const getDoctorReports = async (
   fromDate: string,
   toDate?: string,
@@ -34,18 +27,22 @@ export const getDoctorReports = async (
     throw new Error("Failed to generate report - invalid data received");
   } catch (error: any) {
     logger.error('API Error:', error);
+    
+    if (error?.response?.data instanceof ArrayBuffer) {
+      try {
+        const decoder = new TextDecoder();
+        const errorText = decoder.decode(error.response.data);
+        const errorJson = JSON.parse(errorText);
+        throw new Error(errorJson.message || getErrorMessage(error));
+      } catch {
+        throw new Error(getErrorMessage(error));
+      }
+    }
+    
     throw new Error(getErrorMessage(error));
   }
 };
 
-// Helper Functions
-
-/**
- * Validate date format and range
- * @param fromDate - Start date in yyyy-MM-dd format
- * @param toDate - End date in yyyy-MM-dd format (optional)
- * @throws Error if date format is invalid or fromDate is after toDate
- */
 const validateDates = (fromDate: string, toDate?: string): void => {
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   
@@ -65,10 +62,6 @@ const validateDates = (fromDate: string, toDate?: string): void => {
   }
 };
 
-/**
- * Validate PDF file header
- * @param pdfData - PDF file data as Uint8Array
- */
 const validatePdfHeader = (pdfData: Uint8Array): void => {
   if (pdfData.length >= 4) {
     const header = String.fromCharCode(...pdfData.slice(0, 4));
@@ -78,14 +71,12 @@ const validatePdfHeader = (pdfData: Uint8Array): void => {
   }
 };
 
-/**
- * Get user-friendly error message from API error
- * @param error - Error object from API call
- * @returns string - User-friendly error message
- */
 const getErrorMessage = (error: any): string => {
   if (error?.response?.status === 401) {
     return "Unauthorized. Please log in again.";
+  }
+  if (error?.response?.status === 403) {
+    return "Access denied. You don't have permission to access this resource.";
   }
   if (error?.response?.status === 404) {
     return "No report data found for the specified date range.";
