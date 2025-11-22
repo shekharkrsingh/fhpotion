@@ -18,7 +18,11 @@ module.exports = {
         foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff"
       },
-      package: "com.hportion.fhpotion"
+      package: "com.hportion.fhpotion",
+      statusBar: {
+        backgroundColor: "#000000",
+        barStyle: "light-content"
+      }
     },
     web: {
       bundler: "metro",

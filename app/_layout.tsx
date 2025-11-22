@@ -23,6 +23,7 @@ export default function RootLayout() {
         // Set StatusBar programmatically for both platforms
         if (Platform.OS === 'android') {
             StatusBar.setBackgroundColor('#000000', true);
+            StatusBar.setTranslucent(false);
         }
         StatusBar.setBarStyle('light-content', true);
 
@@ -53,16 +54,18 @@ export default function RootLayout() {
                         translucent={false}
                         hidden={false}
                     />
-                    <SafeScreen>
-                        <Stack
-                            screenOptions={{
-                                headerShown: false
-                            }}>
-                            <Stack.Screen name="index"/>
-                            <Stack.Screen name="(auth)"/>
-                            <Stack.Screen name="(tabs)"/>
-                        </Stack>
-                    </SafeScreen>
+                    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+                        <SafeScreen>
+                            <Stack
+                                screenOptions={{
+                                    headerShown: false
+                                }}>
+                                <Stack.Screen name="index"/>
+                                <Stack.Screen name="(auth)"/>
+                                <Stack.Screen name="(tabs)"/>
+                            </Stack>
+                        </SafeScreen>
+                    </View>
                 </SafeAreaProvider>
             </Provider>
         </ErrorBoundary>

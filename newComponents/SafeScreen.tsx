@@ -15,20 +15,28 @@ export default function SafeScreen({
   const inserts = useSafeAreaInsets();
   
   return (
-    <View style={[
-      styles.container, 
-      { 
-        paddingTop: inserts.top,
-        backgroundColor: MedicalTheme.colors.background[backgroundColor]
-      }
-    ]}>
-      {children}
+    <View style={styles.container}>
+      <View style={{ 
+        height: inserts.top, 
+        backgroundColor: '#000000' 
+      }} />
+      <View style={[
+        styles.content, 
+        { 
+          backgroundColor: MedicalTheme.colors.background[backgroundColor]
+        }
+      ]}>
+        {children}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  } as ViewStyle,
+  content: {
     flex: 1,
   } as ViewStyle,
 });
