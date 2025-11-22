@@ -401,7 +401,7 @@ const ReportScreen: React.FC = () => {
         </View>
 
         {/* Custom Date Range */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.customDateSection]}>
           <Text style={styles.sectionTitle}>Custom Date Range</Text>
 
           <View style={styles.inputContainer}>

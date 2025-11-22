@@ -84,7 +84,7 @@ export const reportScreenStyles = StyleSheet.create({
     textAlign: 'center',
   },
   section: {
-    marginBottom: MedicalTheme.spacing[6],
+    marginBottom: MedicalTheme.spacing[8],
   },
   sectionTitle: {
     fontSize: MedicalTheme.typography.fontSize.lg,
@@ -92,12 +92,16 @@ export const reportScreenStyles = StyleSheet.create({
     color: MedicalTheme.colors.text.primary,
     marginBottom: MedicalTheme.spacing[3],
   },
+  customDateSection: {
+    marginTop: MedicalTheme.spacing[4],
+  },
 
   // Quick Actions Styles
   quickActionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: MedicalTheme.spacing[2],
+    marginBottom: MedicalTheme.spacing[2],
   },
   quickActionButton: {
     flex: 1,
