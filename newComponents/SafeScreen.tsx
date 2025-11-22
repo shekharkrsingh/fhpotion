@@ -18,7 +18,7 @@ export default function SafeScreen({
     <View style={styles.container}>
       <View style={{ 
         height: inserts.top, 
-        backgroundColor: MedicalTheme.colors.secondary[500]
+        backgroundColor: MedicalTheme.colors.primary[400]
       }} />
       <View style={[
         styles.content, 

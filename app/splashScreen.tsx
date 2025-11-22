@@ -12,7 +12,6 @@ import { splashScreenStyles } from "@/assets/styles/splashScreen.styles";
 import { waitForWebSocketConnection } from "@/utils/websocketUtils";
 
 export default function SplashScreen() {
-    const [initialized, setInitialized] = useState(false);
     const dispatch = useDispatch<AppDispatch>();
 
     const logoScale = React.useRef(new Animated.Value(0.8)).current;
