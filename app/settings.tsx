@@ -614,7 +614,9 @@ const SettingsScreen = () => {
           />
         </View>
         <View style={styles.modalTitleContainer}>
-          <Text style={styles.modalTitle}>Update {getSectionTitle(activeModal!)}</Text>
+          <Text style={styles.modalTitle}>
+            {activeModal === 'support' ? 'Contact Support' : `Update ${getSectionTitle(activeModal!)}`}
+          </Text>
         </View>
       </View>
       <TouchableOpacity style={styles.modalCloseButton} onPress={closeModal}>
