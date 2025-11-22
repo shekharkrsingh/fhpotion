@@ -8,6 +8,7 @@ import { MedicalTheme } from '@/newConstants/theme';
 interface Statistics {
   lastActiveDayAppointments?: number;
   lastActiveDayTreatedAppointments?: number;
+  lastActiveDayPercentageTreatedAppointments?: number; // Added to match backend DTO
 }
 
 interface PerformanceMetricsProps {
@@ -15,18 +16,21 @@ interface PerformanceMetricsProps {
 }
 
 const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ statistics }) => {
-  const successRate = statistics?.lastActiveDayAppointments && statistics.lastActiveDayTreatedAppointments
+  // Use backend's calculated percentage if available, otherwise calculate locally
+  const successRate = statistics?.lastActiveDayPercentageTreatedAppointments !== undefined
+    ? Math.round(statistics.lastActiveDayPercentageTreatedAppointments) + "%"
+    : statistics?.lastActiveDayAppointments && statistics.lastActiveDayTreatedAppointments
     ? Math.round((statistics.lastActiveDayTreatedAppointments / statistics.lastActiveDayAppointments) * 100) + "%"
     : "0%";
 
   const metrics = [
     {
-      label: "Today's Appointments",
+      label: "Last Active Day",
       value: statistics?.lastActiveDayAppointments || 0,
       color: MedicalTheme.colors.text.primary,
     },
     {
-      label: "Treated Today",
+      label: "Treated (Last Active)",
       value: statistics?.lastActiveDayTreatedAppointments || 0,
       color: MedicalTheme.colors.text.primary,
     },
@@ -39,7 +43,7 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ statistics }) =
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Today's Performance</Text>
+      <Text style={styles.title}>Last Active Day Performance</Text>
       <View style={styles.grid}>
         {metrics.map((metric, index) => (
           <View key={index} style={styles.metricItem}>

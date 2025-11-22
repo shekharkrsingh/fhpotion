@@ -1,9 +1,11 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import { View, ScrollView, Text, RefreshControl } from 'react-native';
+import { View, ScrollView, Text, RefreshControl, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { router } from 'expo-router';
 
 import { profileStyles } from '@/assets/styles/profile.styles';
 import { MedicalTheme } from '@/newConstants/theme';
@@ -13,19 +15,27 @@ import ProfileSection from '@/newComponents/profileSection';
 import InfoRow from '@/newComponents/infoRow';
 import ListSection from '@/newComponents/listSection';
 import EmptyScreen from '@/newComponents/EmptyScreen';
+import LoadingState from '@/newComponents/loadingState';
 import { AppDispatch, RootState } from '@/newStore';
 import { getProfile } from '@/newService/config/api/profileApi';
+import logger from '@/utils/logger';
+import ErrorBoundary from '@/newComponents/ErrorBoundary';
 
 const DoctorProfileScreen = () => {
   const profileData = useSelector((state: RootState) => state.profile);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
+  const hasAttemptedInitialLoad = React.useRef(false);
 
-  // Load profile data on component mount
+  // Load profile data on component mount - ONLY ONCE
   useEffect(() => {
-    loadProfileData();
-  }, []);
+    // Only attempt initial load once - prevents infinite loops on API failures
+    if (!hasAttemptedInitialLoad.current) {
+      hasAttemptedInitialLoad.current = true;
+      loadProfileData();
+    }
+  }, []); // Empty deps - only run once on mount
 
   const loadProfileData = async () => {
     try {
@@ -33,7 +43,7 @@ const DoctorProfileScreen = () => {
        await dispatch(getProfile());
     } catch (err) {
       setError('Failed to load profile data');
-      console.error('Failed to load profile:', err);
+      logger.error('Failed to load profile:', err);
     }
   };
 
@@ -41,16 +51,16 @@ const DoctorProfileScreen = () => {
     try {
       setRefreshing(true);
       setError(null);
-      await getProfile();
+      await dispatch(getProfile()); // Fixed: Use dispatch instead of direct function call
     } catch (err) {
       setError('Failed to refresh profile data');
-      console.error('Failed to refresh profile:', err);
+      logger.error('Failed to refresh profile:', err);
     } finally {
       setRefreshing(false);
     }
-  }, [dispatch]);
+  }, [dispatch]); // dispatch is stable from Redux
 
-  const formatAvailableDays = (days: string[]) => {
+  const formatAvailableDays = (days: string[] | null | undefined) => {
     if (!days || days.length === 0) return 'Not specified';
     return days.join(', ');
   };
@@ -60,20 +70,14 @@ const DoctorProfileScreen = () => {
     return slots.map(slot => `${slot.startTime} - ${slot.endTime}`).join(', ');
   };
 
-  // Show loading state
   if (profileData.isLoading && !refreshing) {
     return (
-      <EmptyScreen
-        type="no-data"
-        title="Loading Profile..."
-        subtitle="Please wait while we load your profile information."
-        showRefresh={false}
-        showSupport={false}
-      />
+      <ErrorBoundary>
+        <LoadingState message="Loading profile..." />
+      </ErrorBoundary>
     );
   }
 
-  // Show error state
   if (error || !profileData.success) {
     return (
       <EmptyScreen
@@ -92,7 +96,14 @@ const DoctorProfileScreen = () => {
           },
           {
             label: 'Restart App',
-            onPress: () => window.location.reload(),
+            onPress: async () => {
+              if (Platform.OS === 'web') {
+                window.location.reload();
+              } else {
+                // For React Native, navigate to splash screen to reinitialize
+                router.replace('/splashScreen');
+              }
+            },
             variant: 'outline',
             icon: 'restart-alt',
           },
@@ -120,7 +131,9 @@ const DoctorProfileScreen = () => {
           },
           {
             label: 'Setup Profile',
-            onPress: () => console.log('Navigate to profile setup'),
+            onPress: () => {
+              // TODO: Navigate to profile setup
+            },
             variant: 'secondary',
             icon: 'person-add',
           },
@@ -130,8 +143,10 @@ const DoctorProfileScreen = () => {
   }
 
   return (
-    <GestureHandlerRootView style={profileStyles.container}>
-      <View style={profileStyles.container}>
+    <ErrorBoundary>
+      {/* Reverted: remove explicit StatusBar override */}
+      <GestureHandlerRootView style={profileStyles.container}>
+        <View style={profileStyles.container}>
         <ScrollView 
           showsVerticalScrollIndicator={false} 
           contentContainerStyle={profileStyles.scrollContainer}
@@ -181,7 +196,7 @@ const DoctorProfileScreen = () => {
                   actions={[
                     {
                       label: 'Add Summary',
-                      onPress: () => console.log('Navigate to edit profile'),
+                      onPress: () => router.push('/editProfile'),
                       variant: 'outline',
                       icon: 'edit',
                     },
@@ -214,7 +229,7 @@ const DoctorProfileScreen = () => {
                   actions={[
                     {
                       label: 'Add Biography',
-                      onPress: () => console.log('Navigate to edit profile'),
+                      onPress: () => router.push('/editProfile'),
                       variant: 'outline',
                       icon: 'edit',
                     },
@@ -271,7 +286,7 @@ const DoctorProfileScreen = () => {
                   actions={[
                     {
                       label: 'Add Contact Info',
-                      onPress: () => console.log('Navigate to edit profile'),
+                      onPress: () => router.push('/editProfile'),
                       variant: 'outline',
                       icon: 'edit',
                     },
@@ -314,7 +329,7 @@ const DoctorProfileScreen = () => {
                   actions={[
                     {
                       label: 'Add Qualifications',
-                      onPress: () => console.log('Navigate to edit profile'),
+                      onPress: () => router.push('/editProfile'),
                       variant: 'outline',
                       icon: 'edit',
                     },
@@ -326,6 +341,7 @@ const DoctorProfileScreen = () => {
         </ScrollView>
       </View>
     </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 };
 

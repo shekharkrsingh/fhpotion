@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { appointmentCardStyles } from '@/assets/styles/appointmentCard.styles';
 import { MedicalTheme } from '@/newConstants/theme';
@@ -70,14 +70,15 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({
       </View>
     
       <View style={appointmentCardStyles.actionsContainer}>
-        <TouchableOpacity
-          style={[
+        <Pressable
+          style={({ pressed }) => [
             appointmentCardStyles.actionButton,
             { 
               backgroundColor: item.paymentStatus 
                 ? MedicalTheme.colors.neutral[100]
                 : MedicalTheme.colors.primary[50],
-            }
+            },
+            pressed && { opacity: 0.7 }
           ]}
           onPress={onTogglePaymentStatus}
         >
@@ -91,7 +92,7 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({
           ]}>
             {item.paymentStatus ? 'Mark as Unpaid' : 'Mark as Paid'}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );

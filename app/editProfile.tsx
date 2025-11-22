@@ -47,7 +47,7 @@ const ProfileSettingsScreen = () => {
     street: profileData.address?.street || '',
     city: profileData.address?.city || '',
     state: profileData.address?.state || '',
-    postalCode: profileData.address?.postalCode || '',
+    pincode: profileData.address?.pincode || '',
     country: profileData.address?.country || '',
     
     // Availability
@@ -246,7 +246,7 @@ const ProfileSettingsScreen = () => {
       city: () => !value.trim() ? 'City is required' : '',
       state: () => !value.trim() ? 'State is required' : '',
       country: () => !value.trim() ? 'Country is required' : '',
-      postalCode: () => !value.trim() ? 'Postal code is required' : '',
+      pincode: () => !value.trim() ? 'Pincode is required' : '',
       availability: () => formData.selectedDays.length === 0 ? 'Please select at least one day' : formData.timeSlots.length === 0 ? 'Please add at least one time slot' : ''
     };
 
@@ -288,7 +288,7 @@ const ProfileSettingsScreen = () => {
         updatePayload = { clinicAddress: formData.clinicAddress };
         break;
       case 'address':
-        const addressFields = ['street', 'city', 'state', 'postalCode', 'country'];
+        const addressFields = ['street', 'city', 'state', 'pincode', 'country'];
         for (const field of addressFields) {
           const error = validateField(field, formData[field as keyof typeof formData]);
           if (error) {
@@ -301,7 +301,7 @@ const ProfileSettingsScreen = () => {
             street: formData.street,
             city: formData.city,
             state: formData.state,
-            postalCode: formData.postalCode,
+            pincode: formData.pincode,
             country: formData.country
           }
         };
@@ -328,8 +328,8 @@ const ProfileSettingsScreen = () => {
 
     setIsLoading(true);
     try {
-      const success =dispatch(updateProfile( updatePayload));
-      if (success) {
+      const result = await dispatch(updateProfile(updatePayload));
+      if (result.type.endsWith('/fulfilled')) {
         Toast.show({
           type: 'success',
           text1: 'Success',
@@ -796,11 +796,11 @@ const ProfileSettingsScreen = () => {
 
           <View style={styles.row}>
             <View style={[styles.inputGroup, styles.flex1]}>
-              <Text style={styles.inputLabel}>Postal Code</Text>
+              <Text style={styles.inputLabel}>Pincode</Text>
               {renderInput(
-                formData.postalCode,
-                (text) => updateFormData({ postalCode: text }),
-                "Postal Code",
+                formData.pincode,
+                (text) => updateFormData({ pincode: text }),
+                "Pincode",
                 false,
                 'numeric'
               )}
@@ -1262,8 +1262,9 @@ const ProfileSettingsScreen = () => {
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={closeModal}
+        accessible={false}
       >
-        <View style={styles.modalContainer}>
+        <View style={styles.modalContainer} accessible={false} importantForAccessibility="no-hide-descendants">
           {renderModalHeader()}
           {renderModalContent()}
         </View>

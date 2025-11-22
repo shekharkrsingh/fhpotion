@@ -1,29 +1,45 @@
-// utils/websocketUtils.ts
 import { websocketAppointment } from "@/newService/config/websocket/websocketService";
 
-/** 
- * Waits for WebSocket connection (max wait = timeout ms)
- * Returns true if connected, false if timeout or failure.
- */
 export const waitForWebSocketConnection = async (timeout = 5000): Promise<boolean> => {
     return new Promise(async (resolve) => {
+        let interval: NodeJS.Timeout | null = null;
+        let resolved = false;
+        
+        const cleanup = () => {
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
+            }
+        };
+        
+        const safeResolve = (value: boolean) => {
+            if (!resolved) {
+                resolved = true;
+                cleanup();
+                resolve(value);
+            }
+        };
+        
         try {
             await websocketAppointment.connect();
+            
+            if (websocketAppointment.connected) {
+                safeResolve(true);
+                return;
+            }
 
             const startTime = Date.now();
-            const interval = setInterval(() => {
-                const isConnected = (websocketAppointment as any).stompClient?.connected;
-
-                if (isConnected) {
-                    clearInterval(interval);
-                    resolve(true);
+            interval = setInterval(() => {
+                if (resolved) return;
+                
+                if (websocketAppointment.connected) {
+                    safeResolve(true);
                 } else if (Date.now() - startTime > timeout) {
-                    clearInterval(interval);
-                    resolve(false);
+                    safeResolve(false);
                 }
             }, 200);
         } catch {
-            resolve(false);
+            safeResolve(false);
         }
     });
 };

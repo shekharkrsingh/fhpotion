@@ -1,10 +1,12 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
 
 export default function terms() {
-  return (
-    <View>
-      <Text>terms</Text>
-    </View>
-  )
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/terms');
+  }, []);
+
+  return null;
 }

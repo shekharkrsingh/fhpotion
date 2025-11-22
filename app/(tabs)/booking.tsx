@@ -1,6 +1,6 @@
-// booking.tsx - Fixed appointment lookup
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSelector, useDispatch } from 'react-redux';
 import Toast from 'react-native-toast-message';
@@ -18,7 +18,11 @@ import BookingHeader from '@/newComponents/bookingHeader';
 import BookingFilterButtons from '@/newComponents/bookingFilterButtons';
 import BookingList from '@/newComponents/bookingList';
 import AlertPopup from '@/newComponents/alertPopup';
+import ErrorBoundary from '@/newComponents/ErrorBoundary';
+import LoadingState from '@/newComponents/loadingState';
+import ErrorState from '@/newComponents/errorState';
 import { bookingStyles } from '@/assets/styles/booking.styles';
+import logger from '@/utils/logger';
 import { 
   canMarkAvailable, 
   canMarkUnavailable, 
@@ -34,7 +38,7 @@ import {
 } from '@/utils/bookingActionHelpers';
 
 export default function BookingScreen() {
-  const { appointments, loading, error, success } = useSelector((state: RootState) => state.appointments);
+  const { appointments, isLoading, error, success } = useSelector((state: RootState) => state.appointments);
   const dispatch = useDispatch<AppDispatch>();
   
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -43,7 +47,6 @@ export default function BookingScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkAction, setSelectedMarkAction] = useState<'treated' | 'emergency' | 'cancel' | 'edit'>('treated');
 
-  // Single Confirmation Popup State
   const [confirmationPopupVisible, setConfirmationPopupVisible] = useState(false);
   const [confirmationData, setConfirmationData] = useState<{
     message: string;
@@ -52,64 +55,9 @@ export default function BookingScreen() {
   } | null>(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const hasAttemptedInitialLoad = React.useRef(false);
 
-  // Helper function to find appointment safely
-  const findAppointment = (id: string) => {
-    return Array.isArray(appointments) 
-      ? appointments.find(item => item.appointmentId === id)
-      : undefined;
-  };
-
-  const fetchData = async () => {
-    try {
-      await dispatch(getAppointments());
-      await websocketAppointment.connect();
-    } catch (error) {
-      console.error('Failed to fetch appointments:', error);
-      showToast('Failed to fetch appointments. Please try again.', 'error');
-    }
-  };
-
-  const updateAppointmentHandler = async (id: string, change: any) => {
-    try {
-      // If editing, ensure status becomes ACCEPTED
-      const updateData = selectedMarkAction === 'edit' 
-        ? { ...change, status: "ACCEPTED" as const }
-        : change;
-        
-      const result = await dispatch(updateAppointment(id, updateData));
-      if (result) {
-        return true;
-      } else {
-        throw new Error('Update failed');
-      }
-    } catch (error) {
-      console.error('Failed to update appointment:', error);
-      // State is automatically reverted by the API error handler
-      throw error;
-    }
-  };
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchData();
-    setRefreshing(false);
-  }, [dispatch]);
-
-  const handleSearch = (query: string) => setSearchQuery(query);
-
-  const handleMarkAction = (action: 'treated' | 'emergency' | 'cancel' | 'edit') => {
-    setSelectedMarkAction(action);
-    // Reset filter when changing mark action
-    setAvailabilityFilter('all');
-    
-    if (action === 'emergency') {
-      showToast('Emergency protocol activated!', 'info');
-    }
-  };
-
-  // Toast helper function
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     Toast.show({
       type: type,
       text1: type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Info',
@@ -117,11 +65,61 @@ export default function BookingScreen() {
       position: 'bottom',
       visibilityTime: 3000,
     });
+  }, []);
+
+  const findAppointment = (id: string) => {
+    return Array.isArray(appointments) 
+      ? appointments.find(item => item.appointmentId === id)
+      : undefined;
   };
 
-  // Single confirmation popup handler
+  const fetchData = useCallback(async () => {
+    try {
+      await dispatch(getAppointments());
+      if (!websocketAppointment.connected) {
+        await websocketAppointment.connect();
+      }
+    } catch (error) {
+      logger.error('Failed to fetch appointments:', error);
+      showToast('Failed to fetch appointments. Please try again.', 'error');
+    }
+  }, [dispatch, showToast]);
+
+  const updateAppointmentHandler = async (id: string, change: any) => {
+    try {
+      const updateData = selectedMarkAction === 'edit' 
+        ? { ...change, status: "ACCEPTED" as const }
+        : change;
+        
+      await dispatch(updateAppointment({ appointmentId: id, updateData })).unwrap();
+      return true;
+    } catch (error) {
+      logger.error('Failed to update appointment:', error);
+      throw error;
+    }
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchData]);
+
+  const handleSearch = (query: string) => setSearchQuery(query);
+
+  const handleMarkAction = (action: 'treated' | 'emergency' | 'cancel' | 'edit') => {
+    setSelectedMarkAction(action);
+    setAvailabilityFilter('all');
+    
+    if (action === 'emergency') {
+      showToast('Emergency protocol activated!', 'info');
+    }
+  };
+
   const showConfirmation = (message: string, action: () => Promise<void>, appointmentId?: string) => {
-    // Prevent multiple popups
     if (confirmationPopupVisible) return;
     
     setConfirmationData({ message, action, appointmentId });
@@ -136,23 +134,20 @@ export default function BookingScreen() {
       try {
         await confirmationData.action();
       } catch (error) {
-        console.error('Error in confirmation action:', error);
+        logger.error('Error in confirmation action:', error);
       } finally {
         setIsProcessing(false);
       }
     }
     
-    // Clear confirmation data after handling
     setConfirmationData(null);
   };
 
-  // Enhanced filtering logic
   const filteredData = useMemo(() => {
     const safeAppointments = Array.isArray(appointments) ? appointments : [];
     
     let filtered = [...safeAppointments];
     
-    // Apply filters based on selected mark action and availability filter
     switch (selectedMarkAction) {
       case 'treated':
         switch (availabilityFilter) {
@@ -207,7 +202,6 @@ export default function BookingScreen() {
             );
             break;
           case 'all':
-            // Include all appointments in cancel mode
             break;
         }
         break;
@@ -218,13 +212,11 @@ export default function BookingScreen() {
             filtered = filtered.filter(item => !item.treated);
             break;
           case 'all':
-            // Include all appointments in edit mode
             break;
         }
         break;
     }
 
-    // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(item => 
         item.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -232,11 +224,9 @@ export default function BookingScreen() {
       );
     }
 
-    // Apply emergency sorting (only for ACCEPTED emergency appointments)
     return sortAppointments(filtered);
   }, [appointments, selectedMarkAction, availabilityFilter, searchQuery]);
 
-  // Action handlers with validation - FIXED APPOINTMENT LOOKUP
   const toggleAvailability = async (id: string, value: boolean) => {
     const appointment = findAppointment(id);
     if (!appointment) {
@@ -259,7 +249,6 @@ export default function BookingScreen() {
             await updateAppointmentHandler(id, { availableAtClinic: value });
             showToast(`Appointment ${value ? 'marked as available' : 'marked as unavailable'}`, 'success');
           } catch (error) {
-            // Error handled in update function
           }
         },
         id
@@ -269,7 +258,6 @@ export default function BookingScreen() {
         await updateAppointmentHandler(id, { availableAtClinic: value });
         showToast(`Appointment ${value ? 'marked as available' : 'marked as unavailable'}`, 'success');
       } catch (error) {
-        // Error handled in update function
       }
     }
   };
@@ -297,7 +285,6 @@ export default function BookingScreen() {
             await updateAppointmentHandler(id, { paymentStatus: newPaymentStatus });
             showToast(`Payment status ${newPaymentStatus ? 'marked as paid' : 'marked as unpaid'}`, 'success');
           } catch (error) {
-            // Error handled in update function
           }
         },
         id
@@ -307,13 +294,12 @@ export default function BookingScreen() {
         await updateAppointmentHandler(id, { paymentStatus: newPaymentStatus });
         showToast(`Payment status ${newPaymentStatus ? 'marked as paid' : 'marked as unpaid'}`, 'success');
       } catch (error) {
-        // Error handled in update function
       }
     }
   };
 
   const toggleTreatedStatus = async (id: string) => {
-    console.log(id)
+    logger.log('Toggling treated status for appointment:', id);
     const appointment = findAppointment(id);
     if (!appointment) {
       showToast("Appointment not found.", 'error');
@@ -336,7 +322,6 @@ export default function BookingScreen() {
             await updateAppointmentHandler(id, { treated: newTreatedStatus });
             showToast(`Appointment ${newTreatedStatus ? 'marked as treated' : 'marked as untreated'}`, 'success');
           } catch (error) {
-            // Error handled in update function
           }
         },
         id
@@ -346,7 +331,6 @@ export default function BookingScreen() {
         await updateAppointmentHandler(id, { treated: newTreatedStatus });
         showToast(`Appointment ${newTreatedStatus ? 'marked as treated' : 'marked as untreated'}`, 'success');
       } catch (error) {
-        // Error handled in update function
       }
     }
   };
@@ -370,14 +354,10 @@ export default function BookingScreen() {
       `Are you sure you want to ${newEmergencyStatus ? 'mark as emergency' : 'remove emergency status'}?`,
       async () => {
         try {
-          const result = await dispatch(updateEmergencyStatus(id, newEmergencyStatus));
-          if (result) {
-            showToast(`Appointment ${newEmergencyStatus ? 'marked as emergency' : 'emergency status removed'}`, 'success');
-          } else {
-            showToast(`Failed to ${newEmergencyStatus ? 'mark as emergency' : 'remove emergency status'}.`, 'error');
-          }
+          await dispatch(updateEmergencyStatus({ appointmentId: id, isEmergency: newEmergencyStatus })).unwrap();
+          showToast(`Appointment ${newEmergencyStatus ? 'marked as emergency' : 'emergency status removed'}`, 'success');
         } catch (error) {
-          console.error('Failed to update emergency status:', error);
+          logger.error('Failed to update emergency status:', error);
           showToast(`Failed to ${newEmergencyStatus ? 'mark as emergency' : 'remove emergency status'}.`, 'error');
         }
       },
@@ -403,14 +383,10 @@ export default function BookingScreen() {
       'Are you sure you want to cancel this appointment?',
       async () => {
         try {
-          const result = await dispatch(cancelAppointment(id));
-          if (result) {
-            showToast('Appointment cancelled successfully.', 'success');
-          } else {
-            showToast('Failed to cancel appointment.', 'error');
-          }
+          await dispatch(cancelAppointment(id)).unwrap();
+          showToast('Appointment cancelled successfully.', 'success');
         } catch (error) {
-          console.error('Failed to cancel appointment:', error);
+          logger.error('Failed to cancel appointment:', error);
           showToast('Failed to cancel appointment.', 'error');
         }
       },
@@ -439,7 +415,6 @@ export default function BookingScreen() {
           await updateAppointmentHandler(id, updates);
           showToast('Appointment updated successfully.', 'success');
         } catch (error) {
-          // Error handled in update function
         }
       },
       id
@@ -447,12 +422,45 @@ export default function BookingScreen() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, [dispatch]);
+    if (!hasAttemptedInitialLoad.current) {
+      hasAttemptedInitialLoad.current = true;
+      fetchData();
+    }
+  }, []);
+
+  if (isLoading && !refreshing) {
+    return (
+      <ErrorBoundary>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <View style={bookingStyles.container}>
+            <LoadingState message="Loading appointments..." />
+          </View>
+        </GestureHandlerRootView>
+      </ErrorBoundary>
+    );
+  }
+
+  if (error && !refreshing) {
+    return (
+      <ErrorBoundary>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <View style={bookingStyles.container}>
+            <ErrorState 
+              title="Failed to Load Appointments"
+              message={error || "We couldn't load your appointments. Please check your connection and try again."}
+              onRetry={fetchData}
+              retryLabel="Retry"
+            />
+          </View>
+        </GestureHandlerRootView>
+      </ErrorBoundary>
+    );
+  }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={bookingStyles.container}>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={bookingStyles.container}>
         <BookingHeader 
           onSearch={handleSearch}
           onMarkAction={handleMarkAction}
@@ -479,7 +487,6 @@ export default function BookingScreen() {
           selectedMarkAction={selectedMarkAction}
         />
 
-        {/* Single Confirmation Popup */}
         <AlertPopup
           message={confirmationData?.message || ''}
           visible={confirmationPopupVisible}
@@ -492,9 +499,9 @@ export default function BookingScreen() {
           showIcon={true}
         />
 
-        {/* Toast Component */}
         <Toast />
       </View>
     </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

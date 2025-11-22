@@ -22,6 +22,7 @@ import { styles } from '@/assets/styles/signup.style';
 import { MedicalTheme } from '@/newConstants/theme';
 import { setSignupData } from '@/newStore/slices/signupSlice';
 import { AppDispatch } from '@/newStore';
+import logger from '@/utils/logger';
 
 export default function Signup() {
     const [firstName, setFirstName] = useState("");
@@ -88,7 +89,7 @@ export default function Signup() {
             }, 1000);
 
         } catch (error) {
-            console.error("Signup Error:", error);
+            logger.error("Signup Error:", error);
             Toast.show({
                 type: 'error',
                 text1: 'Signup Failed',

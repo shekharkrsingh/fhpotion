@@ -3,9 +3,10 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 
@@ -126,14 +127,30 @@ const EmptyScreen: React.FC<EmptyScreenProps> = ({
   const defaultActions: ActionButton[] = [
     {
       label: refreshing ? 'Refreshing...' : 'Refresh',
-      onPress: onRefresh || (() => window.location.reload()),
+      onPress: onRefresh || (() => {
+        if (Platform.OS === 'web') {
+          window.location.reload();
+        } else {
+          // For React Native, refresh is handled by onRefresh prop
+          // If no onRefresh provided, do nothing (better than crashing)
+        }
+      }),
       variant: 'primary',
       icon: 'refresh',
       disabled: refreshing,
     },
     {
       label: 'Check Connection',
-      onPress: () => window.location.reload(),
+      onPress: () => {
+        if (Platform.OS === 'web') {
+          window.location.reload();
+        } else {
+          // For React Native, trigger refresh if available
+          if (onRefresh) {
+            onRefresh();
+          }
+        }
+      },
       variant: 'secondary',
       icon: 'wifi',
     },
@@ -252,9 +269,12 @@ const EmptyScreen: React.FC<EmptyScreenProps> = ({
           {displayActions.length > 0 && (
             <View style={styles.actionButtons}>
               {displayActions.map((action, index) => (
-                <TouchableOpacity
+                <Pressable
                   key={index}
-                  style={getButtonStyle(action.variant)}
+                  style={({ pressed }) => [
+                    getButtonStyle(action.variant),
+                    pressed && { opacity: 0.7 }
+                  ]}
                   onPress={action.onPress}
                   disabled={action.disabled}
                 >
@@ -262,7 +282,7 @@ const EmptyScreen: React.FC<EmptyScreenProps> = ({
                   <Text style={getButtonTextStyle(action.variant)}>
                     {action.label}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </View>
           )}

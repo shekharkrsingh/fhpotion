@@ -8,16 +8,21 @@ import {
   ActivityIndicator,
   Modal
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/newStore/rootReducer';
 import { router } from 'expo-router';
 
 import { changeDoctorPassword, changeDoctorEmail, sendOtp, signOutDoctor } from '@/newService/config/api/authApi';
+import { createSupportTicket } from '@/newService/config/api/supportApi';
 import { MedicalTheme } from '@/newConstants/theme';
 import { styles } from '@/assets/styles/settings.styles';
 import AlertPopup from '@/newComponents/alertPopup';
 import OTPVerificationPopup from '@/newComponents/OTPVerificationPopup';
+import logger from '@/utils/logger';
+import ErrorBoundary from '@/newComponents/ErrorBoundary';
+// Reverted: remove ScreenHeader usage
 
 const SettingsScreen = () => {
   const [activeModal, setActiveModal] = useState<string | null>(null);
@@ -180,12 +185,22 @@ const SettingsScreen = () => {
 
     if (!formData.supportSubject.trim()) {
       newErrors.supportSubject = 'Subject is required';
+    } else if (formData.supportSubject.trim().length < 3) {
+      newErrors.supportSubject = 'Subject must be at least 3 characters';
+    } else if (formData.supportSubject.trim().length > 200) {
+      newErrors.supportSubject = 'Subject must not exceed 200 characters';
     }
 
     if (!formData.supportMessage.trim()) {
       newErrors.supportMessage = 'Message is required';
-    } else if (formData.supportMessage.length < 10) {
+    } else if (formData.supportMessage.trim().length < 10) {
       newErrors.supportMessage = 'Please provide more details (minimum 10 characters)';
+    } else if (formData.supportMessage.trim().length > 5000) {
+      newErrors.supportMessage = 'Message must not exceed 5000 characters';
+    }
+
+    if (!formData.supportCategory) {
+      newErrors.support = 'Category is required';
     }
 
     setErrors(newErrors);
@@ -368,25 +383,17 @@ const SettingsScreen = () => {
 
     setIsLoading(true);
     try {
-      const ticketId = `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-      const doctorId = profileData.doctorId || 'N/A';
-      const doctorEmail = formData.currentEmail;
-
-      const supportData = {
-        ticketId,
-        doctorId,
-        doctorEmail,
-        subject: formData.supportSubject,
-        message: formData.supportMessage,
+      const supportRequest = {
+        subject: formData.supportSubject.trim(),
+        message: formData.supportMessage.trim(),
         category: formData.supportCategory,
-        timestamp: new Date().toISOString()
       };
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const ticket = await createSupportTicket(supportRequest);
       
       showAlert({
         title: 'Support Ticket Created',
-        message: `Your support request has been submitted successfully!\n\nTicket ID: ${ticketId}\nWe'll get back to you within 24 hours.`,
+        message: `Your support request has been submitted successfully!\n\nTicket ID: ${ticket.ticketId}\nWe'll get back to you within 24 hours.`,
         variant: 'success',
         onConfirm: () => {
           updateFormData({ supportSubject: '', supportMessage: '', supportCategory: 'general' });
@@ -394,10 +401,14 @@ const SettingsScreen = () => {
           closeModal();
         }
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      logger.error('Error submitting support ticket:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to submit support request. Please try again.';
       showAlert({
         title: 'Error',
-        message: 'Failed to submit support request. Please try again.',
+        message: errorMessage,
         variant: 'error'
       });
     } finally {
@@ -408,12 +419,12 @@ const SettingsScreen = () => {
   const handleSignout = async () => {
     setIsLoading(true);
     try {
-      console.log("Direct signout started");
+      logger.log("Direct signout started");
       await signOutDoctor();
       closeModal();
       router.replace('/(auth)');
     } catch (error) {
-      console.error("Signout error:", error);
+      logger.error("Signout error:", error);
       showAlert({
         title: 'Error',
         message: 'Failed to sign out.',
@@ -464,21 +475,11 @@ const SettingsScreen = () => {
   };
 
   const handleNavigateToTerms = () => {
-    // Placeholder for terms navigation
-    showAlert({
-      title: 'Terms & Conditions',
-      message: 'Terms and conditions screen will be implemented soon.',
-      variant: 'default'
-    });
+    router.push('/terms');
   };
 
   const handleNavigateToPrivacy = () => {
-    // Placeholder for privacy navigation
-    showAlert({
-      title: 'Privacy Policy',
-      message: 'Privacy policy screen will be implemented soon.',
-      variant: 'default'
-    });
+    router.push('/privacy');
   };
 
   // UI Components
@@ -613,7 +614,9 @@ const SettingsScreen = () => {
           />
         </View>
         <View style={styles.modalTitleContainer}>
-          <Text style={styles.modalTitle}>Update {getSectionTitle(activeModal!)}</Text>
+          <Text style={styles.modalTitle}>
+            {activeModal === 'support' ? 'Contact Support' : `Update ${getSectionTitle(activeModal!)}`}
+          </Text>
         </View>
       </View>
       <TouchableOpacity style={styles.modalCloseButton} onPress={closeModal}>
@@ -970,7 +973,7 @@ const SettingsScreen = () => {
           ) : (
             <>
               <Ionicons name="send" size={20} color="#fff" />
-              <Text style={styles.buttonText}>Submit Support Request</Text>
+              <Text style={styles.buttonText}>Submit Request</Text>
             </>
           )}
         </TouchableOpacity>
@@ -1148,15 +1151,17 @@ const SettingsScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
-      {/* Header with Back Button */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerPlaceholder} />
-      </View>
+    <ErrorBoundary>
+      {/* Reverted: remove explicit StatusBar override */}
+      <View style={styles.container}>
+        {/* Reverted header: simple inline header */}
+        <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Settings</Text>
+          <View style={{ width: 24 }} />
+        </View>
 
       <ScrollView 
         style={styles.scrollView}
@@ -1178,11 +1183,11 @@ const SettingsScreen = () => {
           {renderSection("privacy", "Control your profile visibility and privacy")}
         </View> */}
 
-        {/* Support 
+        {/* Support */}
         <View style={styles.categoryContainer}>
           <Text style={styles.categoryTitle}>Support</Text>
           {renderSection("support", "Get help from our support team")}
-        </View>*/}
+        </View>
 
         {/* Account Actions */}
         <View style={styles.categoryContainer}>
@@ -1201,8 +1206,9 @@ const SettingsScreen = () => {
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={closeModal}
+        accessible={false}
       >
-        <View style={styles.modalContainer}>
+        <View style={styles.modalContainer} accessible={false} importantForAccessibility="no-hide-descendants">
           {renderModalHeader()}
           {renderModalContent()}
         </View>
@@ -1233,7 +1239,8 @@ const SettingsScreen = () => {
         confirmText="OK"
         cancelText="Cancel"
       />
-    </View>
+      </View>
+    </ErrorBoundary>
   );
 };
 

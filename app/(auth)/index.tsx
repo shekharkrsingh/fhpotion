@@ -19,6 +19,7 @@ import Toast from 'react-native-toast-message';
 import { styles } from '@/assets/styles/login.style';
 import { MedicalTheme } from '@/newConstants/theme';
 import { loginDoctor } from '@/newService/config/api/authApi';
+import logger from '@/utils/logger';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -87,7 +88,7 @@ export default function Login() {
         });
       }
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       Toast.show({
         type: 'error',
         text1: 'Login Error',

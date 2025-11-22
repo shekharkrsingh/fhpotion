@@ -12,55 +12,6 @@ export const reportScreenStyles = StyleSheet.create({
     paddingTop: MedicalTheme.spacing[2],
   },
 
-  // Header Styles
-   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: MedicalTheme.spacing[4],
-    paddingVertical: MedicalTheme.spacing[3],
-    backgroundColor: MedicalTheme.colors.background.secondary,
-    borderBottomWidth: 1,
-    borderBottomColor: MedicalTheme.colors.border.light,
-    shadowColor: MedicalTheme.colors.neutral[900],
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  backButton: {
-    padding: MedicalTheme.spacing[2],
-    backgroundColor: MedicalTheme.colors.primary[50],
-    borderRadius: MedicalTheme.borderRadius.md,
-    marginRight: MedicalTheme.spacing[2],
-  },
-  headerTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: MedicalTheme.typography.fontSize.xl,
-    fontWeight: MedicalTheme.typography.fontWeight.bold,
-    color: MedicalTheme.colors.text.primary,
-    textAlign: 'center',
-  },
-  headerSubtitle: {
-    fontSize: MedicalTheme.typography.fontSize.xs,
-    color: MedicalTheme.colors.text.secondary,
-    marginTop: MedicalTheme.spacing[1],
-    textAlign: 'center',
-  },
-  contactButton: {
-    padding: MedicalTheme.spacing[2],
-    backgroundColor: MedicalTheme.colors.primary[50],
-    borderRadius: MedicalTheme.borderRadius.md,
-    marginLeft: MedicalTheme.spacing[2],
-  },
-
   // Content Styles
   title: {
     fontSize: MedicalTheme.typography.fontSize['2xl'],
@@ -89,11 +40,10 @@ export const reportScreenStyles = StyleSheet.create({
   quickActionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: MedicalTheme.spacing[2],
+    marginBottom: 0,
   },
   quickActionButton: {
-    flex: 1,
-    minWidth: '48%',
+    width: '48%',
     backgroundColor: MedicalTheme.colors.background.secondary,
     borderWidth: 1,
     borderColor: MedicalTheme.colors.border.light,
@@ -102,6 +52,8 @@ export const reportScreenStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: MedicalTheme.spacing[1],
+    minHeight: 80,
+    marginBottom: MedicalTheme.spacing[2],
     shadowColor: MedicalTheme.colors.neutral[900],
     shadowOffset: {
       width: 0,
@@ -111,11 +63,18 @@ export const reportScreenStyles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  quickActionButtonLeft: {
+    marginRight: '4%',
+  },
+  quickActionButtonRight: {
+    marginRight: 0,
+  },
   quickActionText: {
     fontSize: MedicalTheme.typography.fontSize.sm,
     fontWeight: MedicalTheme.typography.fontWeight.medium,
     color: MedicalTheme.colors.text.primary,
     textAlign: 'center',
+    flexWrap: 'wrap',
   },
 
   // Input Styles
@@ -176,6 +135,8 @@ export const reportScreenStyles = StyleSheet.create({
     fontSize: MedicalTheme.typography.fontSize.sm,
     color: MedicalTheme.colors.error[700],
     flex: 1,
+    flexWrap: 'wrap',
+    lineHeight: MedicalTheme.typography.fontSize.sm * MedicalTheme.typography.lineHeight.normal,
   },
 
   // Button Styles
@@ -227,7 +188,8 @@ export const reportScreenStyles = StyleSheet.create({
     fontSize: MedicalTheme.typography.fontSize.sm,
     color: MedicalTheme.colors.text.secondary,
     marginBottom: MedicalTheme.spacing[3],
-    // lineHeight: MedicalTheme.typography.lineHeight.normal,
+    lineHeight: MedicalTheme.typography.fontSize.sm * MedicalTheme.typography.lineHeight.normal,
+    flexWrap: 'wrap',
   },
   actionButtonsContainer: {
     flexDirection: 'row',
@@ -305,5 +267,7 @@ export const reportScreenStyles = StyleSheet.create({
     fontSize: MedicalTheme.typography.fontSize.sm,
     color: MedicalTheme.colors.primary[700],
     flex: 1,
+    lineHeight: MedicalTheme.typography.fontSize.sm * MedicalTheme.typography.lineHeight.normal,
+    flexWrap: 'wrap',
   },
 });

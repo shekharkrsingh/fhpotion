@@ -1,6 +1,6 @@
 // appointmentCard.tsx (Updated version)
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, Pressable, Text } from 'react-native';
 import { appointmentCardStyles } from '@/assets/styles/appointmentCard.styles';
 import AlertPopup from '@/newComponents/alertPopup';
 import AppointmentHeader from '@/newComponents/appointmentHeader';
@@ -20,8 +20,8 @@ interface AppointmentCardProps {
     availableAtClinic: boolean;
     treated: boolean;
     treatedDateTime: string | null;
-    status: "ACCEPTED" | "CANCELLED";
-    appointmentType: string;
+    status: "BOOKED" | "ACCEPTED" | "CANCELLED"; // Updated to match AppointmentStatus enum
+    appointmentType: "IN_PERSON" | "ONLINE"; // Updated to match backend enum
     paymentStatus: boolean;
     isEmergency: boolean;
     avatar?: string;

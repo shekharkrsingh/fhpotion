@@ -1,10 +1,10 @@
 import React from 'react';
-import { ScrollView, RefreshControl, View } from 'react-native';
+import { ScrollView, RefreshControl, View, ActivityIndicator } from 'react-native';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/redux/store';
+import { RootState } from '@/newStore/index';
 
 import NotificationCard from '@/newComponents/notificationCard';
-import EmptyScreen from './EmptyScreen';
+import EmptyScreen from '@/newComponents/EmptyScreen';
 import { notificationStyles } from '@/assets/styles/notification.styles';
 import { MedicalTheme } from '@/newConstants/theme';
 
@@ -20,6 +20,15 @@ const NotificationList: React.FC<NotificationListProps> = ({
   onNotificationPress,
 }) => {
   const { notifications, isLoading } = useSelector((state: RootState) => state.notification);
+
+  // Show loading state when loading and not refreshing
+  if (isLoading && !refreshing) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <ActivityIndicator size="large" color={MedicalTheme.colors.primary[500]} />
+      </View>
+    );
+  }
 
   if (notifications.length === 0) {
     return (

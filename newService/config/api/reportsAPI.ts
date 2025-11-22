@@ -1,10 +1,10 @@
 import { apiConnector } from "@/newService/apiConnector";
 import { reportEndpoints } from "@/newService/config/apiEndpoints";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import logger from "@/utils/logger";
 
 export const getDoctorReports = async (
-  fromDate: string, 
-  toDate?: string
+  fromDate: string,
+  toDate?: string,
 ): Promise<{ pdfData: Uint8Array; fileName: string }> => {
   try {
     validateDates(fromDate, toDate);
@@ -19,19 +19,30 @@ export const getDoctorReports = async (
     if (response.status === 200 && response.data?.byteLength > 100) {
       const pdfData = new Uint8Array(response.data);
       const fileName = `doctor_report_${fromDate}_to_${toDate || 'today'}.pdf`;
-      
+
       validatePdfHeader(pdfData);
       return { pdfData, fileName };
     }
 
     throw new Error("Failed to generate report - invalid data received");
   } catch (error: any) {
-    console.error('API Error:', error);
+    logger.error('API Error:', error);
+    
+    if (error?.response?.data instanceof ArrayBuffer) {
+      try {
+        const decoder = new TextDecoder();
+        const errorText = decoder.decode(error.response.data);
+        const errorJson = JSON.parse(errorText);
+        throw new Error(errorJson.message || getErrorMessage(error));
+      } catch {
+        throw new Error(getErrorMessage(error));
+      }
+    }
+    
     throw new Error(getErrorMessage(error));
   }
 };
 
-// Helper functions
 const validateDates = (fromDate: string, toDate?: string): void => {
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   
@@ -55,7 +66,7 @@ const validatePdfHeader = (pdfData: Uint8Array): void => {
   if (pdfData.length >= 4) {
     const header = String.fromCharCode(...pdfData.slice(0, 4));
     if (header !== '%PDF') {
-      console.warn('Warning: Response data may not be a valid PDF file');
+      logger.warn('Warning: Response data may not be a valid PDF file');
     }
   }
 };
@@ -63,6 +74,9 @@ const validatePdfHeader = (pdfData: Uint8Array): void => {
 const getErrorMessage = (error: any): string => {
   if (error?.response?.status === 401) {
     return "Unauthorized. Please log in again.";
+  }
+  if (error?.response?.status === 403) {
+    return "Access denied. You don't have permission to access this resource.";
   }
   if (error?.response?.status === 404) {
     return "No report data found for the specified date range.";

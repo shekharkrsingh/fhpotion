@@ -1,8 +1,11 @@
-const BASE_URL: string = "http://localhost:8080/api/v1";
-const WEBSOCKET_BASE: string="http://localhost:8080"
+// Previous local URLs:
+// const BASE_URL: string = "http://localhost:8080/api/v1";
+// const WEBSOCKET_BASE: string="http://localhost:8080"
+// Remote hosted URLs:
+const BASE_URL: string = "https://docterdevserver-1-0.onrender.com/api/v1";
+const WEBSOCKET_BASE: string="https://docterdevserver-1-0.onrender.com"
 
-// const BASE_URL: string = "https://docterdevserver-1-0.onrender.com/api/v1";
-// const WEBSOCKET_BASE: string="https://docterdevserver-1-0.onrender.com"
+// You can override via env/expo extras; prefer centralized config in newService/config/apiConfig.ts
 
 type ApiEndpoints = {
   login: string;

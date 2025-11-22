@@ -1,17 +1,13 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { MaterialIcons, Ionicons, FontAwesome } from '@expo/vector-icons';
 import { notificationStyles } from '@/assets/styles/notification.styles';
 import { MedicalTheme } from '@/newConstants/theme';
 
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  createdAt: string;
-  isRead: boolean;
-}
+import { Notification } from "@/newStore/slices/notificationSlice";
+
+// Re-export Notification type for backward compatibility
+// Notification type now uses NotificationType enum instead of string
 
 interface NotificationCardProps {
   notification: Notification;
@@ -70,13 +66,13 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
   const isUnread = !notification.isRead;
 
   return (
-    <TouchableOpacity
-      style={[
+    <Pressable
+      style={({ pressed }) => [
         notificationStyles.notificationCard,
         {
           borderLeftWidth: 4,
           borderLeftColor: isUnread ? config.color : MedicalTheme.colors.border.light,
-          opacity: notification.isRead ? 0.8 : 1,
+          opacity: notification.isRead ? 0.8 : pressed ? 0.7 : 1,
         }
       ]}
       onPress={() => onPress(notification.id, notification.isRead)}
@@ -120,7 +116,7 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
           {formatTime(notification.createdAt)}
         </Text>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 

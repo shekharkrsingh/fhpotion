@@ -47,7 +47,12 @@ export const selectSignup = (state: RootState) => state.signup;
 export const selectSignupLoading = (state: RootState) => state.signup.isLoading;
 export const selectSignupError = (state: RootState) => state.signup.error;
 
-export const { setSignupData, setLoading, setSuccess, setError, resetSignup } =
-  signupSlice.actions;
+export const {
+  setSignupData,
+  setLoading,
+  setSuccess,
+  setError,
+  resetSignup,
+} = signupSlice.actions;
 
 export default signupSlice.reducer;

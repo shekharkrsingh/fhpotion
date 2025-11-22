@@ -1,6 +1,6 @@
 // appointmentHeader.tsx - Fixed version
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, Pressable, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Switch } from 'react-native-gesture-handler';
 import { appointmentCardStyles } from '@/assets/styles/appointmentCard.styles';
@@ -70,68 +70,82 @@ const AppointmentHeader: React.FC<AppointmentHeaderProps> = ({
     switch (selectedMarkAction) {
       case 'emergency':
         return (
-          <TouchableOpacity 
+          <Pressable 
             onPress={handleEmergencyAction}
-            style={appointmentCardStyles.emergencyButton}
+            style={({ pressed }) => [
+              appointmentCardStyles.emergencyButton,
+              pressed && { opacity: 0.7 }
+            ]}
           >
             <MaterialIcons 
               name="emergency" 
               size={24} 
               color={MedicalTheme.colors.error[500]} 
             />
-          </TouchableOpacity>
+          </Pressable>
         );
       
       case 'cancel':
         return (
-          <TouchableOpacity 
+          <Pressable 
             onPress={handleCancelAction}
-            style={appointmentCardStyles.cancelButton}
+            style={({ pressed }) => [
+              appointmentCardStyles.cancelButton,
+              pressed && { opacity: 0.7 }
+            ]}
           >
             <MaterialIcons 
               name="cancel" 
               size={24} 
               color={MedicalTheme.colors.warning[600]} 
             />
-          </TouchableOpacity>
+          </Pressable>
         );
       
       case 'edit':
         return (
-          <TouchableOpacity 
+          <Pressable 
             onPress={handleEditAction}
-            style={appointmentCardStyles.editButton}
+            style={({ pressed }) => [
+              appointmentCardStyles.editButton,
+              pressed && { opacity: 0.7 }
+            ]}
           >
             <MaterialIcons 
               name="edit" 
               size={24} 
               color={MedicalTheme.colors.primary[500]} 
             />
-          </TouchableOpacity>
+          </Pressable>
         );
       
       case 'treated':
       default:
         return (
-          <TouchableOpacity 
+          <Pressable 
             onPress={handleToggleTreatedStatus}
-            style={appointmentCardStyles.treatedButton}
+            style={({ pressed }) => [
+              appointmentCardStyles.treatedButton,
+              pressed && { opacity: 0.7 }
+            ]}
           >
             <MaterialIcons 
               name={item.treated ? 'check-circle' : 'radio-button-unchecked'} 
               size={24} 
               color={item.treated ? MedicalTheme.colors.success[500] : MedicalTheme.colors.neutral[400]} 
             />
-          </TouchableOpacity>
+          </Pressable>
         );
     }
   };
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.9}
+    <Pressable
+      style={({ pressed }) => [
+        appointmentCardStyles.header,
+        pressed && { opacity: 0.9 }
+      ]}
       onPress={handleHeaderPress}
-      style={appointmentCardStyles.header}
     >
       <View style={appointmentCardStyles.availabilityContainer}>
         <Switch
@@ -184,7 +198,7 @@ const AppointmentHeader: React.FC<AppointmentHeaderProps> = ({
       </View>
 
       {renderActionButton()}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 

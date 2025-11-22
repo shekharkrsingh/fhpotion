@@ -3,12 +3,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   Modal,
   TextInput,
   Keyboard,
-  TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -16,6 +15,7 @@ import Toast from 'react-native-toast-message';
 
 import { styles } from '@/assets/styles/OTPVerificationPopup.styles';
 import { MedicalTheme } from '@/newConstants/theme';
+import logger from '@/utils/logger';
 
 interface OTPModalProps {
   visible: boolean;
@@ -181,7 +181,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
         resetInputs();
       }
     } catch (error) {
-      console.error('OTP verification error:', error);
+      logger.error('OTP verification error:', error);
       Toast.show({
         type: 'error',
         text1: 'Verification Error',
@@ -213,7 +213,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
         text2: 'New verification code sent',
       });
     } catch (error) {
-      console.error('Resend OTP error:', error);
+      logger.error('Resend OTP error:', error);
       Toast.show({
         type: 'error',
         text1: 'Resend Failed',
@@ -243,14 +243,23 @@ const OTPModal: React.FC<OTPModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
       statusBarTranslucent={false}
+      accessible={false}
     >
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <View style={styles.container}>
+      <Pressable 
+        onPress={dismissKeyboard} 
+        style={{ flex: 1 }}
+        accessible={false}
+        importantForAccessibility="no-hide-descendants"
+      >
+        <View style={styles.container} accessible={false}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity 
+            <Pressable 
               onPress={onClose} 
-              style={styles.closeButton}
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && { opacity: 0.7 }
+              ]}
               disabled={isLoading}
             >
               <Ionicons 
@@ -258,7 +267,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
                 size={24} 
                 color={MedicalTheme.colors.text.primary} 
               />
-            </TouchableOpacity>
+            </Pressable>
             <Text style={styles.title}>{title}</Text>
             <View style={styles.closeButtonPlaceholder} />
           </View>
@@ -317,14 +326,14 @@ const OTPModal: React.FC<OTPModalProps> = ({
                 </View>
 
                 {/* Verify Button */}
-                <TouchableOpacity
-                  style={[
+                <Pressable
+                  style={({ pressed }) => [
                     styles.button,
-                    (isVerifyDisabled || isLoading) && styles.buttonDisabled
+                    (isVerifyDisabled || isLoading) && styles.buttonDisabled,
+                    pressed && !isVerifyDisabled && !isLoading && { opacity: 0.8 }
                   ]}
                   onPress={handleVerifyOtp}
                   disabled={isVerifyDisabled || isLoading}
-                  activeOpacity={0.8}
                 >
                   {isLoading ? (
                     <ActivityIndicator 
@@ -334,16 +343,19 @@ const OTPModal: React.FC<OTPModalProps> = ({
                   ) : (
                     <Text style={styles.buttonText}>Verify & Continue</Text>
                   )}
-                </TouchableOpacity>
+                </Pressable>
 
                 {/* Resend OTP Section */}
                 <View style={styles.resendContainer}>
                   <Text style={styles.resendText}>
                     Didn't receive the code?{' '}
                   </Text>
-                  <TouchableOpacity
+                  <Pressable
                     onPress={handleResendOtp}
                     disabled={!canResend || isLoading || isResending}
+                    style={({ pressed }) => [
+                      pressed && { opacity: 0.7 }
+                    ]}
                   >
                     <Text style={[
                       styles.resendLink,
@@ -352,7 +364,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
                       {isResending ? 'Resending...' : 
                       canResend ? 'Resend Code' : `Resend in ${formatTime(timer)}`}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               </View>
 
@@ -361,16 +373,21 @@ const OTPModal: React.FC<OTPModalProps> = ({
                 <Text style={styles.footerText}>
                   Having trouble receiving the code?{' '}
                 </Text>
-                <TouchableOpacity disabled={isLoading}>
+                <Pressable 
+                  disabled={isLoading}
+                  style={({ pressed }) => [
+                    pressed && { opacity: 0.7 }
+                  ]}
+                >
                   <Text style={styles.link}>
                     Contact Support
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           </View>
         </View>
-      </TouchableWithoutFeedback>
+      </Pressable>
     </Modal>
   );
 };

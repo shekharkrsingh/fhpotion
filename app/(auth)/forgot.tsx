@@ -22,6 +22,7 @@ import { MedicalTheme } from '@/newConstants/theme';
 import OTPModal from '@/newComponents/OTPVerificationPopup';
 import { sendOtp } from '@/newService/config/api/authApi';
 import { forgotPassword } from '@/newService/config/api/authApi';
+import logger from '@/utils/logger';
 
 export default function Forget() {
     const [email, setEmailState] = useState("");
@@ -120,7 +121,7 @@ export default function Forget() {
             }
 
         } catch (error) {
-            console.error('Forget password error:', error);
+            logger.error('Forget password error:', error);
             Toast.show({
                 type: 'error',
                 text1: 'Request Failed',
@@ -135,7 +136,7 @@ export default function Forget() {
         try {
             return await forgotPassword(email, newPassword, otp);
         } catch (error) {
-            console.error('Verify OTP error:', error);
+            logger.error('Verify OTP error:', error);
             return false;
         }
     };

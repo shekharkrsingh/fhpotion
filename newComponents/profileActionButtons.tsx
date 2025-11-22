@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { profileStyles } from '@/assets/styles/profile.styles';
@@ -26,16 +26,22 @@ const ProfileActionButtons: React.FC = () => {
       label: 'Book',
       icon: <Ionicons name="calendar" size={16} color="#fff" />,
       colors: ['#4facfe', '#00f2fe'],
-      onPress: () => console.log('Book appointment'),
+      onPress: () => {
+        // TODO: Implement book appointment functionality
+      },
     },
   ];
 
   return (
     <View style={profileStyles.actionButtons}>
       {buttons.map((button) => (
-        <TouchableOpacity 
+        <Pressable 
           key={button.id}
-          style={[profileStyles.button, profileStyles[`${button.id}Button`]]}
+          style={({ pressed }) => [
+            profileStyles.button,
+            profileStyles[`${button.id}Button`],
+            pressed && { opacity: 0.8 }
+          ]}
           onPress={button.onPress}
         >
           <LinearGradient
@@ -45,7 +51,7 @@ const ProfileActionButtons: React.FC = () => {
             {button.icon}
             <Text style={profileStyles.buttonText}>{button.label}</Text>
           </LinearGradient>
-        </TouchableOpacity>
+        </Pressable>
       ))}
     </View>
   );

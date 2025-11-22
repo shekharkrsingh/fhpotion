@@ -2,161 +2,131 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   Share,
   Platform,
+  Pressable,
+  Modal,
 } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getDoctorReports } from '@/newService/config/api/reportsAPI';
 import { MedicalTheme } from '@/newConstants/theme';
 import AlertPopup from '@/newComponents/alertPopup';
+import ErrorBoundary from '@/newComponents/ErrorBoundary';
 import { reportScreenStyles as styles } from '@/assets/styles/ReportScreen.styles';
+import logger from '@/utils/logger';
 
 const ReportScreen: React.FC = () => {
   const router = useRouter();
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
+  const [showFromDatePicker, setShowFromDatePicker] = useState(false);
+  const [showToDatePicker, setShowToDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [showAlert, setShowAlert] = useState(false);
 
-  // Date validation helpers
-  const isValidMonth = (month: number): boolean => month >= 1 && month <= 12;
-  
-  const isValidDay = (day: number, month: number, year: number): boolean => {
-    if (day < 1 || day > 31) return false;
-    
-    // Check for months with 30 days
-    if ([4, 6, 9, 11].includes(month) && day > 30) return false;
-    
-    // Check for February
-    if (month === 2) {
-      const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-      return isLeapYear ? day <= 29 : day <= 28;
+  const formatDateToString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatDateDisplay = (date: Date | null): string => {
+    if (!date) return '';
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const handleFromDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowFromDatePicker(false);
     }
-    
-    return true;
-  };
 
-  const formatDateInput = (text: string): string => {
-    // Remove all non-digit characters
-    const cleaned = text.replace(/\D/g, '');
-    
-    // Limit to 8 characters (YYYYMMDD)
-    const limited = cleaned.slice(0, 8);
-    
-    // Format based on length
-    if (limited.length <= 4) {
-      return limited;
-    } else if (limited.length <= 6) {
-      return `${limited.slice(0, 4)}-${limited.slice(4)}`;
-    } else {
-      return `${limited.slice(0, 4)}-${limited.slice(4, 6)}-${limited.slice(6, 8)}`;
-    }
-  };
-
-  const validateDateInput = (text: string): boolean => {
-    if (text.length === 0) return true;
-    
-    // Check format YYYY-MM-DD
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(text)) return false;
-    
-    const [yearStr, monthStr, dayStr] = text.split('-');
-    const year = parseInt(yearStr, 10);
-    const month = parseInt(monthStr, 10);
-    const day = parseInt(dayStr, 10);
-    
-    // Validate year (reasonable range)
-    if (year < 1900 || year > 2100) return false;
-    
-    // Validate month
-    if (!isValidMonth(month)) return false;
-    
-    // Validate day
-    if (!isValidDay(day, month, year)) return false;
-    
-    return true;
-  };
-
-  const handleFromDateChange = (text: string) => {
-    const formatted = formatDateInput(text);
-    setFromDate(formatted);
-    
-    // Clear error when user starts typing
-    if (error && error.includes('date')) {
-      setError(null);
+    if (event.type === 'set' && selectedDate) {
+      setFromDate(selectedDate);
+      if (error && error.includes('date')) {
+        setError(null);
+      }
+      if (toDate && selectedDate > toDate) {
+        setToDate(null);
+      }
+    } else if (event.type === 'dismissed') {
+      setShowFromDatePicker(false);
     }
   };
 
-  const handleToDateChange = (text: string) => {
-    const formatted = formatDateInput(text);
-    setToDate(formatted);
-    
-    // Clear error when user starts typing
-    if (error && error.includes('date')) {
-      setError(null);
+  const handleToDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowToDatePicker(false);
+    }
+
+    if (event.type === 'set' && selectedDate) {
+      setToDate(selectedDate);
+      if (error && error.includes('date')) {
+        setError(null);
+      }
+    } else if (event.type === 'dismissed') {
+      setShowToDatePicker(false);
     }
   };
 
-  // Date calculation helpers
-  const getTodayDate = () => new Date().toISOString().split('T')[0];
+  const getTodayDate = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  };
+
   const getYesterdayDate = () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString().split('T')[0];
+    yesterday.setHours(0, 0, 0, 0);
+    return yesterday;
   };
+
   const getFirstDayOfMonth = () => {
     const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+    return new Date(today.getFullYear(), today.getMonth(), 1);
   };
+
   const getFirstDayOfYear = () => {
     const today = new Date();
-    return new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+    return new Date(today.getFullYear(), 0, 1);
   };
 
   const validateDates = (): boolean => {
-    // Check if fromDate is in correct format and valid
     if (!fromDate) {
       setError('Please select a from date');
       return false;
     }
     
-    if (!validateDateInput(fromDate)) {
-      setError('Please enter a valid from date in YYYY-MM-DD format');
-      return false;
-    }
-    
-    // Check if toDate is provided and valid
-    if (toDate && !validateDateInput(toDate)) {
-      setError('Please enter a valid to date in YYYY-MM-DD format');
-      return false;
-    }
-    
-    // Check date range
-    if (toDate && fromDate > toDate) {
-      setError('From date cannot be after to date');
-      return false;
-    }
-    
-    // Check if fromDate is not in future
     const today = getTodayDate();
     if (fromDate > today) {
       setError('From date cannot be in the future');
       return false;
     }
     
-    if (toDate && toDate > today) {
-      setError('To date cannot be in the future');
-      return false;
+    if (toDate) {
+      if (toDate > today) {
+        setError('To date cannot be in the future');
+        return false;
+      }
+      if (fromDate > toDate) {
+        setError('From date cannot be after to date');
+        return false;
+      }
     }
     
     setError(null);
@@ -173,22 +143,25 @@ const ReportScreen: React.FC = () => {
     return btoa(binary);
   };
 
-  const generateReport = async (customFromDate?: string, customToDate?: string) => {
+  const generateReport = async (customFromDate?: Date, customToDate?: Date) => {
     const useFromDate = customFromDate || fromDate;
     const useToDate = customToDate || toDate;
 
-    if (!validateDates() && !customFromDate) return;
+    if (!customFromDate && !validateDates()) return;
+
+    const fromDateStr = useFromDate ? formatDateToString(useFromDate) : '';
+    const toDateStr = useToDate ? formatDateToString(useToDate) : undefined;
 
     try {
       setLoading(true);
       setError(null);
-      setPdfData(null); // Reset previous data
+      setPdfData(null);
 
-      console.log(`Generating report for: ${useFromDate} to ${useToDate}`);
+      logger.log(`Generating report for: ${fromDateStr} to ${toDateStr || 'today'}`);
 
-      const result = await getDoctorReports(useFromDate, useToDate || undefined);
+      const result = await getDoctorReports(fromDateStr, toDateStr);
       
-      console.log(`Report generated successfully: ${result.fileName}, Size: ${result.pdfData.length} bytes`);
+      logger.log(`Report generated successfully: ${result.fileName}, Size: ${result.pdfData.length} bytes`);
       
       setPdfData(result.pdfData);
       setFileName(result.fileName);
@@ -199,7 +172,7 @@ const ReportScreen: React.FC = () => {
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to generate report';
       setError(errorMessage);
-      console.error('Generate report error:', err);
+      logger.error('Generate report error:', err);
     } finally {
       setLoading(false);
     }
@@ -209,42 +182,57 @@ const ReportScreen: React.FC = () => {
     if (!pdfData) return;
 
     try {
-      console.log(`Downloading PDF: ${fileName}, Size: ${pdfData.length} bytes`);
+      logger.log(`Downloading PDF: ${fileName}, Size: ${pdfData.length} bytes`);
       
       if (Platform.OS === 'web') {
         // Web download - direct blob approach
-        const blob = new Blob([pdfData], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.style.display = 'none';
-        
-        // Append to body and click
-        document.body.appendChild(link);
-        link.click();
-        
-        // Clean up
-        setTimeout(() => {
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-        }, 100);
-        
-        console.log('PDF download initiated on web');
+        if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof Blob !== 'undefined') {
+          const blob = new Blob([pdfData as any], { type: 'application/pdf' });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          link.style.display = 'none';
+          
+          // Append to body and click
+          document.body.appendChild(link);
+          link.click();
+          
+          // Clean up
+          setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          }, 100);
+          
+          logger.log('PDF download initiated on web');
+        } else {
+          throw new Error('Web APIs not available');
+        }
       } else {
         // React Native - Save and share with proper base64 encoding
         const base64Data = uint8ArrayToBase64(pdfData);
-        const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
+        // Use cacheDirectory for temporary files (will be cleaned by system)
+        const directory = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+        if (!directory) {
+          throw new Error('File system directory not available');
+        }
+        const fileUri = `${directory}${fileName}`;
         
-        console.log(`Writing PDF to cache: ${fileUri}`);
+        logger.log(`Writing PDF to cache: ${fileUri}`);
         
+        // Use FileSystem.EncodingType.Base64 if available, otherwise use string
+        const encoding = (FileSystem as any).EncodingType?.Base64 || 'base64';
         await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-          encoding: FileSystem.EncodingType.Base64,
+          encoding: encoding as any,
         });
 
         // Verify file was written
         const fileInfo = await FileSystem.getInfoAsync(fileUri);
-        console.log(`File written: ${fileInfo.exists}, Size: ${fileInfo.size} bytes`);
+        if (fileInfo.exists) {
+          logger.log(`File written successfully: ${fileUri}`);
+        } else {
+          throw new Error('File was not written successfully');
+        }
 
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri, {
@@ -255,7 +243,7 @@ const ReportScreen: React.FC = () => {
         }
       }
     } catch (err: any) {
-      console.error('Download error:', err);
+      logger.error('Download error:', err);
       setError(`Failed to download PDF: ${err.message}`);
     }
   };
@@ -266,44 +254,64 @@ const ReportScreen: React.FC = () => {
     try {
       if (Platform.OS === 'web') {
         // Web share API
-        const blob = new Blob([pdfData], { type: 'application/pdf' });
-        const file = new File([blob], fileName, { type: 'application/pdf' });
-        
-        if (navigator.share) {
+        if (typeof navigator !== 'undefined' && navigator.share && typeof Blob !== 'undefined' && typeof File !== 'undefined') {
+          const blob = new Blob([pdfData as any], { type: 'application/pdf' });
+          const file = new File([blob], fileName, { type: 'application/pdf' });
+          
           await navigator.share({
             files: [file],
             title: 'Doctor Report',
           });
         } else {
           // Fallback to download if share not supported
-          console.log('Web Share API not supported, falling back to download');
+          logger.log('Web Share API not supported, falling back to download');
           downloadPdf();
         }
       } else {
         // React Native share
         const base64Data = uint8ArrayToBase64(pdfData);
-        const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
+        const directory = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+        if (!directory) {
+          throw new Error('File system directory not available');
+        }
+        const fileUri = `${directory}${fileName}`;
         
+        const encoding = (FileSystem as any).EncodingType?.Base64 || 'base64';
         await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-          encoding: FileSystem.EncodingType.Base64,
+          encoding: encoding as any,
         });
 
         await Share.share({
           url: fileUri,
           title: 'Doctor Report',
-          type: 'application/pdf',
         });
       }
     } catch (err: any) {
-      console.log('Share cancelled or failed:', err);
+      // Share cancellation is not an error, just log it
+      if (err.message && !err.message.includes('cancelled')) {
+        logger.error('Share error:', err);
+      }
     }
   };
 
-  // Quick action handlers
-  const handleTodayReport = () => generateReport(getTodayDate(), getTodayDate());
-  const handleYesterdayReport = () => generateReport(getYesterdayDate(), getYesterdayDate());
-  const handleThisMonth = () => generateReport(getFirstDayOfMonth(), getTodayDate());
-  const handleThisYear = () => generateReport(getFirstDayOfYear(), getTodayDate());
+  const handleTodayReport = () => {
+    const today = getTodayDate();
+    generateReport(today, today);
+  };
+
+  const handleYesterdayReport = () => {
+    const yesterday = getYesterdayDate();
+    generateReport(yesterday, yesterday);
+  };
+
+  const handleThisMonth = () => {
+    generateReport(getFirstDayOfMonth(), getTodayDate());
+  };
+
+  const handleThisYear = () => {
+    generateReport(getFirstDayOfYear(), getTodayDate());
+  };
+
   const handleCustomReport = () => generateReport();
 
   const handleAlertClose = () => {
@@ -320,57 +328,20 @@ const ReportScreen: React.FC = () => {
   };
 
   const handleContactUs = () => {
-    // Placeholder for contact us action
-    console.log('Contact us button pressed');
-  };
-
-  // Get current placeholder based on input state
-  const getFromDatePlaceholder = () => {
-    if (fromDate.length === 0) return 'YYYY-MM-DD';
-    if (fromDate.length <= 4) return 'YYYY-MM-DD';
-    if (fromDate.length <= 7) return `${fromDate.slice(0, 4)}-MM-DD`;
-    return 'YYYY-MM-DD';
-  };
-
-  const getToDatePlaceholder = () => {
-    if (toDate.length === 0) return 'YYYY-MM-DD';
-    if (toDate.length <= 4) return 'YYYY-MM-DD';
-    if (toDate.length <= 7) return `${toDate.slice(0, 4)}-MM-DD`;
-    return 'YYYY-MM-DD';
+    logger.log('Contact us button pressed');
   };
 
   return (
-    <>
-      {/* Improved Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={handleBackPress}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons 
-            name="arrow-back" 
-            size={24} 
-            color={MedicalTheme.colors.primary[500]} 
-          />
-        </TouchableOpacity>
-        
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Medical Reports</Text>
-          <Text style={styles.headerSubtitle}>Generate and download patient reports</Text>
+    <ErrorBoundary>
+      {/* Header */}
+      <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
+        <Pressable onPress={handleBackPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ marginRight: 8 }}>
+          <Ionicons name="arrow-back" size={24} color={MedicalTheme.colors.primary[500]} />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Medical Reports</Text>
+          <Text style={{ fontSize: 12, color: MedicalTheme.colors.text.secondary }}>Generate and download patient reports</Text>
         </View>
-        
-        <TouchableOpacity
-          style={styles.contactButton}
-          onPress={handleContactUs}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons 
-            name="headset-outline" 
-            size={24} 
-            color={MedicalTheme.colors.primary[500]} 
-          />
-        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -382,7 +353,7 @@ const ReportScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>Quick Reports</Text>
           <View style={styles.quickActionsContainer}>
             <TouchableOpacity
-              style={[styles.quickActionButton, loading && styles.disabledButton]}
+              style={[styles.quickActionButton, styles.quickActionButtonLeft, loading && styles.disabledButton]}
               onPress={handleTodayReport}
               disabled={loading}
             >
@@ -391,7 +362,7 @@ const ReportScreen: React.FC = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.quickActionButton, loading && styles.disabledButton]}
+              style={[styles.quickActionButton, styles.quickActionButtonRight, loading && styles.disabledButton]}
               onPress={handleYesterdayReport}
               disabled={loading}
             >
@@ -400,7 +371,7 @@ const ReportScreen: React.FC = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.quickActionButton, loading && styles.disabledButton]}
+              style={[styles.quickActionButton, styles.quickActionButtonLeft, loading && styles.disabledButton]}
               onPress={handleThisMonth}
               disabled={loading}
             >
@@ -409,7 +380,7 @@ const ReportScreen: React.FC = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.quickActionButton, loading && styles.disabledButton]}
+              style={[styles.quickActionButton, styles.quickActionButtonRight, loading && styles.disabledButton]}
               onPress={handleThisYear}
               disabled={loading}
             >
@@ -425,32 +396,46 @@ const ReportScreen: React.FC = () => {
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>From Date <Text style={styles.required}>*</Text></Text>
-            <TextInput
-              style={[styles.input, error && !fromDate && styles.inputError]}
-              value={fromDate}
-              onChangeText={handleFromDateChange}
-              placeholder={getFromDatePlaceholder()}
-              placeholderTextColor={MedicalTheme.colors.text.tertiary}
-              editable={!loading}
-              keyboardType="numeric"
-              maxLength={10} // YYYY-MM-DD
-            />
-            <Text style={styles.hint}>Format: YYYY-MM-DD (e.g., 2024-12-25)</Text>
+            <Pressable
+              onPress={() => !loading && setShowFromDatePicker(true)}
+              style={({ pressed }) => [
+                styles.input,
+                error && !fromDate && styles.inputError,
+                pressed && { opacity: 0.7 },
+                { justifyContent: 'center' }
+              ]}
+              disabled={loading}
+            >
+              <Text style={[
+                { color: fromDate ? MedicalTheme.colors.text.primary : MedicalTheme.colors.text.tertiary },
+                { fontSize: 16 }
+              ]}>
+                {fromDate ? formatDateDisplay(fromDate) : 'Select from date'}
+              </Text>
+            </Pressable>
+            <Text style={styles.hint}>Tap to select a date</Text>
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>To Date (Optional)</Text>
-            <TextInput
-              style={[styles.input, error && toDate && !validateDateInput(toDate) && styles.inputError]}
-              value={toDate}
-              onChangeText={handleToDateChange}
-              placeholder={getToDatePlaceholder()}
-              placeholderTextColor={MedicalTheme.colors.text.tertiary}
-              editable={!loading}
-              keyboardType="numeric"
-              maxLength={10} // YYYY-MM-DD
-            />
-            <Text style={styles.hint}>Leave empty for today's date. Format: YYYY-MM-DD</Text>
+            <Pressable
+              onPress={() => !loading && setShowToDatePicker(true)}
+              style={({ pressed }) => [
+                styles.input,
+                error && toDate && styles.inputError,
+                pressed && { opacity: 0.7 },
+                { justifyContent: 'center' }
+              ]}
+              disabled={loading}
+            >
+              <Text style={[
+                { color: toDate ? MedicalTheme.colors.text.primary : MedicalTheme.colors.text.tertiary },
+                { fontSize: 16 }
+              ]}>
+                {toDate ? formatDateDisplay(toDate) : 'Select to date (optional)'}
+              </Text>
+            </Pressable>
+            <Text style={styles.hint}>Leave empty for today's date</Text>
           </View>
 
           {error && (
@@ -480,7 +465,7 @@ const ReportScreen: React.FC = () => {
         {pdfData && (
           <View style={styles.actionsSection}>
             <Text style={styles.sectionTitle}>Report Ready</Text>
-            <Text style={styles.actionsDescription}>
+            <Text style={styles.actionsDescription} numberOfLines={3} ellipsizeMode="tail">
               Your report "{fileName}" is ready. Choose an action below:
             </Text>
             <View style={styles.actionButtonsContainer}>
@@ -508,19 +493,19 @@ const ReportScreen: React.FC = () => {
           <Text style={styles.infoTitle}>How to use:</Text>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
-            <Text style={styles.infoText}>Enter dates in YYYY-MM-DD format (auto-formatted)</Text>
+            <Text style={styles.infoText} numberOfLines={2}>Tap on date fields to open date picker</Text>
           </View>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
-            <Text style={styles.infoText}>Month must be between 01-12, days are validated</Text>
+            <Text style={styles.infoText} numberOfLines={2}>Dates are automatically validated</Text>
           </View>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
-            <Text style={styles.infoText}>Use quick actions for common time periods</Text>
+            <Text style={styles.infoText} numberOfLines={2}>Use quick actions for common time periods</Text>
           </View>
           <View style={styles.infoItem}>
             <MaterialIcons name="check-circle" size={16} color={MedicalTheme.colors.success[500]} />
-            <Text style={styles.infoText}>Report will be generated and ready for download</Text>
+            <Text style={styles.infoText} numberOfLines={2}>Report will be generated and ready for download</Text>
           </View>
         </View>
       </ScrollView>
@@ -535,7 +520,88 @@ const ReportScreen: React.FC = () => {
         variant="success"
         confirmText="Got It"
       />
-    </>
+
+      {Platform.OS === 'android' && (
+        <>
+          {showFromDatePicker && (
+            <DateTimePicker
+              value={fromDate || getTodayDate()}
+              mode="date"
+              display="default"
+              onChange={handleFromDateChange}
+              maximumDate={getTodayDate()}
+            />
+          )}
+          {showToDatePicker && (
+            <DateTimePicker
+              value={toDate || getTodayDate()}
+              mode="date"
+              display="default"
+              onChange={handleToDateChange}
+              minimumDate={fromDate || undefined}
+              maximumDate={getTodayDate()}
+            />
+          )}
+        </>
+      )}
+
+      {Platform.OS === 'ios' && (
+        <>
+          <Modal
+            visible={showFromDatePicker}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setShowFromDatePicker(false)}
+          >
+            <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+              <View style={{ backgroundColor: MedicalTheme.colors.background.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Select From Date</Text>
+                  <Pressable onPress={() => setShowFromDatePicker(false)}>
+                    <Text style={{ fontSize: 16, color: MedicalTheme.colors.primary[500], fontWeight: '600' }}>Done</Text>
+                  </Pressable>
+                </View>
+                <DateTimePicker
+                  value={fromDate || getTodayDate()}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleFromDateChange}
+                  maximumDate={getTodayDate()}
+                  textColor={MedicalTheme.colors.text.primary}
+                />
+              </View>
+            </View>
+          </Modal>
+
+          <Modal
+            visible={showToDatePicker}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setShowToDatePicker(false)}
+          >
+            <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+              <View style={{ backgroundColor: MedicalTheme.colors.background.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: MedicalTheme.colors.text.primary }}>Select To Date</Text>
+                  <Pressable onPress={() => setShowToDatePicker(false)}>
+                    <Text style={{ fontSize: 16, color: MedicalTheme.colors.primary[500], fontWeight: '600' }}>Done</Text>
+                  </Pressable>
+                </View>
+                <DateTimePicker
+                  value={toDate || getTodayDate()}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleToDateChange}
+                  minimumDate={fromDate || undefined}
+                  maximumDate={getTodayDate()}
+                  textColor={MedicalTheme.colors.text.primary}
+                />
+              </View>
+            </View>
+          </Modal>
+        </>
+      )}
+    </ErrorBoundary>
   );
 };
 

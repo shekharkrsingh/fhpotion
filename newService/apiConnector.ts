@@ -4,10 +4,13 @@ import axios, {
   AxiosResponse,
   Method,
 } from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import { getValidToken } from "@/utils/tokenService";
+import { API_BASE_URL } from "@/newService/config/apiConfig";
 
-export const axiosInstance: AxiosInstance = axios.create({});
+export const axiosInstance: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+});
 
 export interface ApiResponse<T = any> {
   data: T;
@@ -29,13 +32,12 @@ axiosInstance.interceptors.request.use(async (config) => {
   const tokenRequired = (config as any).tokenRequired ?? true;
 
   if (tokenRequired) {
-    const token = await AsyncStorage.getItem("token");
+    const token = await getValidToken(true);
     if (!token) {
-      router.replace('/(auth)');
       return Promise.reject({
         response: {
           status: 401,
-          data: { message: "Authentication token missing" },
+          data: { message: "Authentication token missing or expired" },
         },
       });
     }
@@ -48,7 +50,18 @@ axiosInstance.interceptors.request.use(async (config) => {
 
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error) => Promise.reject(error)
+  async (error) => {
+    if (error?.response?.status === 401) {
+      const { hasValidToken, removeToken } = await import("@/utils/tokenService");
+      const hasToken = await hasValidToken();
+      
+      if (!hasToken) {
+        await removeToken();
+        router.replace('/(auth)');
+      }
+    }
+    return Promise.reject(error);
+  }
 );
 
 export const apiConnector = async <T = any>({

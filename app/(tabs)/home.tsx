@@ -3,7 +3,10 @@ import React from 'react';
 import {
   ScrollView,
   RefreshControl,
+  Platform,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { router } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/newStore';
 
@@ -20,19 +23,22 @@ import EmptyScreen from '@/newComponents/EmptyScreen';
 import { fetchDoctorStatistics } from '@/newService/config/api/statisticsApi';
 import { getProfile } from '@/newService/config/api/profileApi';
 import { getAppointments } from '@/newService/config/api/appointmentApi';
+import logger from '@/utils/logger';
+import ErrorBoundary from '@/newComponents/ErrorBoundary';
 
 const DoctorDashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
   const profileData = useSelector((state: RootState) => state.profile);
-  const { data: statistics, loading, error } = useSelector(
+  const { data: statistics, isLoading, error } = useSelector(
     (state: RootState) => state.statistics
   );
 
-  const { appointments: upcomingAppointments, loading: upcomingAppointmentsLoading } = useSelector(
+  const { appointments: upcomingAppointments, isLoading: upcomingAppointmentsLoading } = useSelector(
     (state: RootState) => state.appointments
   );
 
   const [refreshing, setRefreshing] = React.useState(false);
+  const hasAttemptedInitialLoad = React.useRef(false);
 
   // Fixed refresh function
   const onRefresh = React.useCallback(async () => {
@@ -43,23 +49,22 @@ const DoctorDashboard = () => {
       await dispatch(getProfile());
       await dispatch(getAppointments());
     } catch (error) {
-      console.error('Error refreshing dashboard:', error);
+      logger.error('Error refreshing dashboard:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [dispatch]);
+  }, [dispatch]); // dispatch is stable from Redux, but including it for completeness
 
-  // Load initial data on component mount
+  // Load initial data on component mount - ONLY ONCE
   React.useEffect(() => {
-    // Load initial statistics if not already loaded
-
-      if(!statistics && !loading){
-        dispatch(fetchDoctorStatistics());
-        dispatch(getProfile());
-        dispatch(getAppointments());
-      }
-
-  }, [dispatch, profileData, upcomingAppointments, statistics, loading, upcomingAppointmentsLoading, profileData.isLoading]);
+    // Only attempt initial load once - prevents infinite loops on API failures
+    if (!hasAttemptedInitialLoad.current) {
+      hasAttemptedInitialLoad.current = true;
+      dispatch(fetchDoctorStatistics());
+      dispatch(getProfile());
+      dispatch(getAppointments());
+    }
+  }, []); // Empty deps - only run once on mount (dispatch is stable from Redux)
 
   // Check if we have meaningful data to display
   const hasData = statistics && (
@@ -68,7 +73,7 @@ const DoctorDashboard = () => {
     statistics.totalAvailableAtClinic > 0
   );
 
-  if (loading && !refreshing) {
+  if (isLoading && !refreshing) {
     return <LoadingState />;
   }
 
@@ -88,7 +93,15 @@ const DoctorDashboard = () => {
           },
           {
             label: 'Restart App',
-            onPress: () => window.location.reload(),
+            onPress: async () => {
+              if (Platform.OS === 'web') {
+                window.location.reload();
+              } else {
+                // For React Native, reload is handled by expo-updates or app restart
+                // Fallback: navigate to splash screen to reinitialize
+                router.replace('/splashScreen');
+              }
+            },
             variant: 'outline',
             icon: 'restart-alt',
           },
@@ -98,7 +111,7 @@ const DoctorDashboard = () => {
   }
 
   // Show empty state if no data
-  if (!statistics && !loading && !refreshing) {
+  if (!statistics && !isLoading && !refreshing) {
     return (
       <EmptyScreen
         type="no-data"
@@ -120,18 +133,20 @@ const DoctorDashboard = () => {
   }
 
   return (
-    <ScrollView 
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={[MedicalTheme.colors.primary[500]]}
-          tintColor={MedicalTheme.colors.primary[500]}
-        />
-      }
-    >
+    <ErrorBoundary>
+      {/* Reverted: remove explicit StatusBar override */}
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[MedicalTheme.colors.primary[500]]}
+            tintColor={MedicalTheme.colors.primary[500]}
+          />
+        }
+      >
       <DashboardHeader profileData={profileData} />
       <StatsCards statistics={statistics} />
       <PerformanceMetrics statistics={statistics} />
@@ -142,6 +157,7 @@ const DoctorDashboard = () => {
       />
       <QuickActions />
     </ScrollView>
+    </ErrorBoundary>
   );
 };
 
