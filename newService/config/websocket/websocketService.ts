@@ -9,10 +9,9 @@ import { webSocketEndpoints } from "@/newService/config/websocketEndpoints";
 import { getValidToken } from "@/utils/tokenService";
 import logger from "@/utils/logger";
 
-interface WebSocketMessage {
-  type: 'APPOINTMENT' | 'NOTIFICATION';
-  payload: any;
-}
+type WebSocketMessage = 
+  | { type: 'APPOINTMENT'; payload: Partial<Appointment> | Appointment }
+  | { type: 'NOTIFICATION'; payload: Partial<Notification> };
 
 class WebsocketService {
   private stompClient: Client | null = null;
@@ -31,50 +30,50 @@ class WebsocketService {
     return !!this.stompClient?.connected;
   }
 
-  /**
-   * Initialize the WebSocket service with dispatch and state getter
-   * This decouples the service from direct store access
-   */
+  public get connected(): boolean {
+    return this.isConnected;
+  }
+
+  public getConnectionStatus(): { connected: boolean; connecting: boolean } {
+    return {
+      connected: this.isConnected,
+      connecting: this.isConnecting,
+    };
+  }
+
   public initialize(dispatch: AppDispatch, getProfileState: () => { doctorId?: string }): void {
     this.dispatch = dispatch;
     this.getProfileState = getProfileState;
   }
 
   public async connect(): Promise<void> {
-    // Ensure service is initialized before connecting
     if (!this.dispatch || !this.getProfileState) {
       logger.warn("WebSocket: Attempted to connect before initialization. Call initialize() first.");
       return;
     }
 
-    // If already connected, return immediately
     if (this.isConnected) {
       return;
     }
 
-    // If connection is in progress, return the existing promise (prevents race condition)
     if (this.isConnecting && this.connectionPromise) {
       return this.connectionPromise;
     }
 
-    // Create new connection promise
     this.isConnecting = true;
     this.connectionPromise = this.attemptConnection();
 
     try {
       await this.connectionPromise;
     } finally {
-      // Clear promise after connection completes (success or failure)
       this.connectionPromise = null;
     }
   }
 
   private async attemptConnection(): Promise<void> {
     try {
-      // getValidToken automatically checks expiration and redirects if invalid
       const token = await getValidToken();
       if (!token) {
-        // getValidToken already handled redirect
         logger.warn("WebSocket: Authentication token not found or expired");
         this.isConnecting = false;
         return;
@@ -91,7 +90,6 @@ class WebsocketService {
           this.reconnectAttempts = 0;
           this.isConnecting = false;
           
-          // Use injected state getter instead of direct store access
           if (this.getProfileState) {
             const profile = this.getProfileState();
             const doctorId = profile?.doctorId;
@@ -141,19 +139,21 @@ class WebsocketService {
       });
 
       this.stompClient.activate();
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("WebSocket: Connection error", error);
       this.isConnecting = false;
       
-      if (error?.status === 401 || error?.message?.includes("401") || 
-          error?.message?.includes("UNAUTHORIZED")) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStatus = (error as { status?: number })?.status;
+      
+      if (errorStatus === 401 || errorMessage.includes("401") || 
+          errorMessage.includes("UNAUTHORIZED")) {
         router.replace('/(auth)');
         return;
       }
       
       this.handleDisconnect();
     } finally {
-      // Ensure isConnecting is reset even if there's an unexpected error
       this.isConnecting = false;
     }
   }
@@ -164,40 +164,39 @@ class WebsocketService {
       return;
     }
 
-    // Unsubscribe existing subscription if any
     if (this.subscription) {
       try {
-        if (this.stompClient && this.isConnected) {
-          this.subscription.unsubscribe();
-        }
+        this.subscription.unsubscribe();
       } catch (error) {
         logger.warn("WebSocket: Error unsubscribing from previous channel", error);
       }
       this.subscription = null;
     }
 
-    // Create new subscription and store reference
     try {
-      if (this.stompClient && this.isConnected) {
-        this.subscription = this.stompClient.subscribe(
-          webSocketEndpoints.appointmentUpdate(doctorId),
-          (message: IMessage) => {
-            try {
-              const update = JSON.parse(message.body);
-              this.handleIncomingMessage(update);
-            } catch (error) {
-              logger.error("WebSocket: Error parsing message", error);
-            }
+      this.subscription = this.stompClient.subscribe(
+        webSocketEndpoints.appointmentUpdate(doctorId),
+        (message: IMessage) => {
+          try {
+            const update = JSON.parse(message.body);
+            this.handleIncomingMessage(update);
+          } catch (error) {
+            logger.error("WebSocket: Error parsing message", error);
           }
-        );
-      }
+        }
+      );
     } catch (error) {
       logger.error("WebSocket: Error subscribing to channel", error);
     }
   }
 
-  private handleIncomingMessage(message: WebSocketMessage): void {
+  private handleIncomingMessage(message: WebSocketMessage | unknown): void {
     try {
+      if (!message || typeof message !== 'object' || !('type' in message)) {
+        logger.warn('WebSocket: Invalid message format received');
+        return;
+      }
+
       switch (message.type) {
         case 'APPOINTMENT':
           this.handleAppointmentUpdate(message.payload);
@@ -208,7 +207,7 @@ class WebsocketService {
           break;
         
         default:
-          logger.warn('Unknown message type:', message.type);
+          logger.warn('Unknown message type:', (message as { type: string }).type);
           break;
       }
     } catch (error) {
@@ -216,40 +215,34 @@ class WebsocketService {
     }
   }
 
-  private handleAppointmentUpdate(updatedAppointment: any): void {
+  private handleAppointmentUpdate(updatedAppointment: Partial<Appointment> | Appointment): void {
     try {
-      // Validate that we have an appointment object
       if (!updatedAppointment || typeof updatedAppointment !== 'object') {
         logger.warn('WebSocket: Invalid appointment data received');
         return;
       }
 
-      // Use injected dispatch instead of direct store access
       if (!this.dispatch) {
         logger.error('WebSocket: Dispatch not initialized');
         return;
       }
 
-      // If appointment has appointmentId, it's an update - use updateAppointmentLocal
-      // Otherwise, it's a new appointment - use addAppointment thunk
-      if (updatedAppointment.appointmentId) {
-        // Update existing appointment using sync action (WebSocket updates are already from server)
+      if ('appointmentId' in updatedAppointment && updatedAppointment.appointmentId) {
         this.dispatch(updateAppointmentLocal(updatedAppointment as Appointment));
       } else {
-        // New appointment - use thunk (though WebSocket usually sends full objects with IDs)
-        this.dispatch(addAppointment(updatedAppointment));
+        this.dispatch(addAppointment(updatedAppointment as Omit<Appointment, "appointmentId">));
       }
     } catch (error) {
       logger.error('WebSocket: Error handling appointment update:', error);
     }
   }
 
-  private handleNotificationUpdate(notificationData: any): void {
-    // Validate and ensure type matches NotificationType enum
+  private handleNotificationUpdate(notificationData: Partial<Notification>): void {
     const validType: NotificationType = 
+      notificationData.type && 
       ['SYSTEM', 'INFO', 'UPDATE', 'ALERT', 'EMERGENCY'].includes(notificationData.type)
         ? notificationData.type as NotificationType
-        : 'SYSTEM'; // Default to SYSTEM if invalid type
+        : 'SYSTEM';
     
     const notification: Notification = {
       id: notificationData.id || `notification-${Date.now()}`,
@@ -260,7 +253,6 @@ class WebsocketService {
       createdAt: notificationData.createdAt || new Date().toISOString(),
     };
 
-    // Use injected dispatch instead of direct store access
     if (!this.dispatch) {
       logger.error('WebSocket: Dispatch not initialized');
       return;
@@ -274,16 +266,14 @@ class WebsocketService {
   }
 
   private scheduleReconnect(): void {
-    // Prevent infinite reconnection loops
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       logger.warn(`WebSocket: Max reconnection attempts (${this.maxReconnectAttempts}) reached. Stopping reconnection.`);
       return;
     }
 
-    // Exponential backoff: 1s, 2s, 4s, 8s, 16s (capped at 30s)
-    const baseDelay = 1000; // 1 second
+    const baseDelay = 1000;
     const exponentialDelay = baseDelay * Math.pow(2, this.reconnectAttempts);
-    const delay = Math.min(exponentialDelay, 30000); // Cap at 30 seconds
+    const delay = Math.min(exponentialDelay, 30000);
     this.reconnectAttempts++;
 
     logger.log(`WebSocket: Scheduling reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
@@ -296,10 +286,9 @@ class WebsocketService {
   }
 
   private cleanup(): void {
-    // Unsubscribe from channel
     if (this.subscription) {
       try {
-        if (this.stompClient && this.isConnected) {
+        if (this.stompClient?.connected) {
           this.subscription.unsubscribe();
         }
       } catch (error) {
@@ -308,7 +297,6 @@ class WebsocketService {
       this.subscription = null;
     }
 
-    // Deactivate and clear client
     if (this.stompClient) {
       try {
         if (this.stompClient.active) {
@@ -329,9 +317,6 @@ class WebsocketService {
     this.reconnectAttempts = 0;
   }
 
-  /**
-   * Reset reconnection attempts (useful after successful manual reconnection)
-   */
   public resetReconnectionAttempts(): void {
     this.reconnectAttempts = 0;
   }
@@ -347,10 +332,6 @@ class WebsocketService {
     }
   }
 
-  /**
-   * Initialize AppState listener to disconnect WebSocket when app goes to background
-   * and reconnect when app comes to foreground
-   */
   public initializeAppStateListener(): void {
     if (this.appStateSubscription) {
       this.appStateSubscription.remove();
@@ -363,7 +344,6 @@ class WebsocketService {
         this.disconnect();
       } else if (nextAppState === 'active') {
         logger.log("WebSocket: App coming to foreground, reconnecting");
-        // Reset reconnection attempts when app comes to foreground
         this.resetReconnectionAttempts();
         this.ensureConnected();
       }
@@ -372,9 +352,6 @@ class WebsocketService {
     this.appStateSubscription = AppState.addEventListener('change', this.appStateListener);
   }
 
-  /**
-   * Remove AppState listener (call on app unmount or logout)
-   */
   public removeAppStateListener(): void {
     if (this.appStateSubscription) {
       this.appStateSubscription.remove();
