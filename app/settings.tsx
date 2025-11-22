@@ -1152,7 +1152,7 @@ const SettingsScreen = () => {
   );
 
   return (
-    <>
+    <ErrorBoundary>
       {/* Reverted: remove explicit StatusBar override */}
       <View style={styles.container}>
         {/* Reverted header: simple inline header */}
