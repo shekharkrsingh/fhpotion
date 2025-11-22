@@ -10,13 +10,10 @@ import { websocketAppointment } from "@/newService/config/websocket/websocketSer
 import ErrorBoundary from "@/newComponents/ErrorBoundary";
 import { MedicalTheme } from "@/newConstants/theme";
 
-// Prevent the default Expo splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
     useEffect(() => {
-        SplashScreen.hideAsync().catch(() => {});
-
         if (Platform.OS === 'android') {
             StatusBar.setBackgroundColor(MedicalTheme.colors.secondary[500], true);
             StatusBar.setTranslucent(false);
