@@ -93,7 +93,11 @@ export const reportScreenStyles = StyleSheet.create({
     marginBottom: MedicalTheme.spacing[3],
   },
   customDateSection: {
-    marginTop: MedicalTheme.spacing[4],
+    marginTop: MedicalTheme.spacing[8],
+    paddingTop: MedicalTheme.spacing[3],
+  },
+  quickActionsSection: {
+    marginBottom: MedicalTheme.spacing[10],
   },
 
   // Quick Actions Styles
@@ -101,7 +105,7 @@ export const reportScreenStyles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: MedicalTheme.spacing[2],
-    marginBottom: MedicalTheme.spacing[2],
+    marginBottom: MedicalTheme.spacing[6],
   },
   quickActionButton: {
     flex: 1,

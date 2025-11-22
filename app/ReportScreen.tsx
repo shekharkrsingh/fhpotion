@@ -359,7 +359,7 @@ const ReportScreen: React.FC = () => {
         <Text style={styles.subtitle}>Select date range to generate PDF report</Text>
 
         {/* Quick Actions */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.quickActionsSection]}>
           <Text style={styles.sectionTitle}>Quick Reports</Text>
           <View style={styles.quickActionsContainer}>
             <TouchableOpacity
