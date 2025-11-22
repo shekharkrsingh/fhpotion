@@ -1,15 +1,13 @@
 import SafeScreen from "@/newComponents/SafeScreen";
 import { store } from "@/newStore/index";
 import {Stack} from "expo-router";
-import {StatusBar as ExpoStatusBar} from "expo-status-bar";
-import {StatusBar, Platform} from "react-native";
+import {StatusBar} from "react-native";
 import {SafeAreaProvider} from "react-native-safe-area-context";
 import {Provider} from "react-redux";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { websocketAppointment } from "@/newService/config/websocket/websocketService";
 import ErrorBoundary from "@/newComponents/ErrorBoundary";
-import { MedicalTheme } from "@/newConstants/theme";
 
 // Prevent the default Expo splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -43,14 +41,11 @@ export default function RootLayout() {
         <ErrorBoundary>
             <Provider store={store}>
                 <SafeAreaProvider>
-                    {Platform.OS === 'android' && (
-                        <StatusBar 
-                            barStyle="light-content"
-                            backgroundColor={MedicalTheme.colors.primary[500]}
-                            translucent={false}
-                        />
-                    )}
-                    <ExpoStatusBar style="light" />
+                    <StatusBar 
+                        barStyle="light-content"
+                        backgroundColor="#000000"
+                        translucent={false}
+                    />
                     <SafeScreen>
                         <Stack
                             screenOptions={{
